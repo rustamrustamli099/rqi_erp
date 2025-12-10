@@ -3,122 +3,376 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN       // Platform Admin
-  TENANT_ADMIN // Tenant Owner
-  MANAGER     // Branch Manager
-  FINANCE
-  GARAGE_STAFF
-  AUDIT_OFFICER
-  WORKER
-}
+// =================================================================================================
+// AUTHENTICATION & CORE (User, Tenant, Branch)
+// =================================================================================================
 
 model Tenant {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  slug        String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  users       User[]
-  branches    Branch[]
-  auditLogs   AuditLog[]
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  branches  Branch[]
+  auditLogs AuditLog[]
+  roles     Role[]
 
   @@map("tenants")
 }
 
 model Branch {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  tenantId    String   @db.Uuid
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  users       User[]
-  auditLogs   AuditLog[]
+  id        String   @id @default(uuid())
+  name      String
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users     User[]
+  auditLogs AuditLog[]
 
   @@map("branches")
 }
 
 model User {
-  id                 String         @id @default(uuid())
-  email              String         @unique
+  id                 String  @id @default(uuid())
+  email              String  @unique
   password           String
   fullName           String?
-  role               Role           @default(WORKER) // Kept WORKER as USER is not in enum
   hashedRefreshToken String?
+
+  // MFA
+  mfaSecret    String?
+  isMfaEnabled Boolean @default(false)
+
+  // Context
+  tenantId String
+  branchId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // RELATIONS
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id])
+  branch              Branch?                @relation(fields: [branchId], references: [id])
   
-  // MFA Fields
-  mfaSecret          String?
-  isMfaEnabled       Boolean        @default(false)
-
-  tenantId    String
-  branchId    String? // Nullable for Tenant Admins who manage all branches
-
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-
-  tenant             Tenant         @relation(fields: [tenantId], references: [id])
-  branch             Branch?        @relation(fields: [branchId], references: [id])
-  securityLogs       SecurityLog[]
-  accessPolicies     AccessPolicy[]
-  auditLogs   AuditLog[]
+  // RBAC
+  roles               UserRole[]
+  
+  // Security & Logs
+  securityLogs        SecurityLog[]
+  accessPolicies      AccessPolicy[]
+  auditLogs           AuditLog[]
+  
+  // Notifications & Files
+  notificationDeliveries NotificationDelivery[]
+  uploadedFiles          File[]
+  
+  // Curator Assignments
+  curatorAssignments     CuratorAssignment[]
 
   @@map("users")
 }
 
+// =================================================================================================
+// RBAC ENGINE (SAP-Style)
+// =================================================================================================
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  
+  // Context
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([name, tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  description String?
+  module      String
+
+  roles       RolePermission[]
+  menuItems   MenuItem[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  
+  validFrom DateTime @default(now())
+  validTo   DateTime?
+
+  assignedBy String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_roles")
+}
+
+model CuratorAssignment {
+  id             String   @id @default(uuid())
+  userId         String
+  targetTenantId String?
+  targetBranchId String?
+  
+  canView   Boolean @default(true)
+  canEdit   Boolean @default(false)
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("curator_assignments")
+}
+
+// =================================================================================================
+// MASTER DATA: ADDRESS (Hierarchical)
+// =================================================================================================
+
+model Country {
+  id     String @id @default(uuid())
+  name   String
+  code   String @unique
+  cities City[]
+
+  @@map("countries")
+}
+
+model City {
+  id        String     @id @default(uuid())
+  name      String
+  countryId String
+  country   Country    @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  districts District[]
+
+  @@map("cities")
+}
+
+model District {
+  id      String   @id @default(uuid())
+  name    String
+  cityId  String
+  city    City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  streets Street[]
+
+  @@map("districts")
+}
+
+model Street {
+  id         String   @id @default(uuid())
+  name       String
+  districtId String
+  district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@map("streets")
+}
+
+// =================================================================================================
+// COMMUNICATION HUB (Notifications)
+// =================================================================================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  subject   String
+  body      String
+  priority  String
+  type      String
+
+  senderId  String?
+  targetFilter String? // SQLite doesn't support Json, storing as Stringified JSON
+
+  createdAt DateTime @default(now())
+
+  deliveries NotificationDelivery[]
+
+  @@map("notifications")
+}
+
+model NotificationDelivery {
+  id             String   @id @default(uuid())
+  notificationId String
+  userId         String
+
+  status         String
+  readAt         DateTime?
+  sentAt         DateTime @default(now())
+
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_deliveries")
+}
+
+// =================================================================================================
+// DOCUMENT ENGINE (Templates)
+// =================================================================================================
+
+model DocumentTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  category    String
+  isActive    Boolean  @default(true)
+
+  versions    TemplateVersion[]
+  createdAt   DateTime @default(now())
+
+  @@map("document_templates")
+}
+
+model TemplateVersion {
+  id         String   @id @default(uuid())
+  templateId String
+  version    String
+  content    String
+
+  status     String
+  createdAt  DateTime @default(now())
+
+  template   DocumentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("template_versions")
+}
+
+// =================================================================================================
+// STORAGE & UI (Files, Menus)
+// =================================================================================================
+
+model File {
+  id           String   @id @default(uuid())
+  originalName String
+  filename     String
+  mimeType     String
+  size         Int
+  path         String
+  bucket       String?
+
+  publicUrl    String?
+
+  uploadedBy   String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [uploadedBy], references: [id])
+
+  @@map("files")
+}
+
+model Menu {
+  id    String @id @default(uuid())
+  name  String
+  slug  String @unique
+
+  items MenuItem[]
+
+  @@map("menus")
+}
+
+model MenuItem {
+  id       String  @id @default(uuid())
+  menuId   String
+
+  title    String
+  icon     String?
+  path     String?
+
+  parentId String?
+  parent   MenuItem?  @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children MenuItem[] @relation("MenuHierarchy")
+
+  permissionId String?
+  permission   Permission? @relation(fields: [permissionId], references: [id])
+
+  order    Int     @default(0)
+
+  menu     Menu    @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@map("menu_items")
+}
+
+// =================================================================================================
+// LOGS & POLICIES
+// =================================================================================================
+
 model SecurityLog {
   id        String   @id @default(uuid())
   userId    String
-  action    String   // LOGIN, LOGOUT, VIEW, CREATE, DELETE
+  action    String
   ipAddress String
   userAgent String?
-  device    String?  // Mobile, Desktop, etc.
-  location  String?  // Country, City (GeoIP)
-  details   String?  // JSON details
+  device    String?
+  location  String?
+  details   String?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("security_logs")
 }
 
 model AccessPolicy {
-  id          String   @id @default(uuid())
-  userId      String
-  name        String   // "Standard Office Hours"
-  
-  // Restrictions
-  allowedDays Int[]    // 0=Sunday, 1=Monday... 6=Saturday
-  allowedStartHour Int? // e.g., 9 (09:00)
-  allowedEndHour   Int? // e.g., 18 (18:00)
-  allowedIps       String[] // List of CIDR or IPs
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(uuid())
+  userId           String
+  name             String
 
-  user        User     @relation(fields: [userId], references: [id])
+  allowedDays      String // SQLite array workaround: "0,1,2,3,4,5"
+  allowedStartHour Int?
+  allowedEndHour   Int?
+  allowedIps       String // SQLite array workaround: "192.168.1.1,10.0.0.1"
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("access_policies")
 }
 
 model AuditLog {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  action      String
-  module      String
-  details     Json?
-  ipAddress   String?
-  
-  userId      String   @db.Uuid
-  tenantId    String   @db.Uuid
-  branchId    String?  @db.Uuid
+  id        String   @id @default(uuid())
+  action    String
+  module    String
+  details   String?  // SQLite Json workaround
+  ipAddress String?
 
-  createdAt   DateTime @default(now())
+  userId    String
+  tenantId  String
+  branchId  String?
 
-  user        User     @relation(fields: [userId], references: [id])
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  branch      Branch?  @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
 }

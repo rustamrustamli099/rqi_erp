@@ -22,13 +22,20 @@ export class AccessControlGuard implements CanActivate {
             return true; // No restrictions
         }
 
+        // Bypass checks for Owner/SuperAdmin
+        const userRoles = (user as any).roles || [];
+        if (userRoles.includes('owner') || userRoles.includes('superadmin')) {
+            return true;
+        }
+
         const now = new Date();
         const dayOfWeek = now.getDay(); // 0-6
         const currentHour = now.getHours();
         const clientIp = request.ip;
 
-        // 1. Check Days
-        if (policy.allowedDays.length > 0 && !policy.allowedDays.includes(dayOfWeek)) {
+        // SQLite stores as "0,1,2" string
+        const allowedDays = policy.allowedDays ? (policy.allowedDays as unknown as string).split(',').map(Number) : [];
+        if (allowedDays.length > 0 && !allowedDays.includes(dayOfWeek)) {
             throw new ForbiddenException('Access denied on this day of the week.');
         }
 
@@ -42,10 +49,9 @@ export class AccessControlGuard implements CanActivate {
         }
 
         // 3. Check IP
-        if (policy.allowedIps.length > 0) {
-            // Simple string match for CDIR/IP (in real app use ip-range-check)
-            // For matching exact IPs:
-            if (!policy.allowedIps.includes(clientIp)) {
+        const allowedIps = policy.allowedIps ? (policy.allowedIps as unknown as string).split(',') : [];
+        if (allowedIps.length > 0) {
+            if (!allowedIps.includes(clientIp)) {
                 throw new ForbiddenException('Access denied from this IP address.');
             }
         }

@@ -1,28 +1,46 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Assume this exists or will be created
-// import { RolesGuard } from '../auth/roles.guard';
-// import { Roles } from '../auth/roles.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AccessControlGuard } from '../../common/guards/access-control.guard';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, AccessControlGuard)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
     @Post()
     create(@Body() createUserDto: any) {
-        // In a real scenario, we extract tenantId from the user's JWT (request.user)
-        // For now, we assume the DTO might contain it, or we rely on the Service to handle it.
-        // If the user is a Tenant Admin, we would force the tenantId.
         return this.usersService.create(createUserDto);
     }
 
     @Get()
-    findAll() {
-        return "This action returns all users (filtered by tenant)";
+    findAll(@Request() req, @Query() query) {
+        // Basic filtering logic based on user role can be added here
+        // For now, returning all (AccessControlGuard handles permission to REACH here)
+        return this.usersService.findAll({
+            take: query.take ? Number(query.take) : undefined,
+            skip: query.skip ? Number(query.skip) : undefined,
+            where: query.search ? {
+                OR: [
+                    { email: { contains: query.search } },
+                    { fullName: { contains: query.search } }
+                ]
+            } : undefined
+        });
     }
 
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.usersService.findById(id);
+    }
+
+    @Patch(':id')
+    update(@Param('id') id: string, @Body() updateUserDto: any) {
+        return this.usersService.update(id, updateUserDto);
+    }
+
+    @Delete(':id')
+    remove(@Param('id') id: string) {
+        return this.usersService.remove(id);
     }
 }

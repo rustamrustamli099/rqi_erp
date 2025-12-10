@@ -11,7 +11,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { TenantMiddleware } from './common/middleware/tenant-context.middleware';
 import { SystemModule } from './modules/system/system.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { MenusModule } from './modules/menus/menus.module';
+import { FilesModule } from './modules/files/files.module';
 import { PrismaService } from './prisma.service';
+import { RolesModule } from './modules/roles/roles.module';
 
 @Module({
   imports: [
@@ -26,7 +29,10 @@ import { PrismaService } from './prisma.service';
     AuditModule,
     DashboardModule,
     SystemModule,
-    IntegrationsModule
+    IntegrationsModule,
+    MenusModule,
+    FilesModule,
+    RolesModule
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

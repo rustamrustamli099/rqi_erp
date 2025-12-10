@@ -29,6 +29,51 @@ export class UsersService {
         });
     }
 
+    async findAll(params?: {
+        skip?: number;
+        take?: number;
+        cursor?: Prisma.UserWhereUniqueInput;
+        where?: Prisma.UserWhereInput;
+        orderBy?: Prisma.UserOrderByWithRelationInput;
+    }): Promise<User[]> {
+        const { skip, take, cursor, where, orderBy } = params || {};
+        return this.prisma.user.findMany({
+            skip,
+            take,
+            cursor,
+            where,
+            orderBy,
+            include: {
+                tenant: true,
+                branch: true,
+                roles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        });
+    }
+
+    async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+        if (data.password) {
+            data.password = await bcrypt.hash(data.password as string, 10);
+        }
+        return this.prisma.user.update({
+            where: { id },
+            data,
+            include: {
+                roles: { include: { role: true } }
+            }
+        });
+    }
+
+    async remove(id: string): Promise<User> {
+        return this.prisma.user.delete({
+            where: { id },
+        });
+    }
+
     async updateRefreshToken(userId: string, refreshToken: string) {
         const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
         await this.prisma.user.update({

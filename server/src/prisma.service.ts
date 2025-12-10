@@ -13,7 +13,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         super({
             datasources: {
                 db: {
-                    url: process.env.DATABASE_URL,
+                    url: 'file:./dev.db',
                 },
             },
         });

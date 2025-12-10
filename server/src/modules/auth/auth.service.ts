@@ -20,7 +20,12 @@ export class AuthService {
     }
 
     async login(user: any, rememberMe: boolean = false) {
-        const payload = { email: user.email, sub: user.id, tenantId: user.tenantId, role: user.role };
+        const payload = {
+            email: user.email,
+            sub: user.id,
+            tenantId: user.tenantId,
+            roles: (user as any).roles?.map(r => r.role?.name) || []
+        };
         const accessToken = this.jwtService.sign(payload);
 
         const expiresIn = rememberMe ? '30d' : '7d';
@@ -42,7 +47,12 @@ export class AuthService {
         const refreshTokenMatches = await bcrypt.compare(refreshToken, user.hashedRefreshToken);
         if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
 
-        const payload = { email: user.email, sub: user.id, tenantId: user.tenantId, role: user.role };
+        const payload = {
+            email: user.email,
+            sub: user.id,
+            tenantId: user.tenantId,
+            roles: (user as any).roles?.map(r => r.role?.name) || []
+        };
         const accessToken = this.jwtService.sign(payload);
         const newRefreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
