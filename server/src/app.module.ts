@@ -1,5 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -15,9 +17,14 @@ import { MenusModule } from './modules/menus/menus.module';
 import { FilesModule } from './modules/files/files.module';
 import { PrismaService } from './prisma.service';
 import { RolesModule } from './modules/roles/roles.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigService available globally
       envFilePath: '.env',
@@ -31,11 +38,20 @@ import { RolesModule } from './modules/roles/roles.module';
     SystemModule,
     IntegrationsModule,
     MenusModule,
+    MenusModule,
     FilesModule,
-    RolesModule
+    RolesModule,
+    AddressesModule
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [
+    AppService,
+    PrismaService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

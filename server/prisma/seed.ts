@@ -2,15 +2,8 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
-import * as dotenv from 'dotenv';
-dotenv.config();
-const prisma = new PrismaClient({
-    datasources: {
-        db: {
-            url: 'file:./dev.db',
-        },
-    },
-});
+
+const prisma = new PrismaClient();
 
 async function main() {
     console.log('Seeding database...');
@@ -46,40 +39,215 @@ async function main() {
         });
     }
 
-    // 3. Create Admin Sidebar Menu
-    const sidebar = await prisma.menu.upsert({
-        where: { slug: 'admin_sidebar' },
+    // Helper to get permission ID
+    const getPermId = async (slug: string) => {
+        const p = await prisma.permission.findUnique({ where: { slug } });
+        return p?.id;
+    };
+
+    // 3. Create Sidebars
+    // A. PLATFORM SIDEBAR (For Owner/SuperAdmin)
+    const platformSidebar = await prisma.menu.upsert({
+        where: { slug: 'platform_sidebar' },
         update: {},
-        create: {
-            name: 'Admin Sidebar',
-            slug: 'admin_sidebar',
-        },
+        create: { name: 'Platform Sidebar', slug: 'platform_sidebar' },
     });
 
-    // 4. Create Menu Items
-    // Dashboard
+    // B. TENANT SIDEBAR (For Tenant Admins/Users)
+    const tenantSidebar = await prisma.menu.upsert({
+        where: { slug: 'tenant_sidebar' },
+        update: {},
+        create: { name: 'Tenant Sidebar', slug: 'tenant_sidebar' },
+    });
+
+    // Clean up old items
+    const oldSidebar = await prisma.menu.findUnique({ where: { slug: 'admin_sidebar' } });
+    if (oldSidebar) {
+        await prisma.menuItem.deleteMany({ where: { menuId: oldSidebar.id } });
+        await prisma.menu.delete({ where: { id: oldSidebar.id } });
+    }
+
+    // Clean up new items to ensure fresh seed
+    await prisma.menuItem.deleteMany({ where: { menuId: { in: [platformSidebar.id, tenantSidebar.id] } } });
+
+
+    // ===========================================
+    // PLATFORM SIDEBAR CONTENT
+    // ===========================================
+    console.log('Seeding Platform Sidebar...');
+
+    // 1. Dashboard
     await prisma.menuItem.create({
         data: {
-            menuId: sidebar.id,
+            menuId: platformSidebar.id,
             title: 'İdarə etmə paneli',
             path: '/',
             icon: 'LayoutDashboard',
-            order: 1,
+            order: 10,
+            permissionId: await getPermId('dashboard:view')
+        }
+    });
 
+    // 1.5 Users (Admin)
+    await prisma.menuItem.create({
+        data: {
+            menuId: platformSidebar.id,
+            title: 'İstifadəçilər',
+            path: '/admin/users',
+            icon: 'Users',
+            order: 15,
+            permissionId: await getPermId('system:users:read')
+        }
+    });
+
+    // 1.6 Approvals (Admin)
+    await prisma.menuItem.create({
+        data: {
+            menuId: platformSidebar.id,
+            title: 'Təsdiqləmələr',
+            path: '/admin/approvals',
+            icon: 'CheckSquare', // or specific icon if available
+            order: 16,
+            permissionId: await getPermId('admin:approvals:read')
+        }
+    });
+
+    // 2. Tenants (Top Level as requested)
+    await prisma.menuItem.create({
+        data: {
+            menuId: platformSidebar.id,
+            title: 'Tenantlar',
+            path: '/admin/tenants',
+            icon: 'Building',
+            order: 20,
+            permissionId: await getPermId('system:tenants:read')
+        }
+    });
+
+    // 3. Settings (Top Level "System Settings")
+    await prisma.menuItem.create({
+        data: {
+            menuId: platformSidebar.id,
+            title: 'Tənzimləmələr', // Settings
+            path: '/admin/settings',
+            icon: 'Settings',
+            order: 50,
+            permissionId: await getPermId('system:config:general:read')
+        }
+    });
+
+    // 2.1 Packages (Service Plans)
+    await prisma.menuItem.create({
+        data: {
+            menuId: platformSidebar.id,
+            title: 'Paketlər',
+            path: '/admin/packages',
+            icon: 'Package', // Lucide icon
+            order: 25,
+            permissionId: await getPermId('system:packages:read')
+        }
+    });
+
+    // 2.2 Subscriptions (Active Billings)
+    await prisma.menuItem.create({
+        data: {
+            menuId: platformSidebar.id,
+            title: 'Abunəliklər',
+            path: '/admin/subscriptions',
+            icon: 'CreditCard',
+            order: 26,
+            permissionId: await getPermId('system:subscriptions:read')
+        }
+    });
+
+
+    // ===========================================
+    // TENANT SIDEBAR CONTENT
+    // ===========================================
+    console.log('Seeding Tenant Sidebar...');
+
+    // 1. Dashboard
+    await prisma.menuItem.create({
+        data: {
+            menuId: tenantSidebar.id,
+            title: 'İdarə etmə paneli',
+            path: '/',
+            icon: 'LayoutDashboard',
+            order: 10,
+            permissionId: await getPermId('dashboard:view')
+        }
+    });
+
+    // 2. Users module
+    await prisma.menuItem.create({
+        data: {
+            menuId: tenantSidebar.id,
+            title: 'İstifadəçilər',
+            path: '/users',
+            icon: 'Users',
+            order: 20,
+            permissionId: await getPermId('users:read')
+        }
+    });
+
+    // 3. Settings Group
+    const configParent = await prisma.menuItem.create({
+        data: {
+            menuId: tenantSidebar.id,
+            title: 'Tənzimləmələr',
+            path: '/settings',
+            icon: 'Settings',
+            order: 30,
+            permissionId: await getPermId('config:roles:read')
+        }
+    });
+
+    // Config -> Roles
+    await prisma.menuItem.create({
+        data: {
+            menuId: tenantSidebar.id,
+            parentId: configParent.id,
+            title: 'Rollar',
+            path: '/settings/roles',
+            icon: 'Shield',
+            order: 31,
+            permissionId: await getPermId('config:roles:read')
+        }
+    });
+
+    // Config -> Dictionaries
+    await prisma.menuItem.create({
+        data: {
+            menuId: tenantSidebar.id,
+            parentId: configParent.id,
+            title: 'Soraqçalar',
+            path: '/settings/dictionaries',
+            icon: 'Book',
+            order: 32,
+            title: 'Soraqçalar',
+            path: '/settings/dictionaries',
+            icon: 'Book',
+            order: 32,
+            permissionId: await getPermId('config:dict:currencies:read') // Changed from generic if needed
+        }
+    });
+
+    // Config -> Files
+    await prisma.menuItem.create({
+        data: {
+            menuId: tenantSidebar.id,
+            parentId: configParent.id,
+            title: 'Fayllar',
+            path: '/settings/files', // Assuming this route exists or we use settings tab
+            icon: 'FileText',
+            order: 33,
+            permissionId: await getPermId('config:dox_templates:read') // Using a placeholder permission or add new
         }
     });
 
     // 2.a Create Granular Permissions
 
-    // 2.a Create Granular Permissions
 
-
-    // 2.a Create Granular Permissions
-    /*
-    const permissions = [
-        // ... (manual list)
-    ];
-    */
     // 2.a Create Granular Permissions
     console.log('Seeding Permissions...');
 
@@ -88,7 +256,7 @@ async function main() {
         for (const key in obj) {
             const val = obj[key];
             if (val && typeof val === 'object') {
-                if ('slug' in val && 'description' in val) {
+                if ('slug' in val && 'description' in val && 'scope' in val) {
                     // It's a leaf permission node
                     acc.push(val);
                 } else {
@@ -100,15 +268,11 @@ async function main() {
         return acc;
     }
 
-    // Dynamic import to avoid earlier issues, or just require
-    // We rely on PERMISSIONS structure.
-    // Note: In seed.ts (ts-node), imports from src should work if configured.
-    // If this fails, we will have to copy the object. But let's try.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { PERMISSIONS } = require('../src/common/constants/permissions');
 
     const permissionList = extractPermissions(PERMISSIONS);
-    const allPermissions = [];
+    const allPermissions: any[] = [];
 
     for (const perm of permissionList) {
         // Derive module from slug (first segment)
@@ -117,17 +281,38 @@ async function main() {
 
         const p = await prisma.permission.upsert({
             where: { slug: perm.slug },
-            update: { description: perm.description, module: moduleName },
+            update: { description: perm.description, module: moduleName, scope: perm.scope },
             create: {
                 slug: perm.slug,
                 description: perm.description,
-                module: moduleName
+                module: moduleName,
+                scope: perm.scope
             }
         });
         allPermissions.push(p);
     }
 
     console.log(`Seeded ${allPermissions.length} permissions.`);
+
+    // 2.b Assign ALL permissions to Owner and Admin roles (for Full Access)
+    console.log('Assigning Permissions to Roles...');
+
+    // Clear existing permissions first to avoid conflicts/stale data
+    await prisma.rolePermission.deleteMany({ where: { roleId: { in: [ownerRole.id, adminRole.id] } } });
+
+    // Assign all to Owner
+    for (const p of allPermissions) {
+        await prisma.rolePermission.create({
+            data: { roleId: ownerRole.id, permissionId: p.id }
+        });
+    }
+    // Assign all to Admin (or maybe slightly restricted? For now Full)
+    for (const p of allPermissions) {
+        await prisma.rolePermission.create({
+            data: { roleId: adminRole.id, permissionId: p.id }
+        });
+    }
+
 
     // Fetch specific permission for menu linking
     // Using a safe default from the new structure
@@ -138,71 +323,8 @@ async function main() {
     // ... rest of menu items
 
     // Admin Section
-    const adminItem = await prisma.menuItem.create({
-        data: {
-            menuId: sidebar.id,
-            title: 'Admin Paneli',
-            path: '/admin',
-            icon: 'ShieldCheck',
-            order: 2,
-            permissionId: pSettingsRead?.id,
-        }
-    });
-
-    // Admin Sub-items
-    await Promise.all([
-        prisma.menuItem.create({
-            data: {
-                menuId: sidebar.id,
-                parentId: adminItem.id,
-                title: 'Tenantlar',
-                path: '/admin/tenants',
-                icon: 'Building',
-                order: 1,
-            }
-        }),
-        prisma.menuItem.create({
-            data: {
-                menuId: sidebar.id,
-                parentId: adminItem.id,
-                title: 'İstifadəçilər',
-                path: '/admin/users',
-                icon: 'Users',
-                order: 2,
-            }
-        }),
-        prisma.menuItem.create({
-            data: {
-                menuId: sidebar.id,
-                parentId: adminItem.id,
-                title: 'Tənzimləmələr',
-                path: '/admin/settings',
-                icon: 'Settings',
-                order: 3,
-            }
-        }),
-        prisma.menuItem.create({
-            data: {
-                menuId: sidebar.id,
-                parentId: adminItem.id,
-                title: 'Rollar & İcazələr',
-                path: '/admin/roles',
-                icon: 'Lock',
-                order: 4,
-            }
-        })
-    ]);
-
-    // Tenant Section
-    await prisma.menuItem.create({
-        data: {
-            menuId: sidebar.id,
-            title: 'İstifadəçilər',
-            path: '/users',
-            icon: 'Users',
-            order: 3,
-        }
-    });
+    // This section is now replaced by the new menu structure above.
+    // The original content for Admin Section and Tenant Section is removed.
 
     // 5. Create Admin User (Owner)
     const passwordHash = await bcrypt.hash('password123', 10);
@@ -220,20 +342,49 @@ async function main() {
 
     const adminUser = await prisma.user.upsert({
         where: { email: 'admin@example.com' },
-        update: {},
+        update: {
+            roleId: ownerRole.id // Ensure role is updated
+        },
         create: {
             email: 'admin@example.com',
             password: passwordHash,
             fullName: 'Admin User',
             tenantId: defaultTenant.id,
-            roles: {
-                create: [
-                    { roleId: ownerRole.id },
-                    { roleId: adminRole.id }
-                ]
-            }
+            roleId: ownerRole.id // Single Role
         }
     });
+
+    // 6. Seed Sectors
+    console.log('Seeding Sectors...');
+    const sectors = [
+        'Information Technology', 'Finance', 'Healthcare', 'Education',
+        'Construction', 'Retail', 'Logistics', 'Manufacturing', 'Other'
+    ];
+    for (const name of sectors) {
+        const slug = name.toLowerCase().replace(/ /g, '-');
+        await prisma.sector.upsert({
+            where: { slug },
+            update: {},
+            create: { name, slug }
+        });
+    }
+
+    // 7. Seed Timezones
+    console.log('Seeding Timezones...');
+    const timezones = [
+        { name: 'Asia/Baku', offset: '+04:00', description: 'Azerbaijan Time' },
+        { name: 'Europe/Istanbul', offset: '+03:00', description: 'Turkey Time' },
+        { name: 'Europe/London', offset: '+00:00', description: 'Greenwich Mean Time' },
+        { name: 'America/New_York', offset: '-05:00', description: 'Eastern Standard Time' },
+        { name: 'UTC', offset: '+00:00', description: 'Coordinated Universal Time' }
+    ];
+    for (const tz of timezones) {
+        await prisma.timezone.upsert({
+            where: { name: tz.name },
+            update: {},
+            create: tz
+        });
+    }
 
     console.log('Admin User created:', adminUser.email);
     console.log('Seeding completed.');

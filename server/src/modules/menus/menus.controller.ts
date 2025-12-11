@@ -9,7 +9,9 @@ export class MenusController {
 
     @Get('sidebar')
     async getSidebar(@Request() req) {
-        // req.user.roles is populated by JwtStrategy
-        return this.menusService.getSidebar(req.user?.roles || []);
+        // req.user.role is populated by JwtStrategy (single role string)
+        const role = req.user?.role;
+        const roles = role ? [role] : [];
+        return this.menusService.getSidebar(roles);
     }
 }

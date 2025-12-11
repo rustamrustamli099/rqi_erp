@@ -23,32 +23,23 @@ export class PermissionsGuard implements CanActivate {
         }
 
         // 1. OWNER BYPASS (Strict Check as requested)
-        const userRoles = (user as any).roles || [];
-        if (userRoles.includes('owner') || userRoles.includes('superadmin')) {
+        // 1. OWNER BYPASS (Strict Check as requested)
+        const userRole = (user as any).role;
+        if (userRole === 'owner' || userRole === 'superadmin') {
             return true;
         }
 
         // 2. Load User Permissions from DB (if not in JWT)
-        // Assuming JWT might not have full permission list to save size, we fetch/cache it.
-        // For now, let's fetch roles->permissions.
-        // In a real app, this should be cached.
+        // We already have user.id. Let's fetch the user's role and permissions.
 
-        // We already have user.id. Let's fetch the user's roles and permissions.
-        // Optimization: If permissions are in JWT, use them. 
-        // But currently we only put roles in JWT.
-
-        const userWithRoles = await this.prisma.user.findUnique({
+        const userWithRole = await this.prisma.user.findUnique({
             where: { id: user.id },
             include: {
-                roles: {
+                role: {
                     include: {
-                        role: {
+                        permissions: {
                             include: {
-                                permissions: {
-                                    include: {
-                                        permission: true
-                                    }
-                                }
+                                permission: true
                             }
                         }
                     }
@@ -56,20 +47,18 @@ export class PermissionsGuard implements CanActivate {
             }
         });
 
-        if (!userWithRoles) return false;
+        if (!userWithRole || !userWithRole.role) return false;
 
         // Flatten permissions
         const userPermissionSlugs = new Set<string>();
-        userWithRoles.roles.forEach(userRole => {
-            // Traverse UserRole -> Role -> RolePermission -> Permission
-            if (userRole.role && userRole.role.permissions) {
-                userRole.role.permissions.forEach(rp => {
-                    if (rp.permission) {
-                        userPermissionSlugs.add(rp.permission.slug);
-                    }
-                });
-            }
-        });
+
+        if (userWithRole.role.permissions) {
+            userWithRole.role.permissions.forEach(rp => {
+                if (rp.permission) {
+                    userPermissionSlugs.add(rp.permission.slug);
+                }
+            });
+        }
 
         // 3. Check requirements
         const hasPermission = requiredPermissions.some(permission => userPermissionSlugs.has(permission));

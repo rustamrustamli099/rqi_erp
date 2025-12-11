@@ -31,8 +31,17 @@ export class FilesService {
                 size: file.size,
                 path: filePath,
                 uploadedBy: userId,
-                publicUrl: `/uploads/${filename}` // Nginx or Static Serve
+                publicUrl: `/uploads/${filename}`, // Nginx or Static Serve
+                usage: 'OTHER', // Default usage
+                module: 'GENERAL' // Default module
             }
+        });
+    }
+
+    async findAll() {
+        return this.prisma.file.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: { user: { select: { fullName: true, email: true } } } // Include uploader info if possible
         });
     }
 }

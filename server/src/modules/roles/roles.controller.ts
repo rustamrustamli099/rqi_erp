@@ -10,37 +10,37 @@ export class RolesController {
     constructor(private readonly rolesService: RolesService) { }
 
     @Get()
-    @RequirePermissions('roles:read')
+    @RequirePermissions('config:roles:read')
     findAll() {
         return this.rolesService.findAll();
     }
 
     @Get('permissions')
-    @RequirePermissions('roles:read')
+    @RequirePermissions('config:roles:read')
     findAllPermissions() {
         return this.rolesService.findAllPermissions();
     }
 
     @Get(':id')
-    @RequirePermissions('roles:read')
+    @RequirePermissions('config:roles:read')
     findOne(@Param('id') id: string) {
         return this.rolesService.findOne(id);
     }
 
     @Post()
-    @RequirePermissions('roles:create')
+    @RequirePermissions('config:roles:create')
     create(@Body() createRoleDto: any) {
         return this.rolesService.create(createRoleDto);
     }
 
     @Patch(':id')
-    @RequirePermissions('roles:update')
+    @RequirePermissions('config:roles:update')
     update(@Param('id') id: string, @Body() updateRoleDto: any) {
         return this.rolesService.update(id, updateRoleDto);
     }
 
     @Delete(':id')
-    @RequirePermissions('roles:delete')
+    @RequirePermissions('config:roles:delete')
     remove(@Param('id') id: string) {
         return this.rolesService.remove(id);
     }

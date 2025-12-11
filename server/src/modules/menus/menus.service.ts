@@ -6,22 +6,32 @@ export class MenusService {
     constructor(private prisma: PrismaService) { }
 
     async getSidebar(roleNames: string[]) {
-        // Fetch the 'admin_sidebar' menu
-        // In a real SAP-like app, we would recursively filter items based on permissions
-        // matching the user's roles.
+        // Determine which menu to serve
+        // If user has Owner or SuperAdmin role, they get the Platform Sidebar
+        // Otherwise they get the Tenant Sidebar
+        // Normalize roles to lowercase to be safe, or check specifically for 'owner'
+        const lowerRoles = roleNames.map(r => r.toLowerCase());
+        const isPlatformAdmin = lowerRoles.includes('owner') || lowerRoles.includes('superadmin');
+        const menuSlug = isPlatformAdmin ? 'platform_sidebar' : 'tenant_sidebar';
 
-        // For now, we return the full structure, and the Frontend filters it too (double security).
         return this.prisma.menu.findUnique({
-            where: { slug: 'admin_sidebar' },
+            where: { slug: menuSlug },
             include: {
                 items: {
                     orderBy: { order: 'asc' },
                     where: { parentId: null }, // Top level
                     include: {
+                        permission: true, // Include Permission
                         children: {
                             orderBy: { order: 'asc' },
                             include: {
-                                children: { orderBy: { order: 'asc' } } // 3 levels deep
+                                permission: true, // Include Permission
+                                children: {
+                                    orderBy: { order: 'asc' },
+                                    include: {
+                                        permission: true // Include Permission
+                                    }
+                                }
                             }
                         }
                     }
@@ -32,6 +42,9 @@ export class MenusService {
 
     async createDefaultMenu() {
         // Seeding logic (call this manually or via seed script)
+        // Legacy seeding logic - Disabling in favor of seed.ts
+        return;
+        /*
         const exists = await this.prisma.menu.findUnique({ where: { slug: 'admin_sidebar' } });
         if (exists) return;
 
@@ -48,5 +61,6 @@ export class MenusService {
                 }
             }
         });
+        */
     }
 }

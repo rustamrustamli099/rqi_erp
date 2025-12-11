@@ -23,8 +23,8 @@ export class AccessControlGuard implements CanActivate {
         }
 
         // Bypass checks for Owner/SuperAdmin
-        const userRoles = (user as any).roles || [];
-        if (userRoles.includes('owner') || userRoles.includes('superadmin')) {
+        const userRole = (user as any).role;
+        if (userRole === 'owner' || userRole === 'superadmin') {
             return true;
         }
 

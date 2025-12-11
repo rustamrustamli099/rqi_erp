@@ -16,6 +16,13 @@ export class UsersService {
     async findById(id: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { id },
+            include: {
+                role: {
+                    include: {
+                        permissions: { include: { permission: true } }
+                    }
+                }
+            }
         });
     }
 
@@ -46,11 +53,7 @@ export class UsersService {
             include: {
                 tenant: true,
                 branch: true,
-                roles: {
-                    include: {
-                        role: true
-                    }
-                }
+                role: true
             }
         });
     }
@@ -63,7 +66,7 @@ export class UsersService {
             where: { id },
             data,
             include: {
-                roles: { include: { role: true } }
+                role: true
             }
         });
     }

@@ -10,13 +10,7 @@ dotenv.config({ path: envPath });
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     constructor() {
-        super({
-            datasources: {
-                db: {
-                    url: 'file:./dev.db',
-                },
-            },
-        });
+        super();
     }
 
     async onModuleInit() {

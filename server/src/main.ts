@@ -12,6 +12,8 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditService } from './modules/audit/audit.service';
 import { AccessControlGuard } from './common/guards/access-control.guard';
 
+import helmet from 'helmet';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -22,6 +24,7 @@ async function bootstrap() {
   });
   app.setGlobalPrefix('api'); // /api/v1/...
 
+  app.use(helmet()); // [SECURITY]
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -51,7 +54,14 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
   console.log('----------------------------------------------------------');
   console.log('🚀  RQI ERP Backend is running on port ' + (process.env.PORT ?? 3000));
-  console.log('✅  Database connected successfully');
+  try {
+    const prismaService = app.get(PrismaService);
+    await prismaService.$connect();
+    console.log('✅  Database connected successfully');
+  } catch (error) {
+    console.error('❌  Database connection failed:', error);
+    process.exit(1);
+  }
   console.log('----------------------------------------------------------');
 }
 bootstrap();

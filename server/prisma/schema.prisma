@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = "postgresql://postgres:9314@localhost:5432/rqi_erp?schema=public"
 }
 
 // =================================================================================================
@@ -15,6 +15,12 @@ model Tenant {
   id        String   @id @default(uuid())
   name      String
   slug      String   @unique
+  tin       String?  // VÖEN
+  website   String?
+  
+  sectorId  String?
+  sector    Sector?  @relation(fields: [sectorId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -24,6 +30,16 @@ model Tenant {
   roles     Role[]
 
   @@map("tenants")
+}
+
+model Sector {
+  id    String @id @default(uuid())
+  name  String @unique
+  slug  String @unique
+
+  tenants Tenant[]
+
+  @@map("sectors")
 }
 
 model Branch {
@@ -63,7 +79,8 @@ model User {
   branch              Branch?                @relation(fields: [branchId], references: [id])
   
   // RBAC
-  roles               UserRole[]
+  roleId              String?
+  role                Role?                  @relation(fields: [roleId], references: [id])
   
   // Security & Logs
   securityLogs        SecurityLog[]
@@ -95,10 +112,15 @@ model Role {
   tenant      Tenant?  @relation(fields: [tenantId], references: [id])
 
   permissions RolePermission[]
-  users       UserRole[]
+  users       User[]
 
   @@unique([name, tenantId])
   @@map("roles")
+}
+
+enum PermissionScope {
+  SYSTEM
+  TENANT
 }
 
 model Permission {
@@ -106,6 +128,7 @@ model Permission {
   slug        String   @unique
   description String?
   module      String
+  scope       PermissionScope
 
   roles       RolePermission[]
   menuItems   MenuItem[]
@@ -124,23 +147,6 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-model UserRole {
-  id        String   @id @default(uuid())
-  userId    String
-  roleId    String
-  
-  validFrom DateTime @default(now())
-  validTo   DateTime?
-
-  assignedBy String?
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("user_roles")
-}
-
 model CuratorAssignment {
   id             String   @id @default(uuid())
   userId         String
@@ -156,48 +162,6 @@ model CuratorAssignment {
 }
 
 // =================================================================================================
-// MASTER DATA: ADDRESS (Hierarchical)
-// =================================================================================================
-
-model Country {
-  id     String @id @default(uuid())
-  name   String
-  code   String @unique
-  cities City[]
-
-  @@map("countries")
-}
-
-model City {
-  id        String     @id @default(uuid())
-  name      String
-  countryId String
-  country   Country    @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  districts District[]
-
-  @@map("cities")
-}
-
-model District {
-  id      String   @id @default(uuid())
-  name    String
-  cityId  String
-  city    City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  streets Street[]
-
-  @@map("districts")
-}
-
-model Street {
-  id         String   @id @default(uuid())
-  name       String
-  districtId String
-  district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
-
-  @@map("streets")
-}
-
-// =================================================================================================
 // COMMUNICATION HUB (Notifications)
 // =================================================================================================
 
@@ -209,7 +173,7 @@ model Notification {
   type      String
 
   senderId  String?
-  targetFilter String? // SQLite doesn't support Json, storing as Stringified JSON
+  targetFilter String? 
 
   createdAt DateTime @default(now())
 
@@ -231,6 +195,63 @@ model NotificationDelivery {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_deliveries")
+}
+
+// =================================================================================================
+// MASTER DATA: ADDRESS (Hierarchical)
+// =================================================================================================
+
+model Country {
+  id        String @id @default(uuid())
+  name      String
+  code      String @unique // ISO-2 (AZ, TR)
+  phoneCode String // +994, +90
+  
+  latitude  Float?
+  longitude Float?
+  isAllowed Boolean @default(true) // Geo-blocking
+  
+  cities    City[]
+
+  @@map("countries")
+}
+
+model City {
+  id        String     @id @default(uuid())
+  name      String
+  latitude  Float?
+  longitude Float?
+
+  countryId String
+  country   Country    @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  districts District[]
+
+  @@map("cities")
+}
+
+model District {
+  id        String   @id @default(uuid())
+  name      String
+  latitude  Float?
+  longitude Float?
+
+  cityId  String
+  city    City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@map("districts")
+}
+
+model Timezone {
+  id        String   @id @default(uuid())
+  name      String   @unique // Asia/Baku
+  offset    String?  // +04:00
+  description String?
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("timezones")
 }
 
 // =================================================================================================
@@ -278,6 +299,10 @@ model File {
   bucket       String?
 
   publicUrl    String?
+  
+  // Categorization
+  module       String   @default("GENERAL") // HR, CRM
+  usage        String   // PROFILE_PHOTO, PASSPORT, CONTRACT
 
   uploadedBy   String
   createdAt    DateTime @default(now())
@@ -364,14 +389,14 @@ model AuditLog {
   details   String?  // SQLite Json workaround
   ipAddress String?
 
-  userId    String
-  tenantId  String
+  userId    String?
+  tenantId  String?
   branchId  String?
 
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")

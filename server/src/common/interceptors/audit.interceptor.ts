@@ -16,16 +16,20 @@ export class AuditInterceptor implements NestInterceptor {
             return next.handle().pipe(
                 tap(async () => {
                     if (user) {
+                        // Mask sensitive data
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { password, ...safeBody } = req.body || {};
+
                         await this.auditService.logAction({
-                            userId: user.userId, // JWT payload has userId
+                            userId: user.userId || user.id, // Support both JWT payload (sub/userId) and User Entity (id)
                             action: method,
-                            module: url.split('/')[2] || 'unknown', // /api/users -> users
+                            module: url.split('/')[2] || 'unknown',
                             method: method,
                             endpoint: url,
-                            tenantId: user.tenantId, // From JWT or Middleware
-                            branchId: null, // TODO: Extract if available
+                            tenantId: user.tenantId,
+                            branchId: user.branchId || null,
                             ipAddress: ip,
-                            details: req.body, // Log payload (be careful with passwords!)
+                            details: safeBody,
                         });
                     }
                 }),

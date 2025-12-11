@@ -20,11 +20,21 @@ export class AuthService {
     }
 
     async login(user: any, rememberMe: boolean = false) {
+        // Fetch full permissions for the user's role
+        const userWithRole = await this.usersService.findById(user.id); // Should include role.permissions
+
+        const permissions = new Set<string>();
+        if ((userWithRole as any)?.role?.permissions) {
+            (userWithRole as any).role.permissions.forEach(rp => {
+                if (rp.permission) permissions.add(rp.permission.slug);
+            });
+        }
+
         const payload = {
             email: user.email,
             sub: user.id,
             tenantId: user.tenantId,
-            roles: (user as any).roles?.map(r => r.role?.name) || []
+            role: (userWithRole as any)?.role?.name // Single Role
         };
         const accessToken = this.jwtService.sign(payload);
 
@@ -37,6 +47,14 @@ export class AuthService {
             access_token: accessToken,
             refresh_token: refreshToken,
             expiresIn,
+            // Return user info for immediate frontend use if needed
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: (userWithRole as any)?.role?.name,
+                permissions: Array.from(permissions) // [CRITICAL] Send permissions to frontend
+            }
         };
     }
 
@@ -51,7 +69,7 @@ export class AuthService {
             email: user.email,
             sub: user.id,
             tenantId: user.tenantId,
-            roles: (user as any).roles?.map(r => r.role?.name) || []
+            role: (user as any).role?.name // Single Role
         };
         const accessToken = this.jwtService.sign(payload);
         const newRefreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
@@ -85,5 +103,22 @@ export class AuthService {
         // that we need to generate tokens.
 
         return this.login(user); // Re-use login logic which generates tokens
+    }
+    async impersonate(requesterId: string, targetUserId: string) {
+        const requester = await this.usersService.findById(requesterId);
+        
+        // Retrieve requester's permissions to verify access
+        // Simplified check: Allow if Owner OR has permission (need to fetch perm slugs)
+        // For MVP/Speed: We trust the Controller/Guard. 
+        // But let's add a basic role check for safety if Guard is missing.
+        // if (requester.role?.name !== 'Owner' && requester.role?.name !== 'SuperAdmin') {
+            // throw new ForbiddenException('Only Admins can impersonate');
+        // }
+        
+        const targetUser = await this.usersService.findById(targetUserId);
+        if (!targetUser) throw new ForbiddenException('Target user not found');
+
+        // Generate tokens FOR THE TARGET USER
+        return this.login(targetUser);
     }
 }

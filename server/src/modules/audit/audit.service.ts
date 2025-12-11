@@ -6,7 +6,7 @@ export class AuditService {
     constructor(private prisma: PrismaService) { }
 
     async logAction(data: {
-        userId: string;
+        userId: string | null | undefined;
         action: string;
         module: string;
         method: string;
@@ -22,8 +22,8 @@ export class AuditService {
                 module: data.module,
                 details: data.details ? JSON.stringify(data.details) : undefined,
                 ipAddress: data.ipAddress || 'unknown',
-                userId: data.userId,
-                tenantId: data.tenantId || '', // Handle nulls based on schema
+                userId: data.userId || undefined, // undefined tells Prisma to skip/set NULL if optional
+                tenantId: data.tenantId || null,
                 branchId: data.branchId,
             },
         });
