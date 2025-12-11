@@ -80,36 +80,60 @@ async function main() {
         // ... (manual list)
     ];
     */
-    // Importing permissions from constant or defining them here if import fails in seed env
-    // For safety in seed script, I will redefine the object structure here to avoid module resolution headaches common in seed scripts.
-    const SYSTEM_PERMISSIONS = {
-        TENANTS: { VIEW: 'tenants:read', CREATE: 'tenants:create', UPDATE: 'tenants:update', DELETE: 'tenants:delete', SUSPEND: 'tenants:suspend', MANAGE_SUBSCRIPTION: 'tenants:billing' },
-        USERS: { VIEW: 'users:read', CREATE: 'users:create', UPDATE: 'users:update', DELETE: 'users:delete', RESET_PASSWORD: 'users:password:reset', MANAGE_ROLES: 'users:roles:assign' },
-        ROLES: { VIEW: 'roles:read', CREATE: 'roles:create', UPDATE: 'roles:update', DELETE: 'roles:delete' },
-        SYSTEM: { VIEW_LOGS: 'system:logs:view', MANAGE_SETTINGS: 'system:settings:manage', MANAGE_INTEGRATIONS: 'system:integrations:manage' },
-        DASHBOARD: { VIEW_GLOBAL: 'dashboard:global:view', VIEW_TENANT: 'dashboard:tenant:view' }
-    };
-
+    // 2.a Create Granular Permissions
     console.log('Seeding Permissions...');
-    const allPermissions = [];
-    for (const [module, perms] of Object.entries(SYSTEM_PERMISSIONS)) {
-        for (const [action, slug] of Object.entries(perms)) {
-            const description = `${module} - ${action}`;
-            const p = await prisma.permission.upsert({
-                where: { slug },
-                update: {},
-                create: { slug, description, module: module.toLowerCase() }
-            });
-            allPermissions.push(p);
+
+    // Recursive helper to extract leaf permissions
+    function extractPermissions(obj: any, acc: any[] = []) {
+        for (const key in obj) {
+            const val = obj[key];
+            if (val && typeof val === 'object') {
+                if ('slug' in val && 'description' in val) {
+                    // It's a leaf permission node
+                    acc.push(val);
+                } else {
+                    // Recurse
+                    extractPermissions(val, acc);
+                }
+            }
         }
+        return acc;
     }
 
-    /* Legacy loop removed */
+    // Dynamic import to avoid earlier issues, or just require
+    // We rely on PERMISSIONS structure.
+    // Note: In seed.ts (ts-node), imports from src should work if configured.
+    // If this fails, we will have to copy the object. But let's try.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { PERMISSIONS } = require('../src/common/constants/permissions');
 
-    // Fetch created permissions for linking
-    // Using the slug directly or from constant if accessible. 
-    // We used 'system:settings:manage' in the constant
-    const pSettingsRead = await prisma.permission.findUnique({ where: { slug: 'system:settings:manage' } });
+    const permissionList = extractPermissions(PERMISSIONS);
+    const allPermissions = [];
+
+    for (const perm of permissionList) {
+        // Derive module from slug (first segment)
+        const parts = perm.slug.split(':');
+        const moduleName = parts[0];
+
+        const p = await prisma.permission.upsert({
+            where: { slug: perm.slug },
+            update: { description: perm.description, module: moduleName },
+            create: {
+                slug: perm.slug,
+                description: perm.description,
+                module: moduleName
+            }
+        });
+        allPermissions.push(p);
+    }
+
+    console.log(`Seeded ${allPermissions.length} permissions.`);
+
+    // Fetch specific permission for menu linking
+    // Using a safe default from the new structure
+    const pSettingsRead = await prisma.permission.findFirst({
+        where: { slug: { contains: 'system:config' } }
+    });
 
     // ... rest of menu items
 

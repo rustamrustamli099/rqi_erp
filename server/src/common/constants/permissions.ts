@@ -1,43 +1,63 @@
 export const PERMISSIONS = {
-    // Tenant Management (Global Admin only)
-    TENANTS: {
-        VIEW: 'tenants:read',
-        CREATE: 'tenants:create',
-        UPDATE: 'tenants:update',
-        DELETE: 'tenants:delete',
-        SUSPEND: 'tenants:suspend', // Suspend a tenant explicitly
-        MANAGE_SUBSCRIPTION: 'tenants:billing', // Manage billing/plans
-    },
-    
-    // User Management
-    USERS: {
-        VIEW: 'users:read',
-        CREATE: 'users:create',
-        UPDATE: 'users:update',
-        DELETE: 'users:delete',
-        RESET_PASSWORD: 'users:password:reset',
-        MANAGE_ROLES: 'users:roles:assign',
-    },
-
-    // Role Management
-    ROLES: {
-        VIEW: 'roles:read',
-        CREATE: 'roles:create',
-        UPDATE: 'roles:update',
-        DELETE: 'roles:delete',
-    },
-
-    // System Settings
+    // =============================================================================================
+    // 🌍 SYSTEM ADMIN PANEL (Platform Owner)
+    // =============================================================================================
     SYSTEM: {
-        VIEW_LOGS: 'system:logs:view',
-        MANAGE_SETTINGS: 'system:settings:manage', // General settings
-        MANAGE_INTEGRATIONS: 'system:integrations:manage', // SMS/SMTP
+        CONFIG: {
+            GENERAL: {
+                READ: { slug: 'system:config:general:read', description: 'View platform branding/meta info' },
+                UPDATE: { slug: 'system:config:general:update', description: 'Update platform name, logo, favicon' },
+            },
+            SMTP: {
+                MANAGE: { slug: 'system:config:smtp:manage', description: 'Configure default SMTP servers' },
+            },
+            SMS: {
+                MANAGE: { slug: 'system:config:sms:manage', description: 'Configure SMS gateways' },
+            },
+        },
+        SECURITY: {
+            AUDIT: {
+                VIEW: { slug: 'system:security:audit:view', description: 'View immutable system audit logs' },
+            }
+        },
+        TENANTS: {
+            CREATE: { slug: 'system:tenants:create', description: 'Provision new tenant' },
+            READ: { slug: 'system:tenants:read', description: 'Search/Filter tenants' },
+            SUSPEND: { slug: 'system:tenants:suspend', description: 'Suspend tenant access' },
+            DELETE: { slug: 'system:tenants:delete', description: 'Permanent deletion' },
+            DOMAINS: {
+                MANAGE: { slug: 'system:tenants:domains:manage', description: 'Map custom domains' },
+            },
+        },
     },
 
-    // Dashboard
-    DASHBOARD: {
-        VIEW_GLOBAL: 'dashboard:global:view', // Owner view
-        VIEW_TENANT: 'dashboard:tenant:view', // Standard tenant view
+    // =============================================================================================
+    // 🏢 TENANT PANEL (Business Operations)
+    // =============================================================================================
+    TENANT: {
+        DASHBOARD: {
+            VIEW: { slug: 'dashboard:view', description: 'Access main dashboard' },
+        },
+        USERS: {
+            VIEW: { slug: 'users:read', description: 'View users list' },
+            CREATE: { slug: 'users:create', description: 'Create new user' },
+            UPDATE: { slug: 'users:update', description: 'Edit user details' },
+            DELETE: { slug: 'users:delete', description: 'Delete user' },
+            MANAGE_ROLES: { slug: 'users:roles:assign', description: 'Assign roles to users' },
+        },
+        ROLES: {
+            VIEW: { slug: 'roles:read', description: 'View roles' },
+            CREATE: { slug: 'roles:create', description: 'Create new role' },
+            UPDATE: { slug: 'roles:update', description: 'Edit role permissions' },
+            DELETE: { slug: 'roles:delete', description: 'Delete role' },
+        },
+        BRANCHES: {
+            VIEW: { slug: 'branches:read', description: 'View branches' },
+            MANAGE: { slug: 'branches:manage', description: 'Create/Edit branches' },
+        },
+        FILES: {
+            UPLOAD: { slug: 'files:upload', description: 'Upload files' },
+        }
     }
 };
 
