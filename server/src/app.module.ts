@@ -18,6 +18,12 @@ import { FilesModule } from './modules/files/files.module';
 import { PrismaService } from './prisma.service';
 import { RolesModule } from './modules/roles/roles.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
+import { PackagesService } from './modules/packages/packages.service';
+import { PackagesController } from './modules/packages/packages.controller';
+import { PackagesModule } from './modules/packages/packages.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { BillingService } from './modules/billing/billing.service';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -41,9 +47,12 @@ import { AddressesModule } from './modules/addresses/addresses.module';
     MenusModule,
     FilesModule,
     RolesModule,
-    AddressesModule
+    AddressesModule,
+    PackagesModule,
+    SubscriptionsModule,
+    PaymentModule
   ],
-  controllers: [AppController],
+  controllers: [AppController, PackagesController],
   providers: [
     AppService,
     PrismaService,
@@ -51,6 +60,8 @@ import { AddressesModule } from './modules/addresses/addresses.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    PackagesService,
+    BillingService,
   ],
 })
 export class AppModule implements NestModule {

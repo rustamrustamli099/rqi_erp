@@ -1,104 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:9314@localhost:5432/rqi_erp?schema=public"
+  url      = env("DATABASE_URL")
 }
 
 // =================================================================================================
-// AUTHENTICATION & CORE (User, Tenant, Branch)
+// CORE & AUTH
 // =================================================================================================
 
-model Tenant {
+model User {
   id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  tin       String?  // VÖEN
-  website   String?
+  email     String   @unique
+  password  String
+  fullName  String?
+  name      String?  
   
-  sectorId  String?
-  sector    Sector?  @relation(fields: [sectorId], references: [id])
+  hashedRefreshToken String?
+  mfaSecret          String?          @map("mfa_secret")
+  isMfaEnabled       Boolean          @default(false) @map("is_mfa_enabled")
+
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id]) 
+  
+  roleId    String?
+  role      Role?    @relation(fields: [roleId], references: [id])     
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  notificationDeliveries NotificationDelivery[]
+  curatorAssignments     CuratorAssignment[]
+  auditLogs              AuditLog[] 
+  files                  File[]     
 
-  users     User[]
-  branches  Branch[]
-  auditLogs AuditLog[]
-  roles     Role[]
-
-  @@map("tenants")
+  @@map("users")
 }
 
-model Sector {
-  id    String @id @default(uuid())
-  name  String @unique
-  slug  String @unique
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  
+  email       String?
+  phone       String?
+  website     String?
+  
+  status      String   @default("PENDING") 
+  address     Json?    
 
-  tenants Tenant[]
+  users       User[]
+  branches    Branch[]
+  roles       Role[]
+  
+  currentSubscription Subscription?
+  usageLogs           UsageLog[]
 
-  @@map("sectors")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tenants")
 }
 
 model Branch {
   id        String   @id @default(uuid())
   name      String
+  
   tenantId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
   users     User[]
   auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("branches")
 }
 
-model User {
-  id                 String  @id @default(uuid())
-  email              String  @unique
-  password           String
-  fullName           String?
-  hashedRefreshToken String?
-
-  // MFA
-  mfaSecret    String?
-  isMfaEnabled Boolean @default(false)
-
-  // Context
-  tenantId String
-  branchId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // RELATIONS
-  tenant              Tenant                 @relation(fields: [tenantId], references: [id])
-  branch              Branch?                @relation(fields: [branchId], references: [id])
-  
-  // RBAC
-  roleId              String?
-  role                Role?                  @relation(fields: [roleId], references: [id])
-  
-  // Security & Logs
-  securityLogs        SecurityLog[]
-  accessPolicies      AccessPolicy[]
-  auditLogs           AuditLog[]
-  
-  // Notifications & Files
-  notificationDeliveries NotificationDelivery[]
-  uploadedFiles          File[]
-  
-  // Curator Assignments
-  curatorAssignments     CuratorAssignment[]
-
-  @@map("users")
-}
-
 // =================================================================================================
-// RBAC ENGINE (SAP-Style)
+// RBAC (Roles & Permissions)
 // =================================================================================================
 
 model Role {
@@ -106,29 +95,26 @@ model Role {
   name        String
   description String?
   isSystem    Boolean  @default(false)
-  
-  // Context
+
   tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  permissions RolePermission[]
   users       User[]
+  permissions RolePermission[]
 
-  @@unique([name, tenantId])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@unique([tenantId, name])
   @@map("roles")
-}
-
-enum PermissionScope {
-  SYSTEM
-  TENANT
 }
 
 model Permission {
   id          String   @id @default(uuid())
-  slug        String   @unique
+  name        String?   
+  slug        String   @unique 
   description String?
-  module      String
-  scope       PermissionScope
+  module      String   
 
   roles       RolePermission[]
   menuItems   MenuItem[]
@@ -140,153 +126,289 @@ model RolePermission {
   roleId       String
   permissionId String
 
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
 
-model CuratorAssignment {
-  id             String   @id @default(uuid())
-  userId         String
-  targetTenantId String?
-  targetBranchId String?
+// =================================================================================================
+// ACCESS CONTROL (ABAC) & AUDIT
+// =================================================================================================
+
+model AccessPolicy {
+  id          String   @id @default(uuid())
+  name        String
+  resource    String
+  action      String
+  conditions  Json?
   
-  canView   Boolean @default(true)
-  canEdit   Boolean @default(false)
+  userId           String?
+  allowedDays      String? 
+  allowedStartHour Int?
+  allowedEndHour   Int?
+  allowedIps       String?
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  effect      String   @default("ALLOW")
 
-  @@map("curator_assignments")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("access_policies")
 }
 
-// =================================================================================================
-// COMMUNICATION HUB (Notifications)
-// =================================================================================================
-
-model Notification {
+model AuditLog {
   id        String   @id @default(uuid())
-  subject   String
-  body      String
-  priority  String
-  type      String
+  action    String
+  resource  String?
+  module    String?
+  
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
 
-  senderId  String?
-  targetFilter String? 
+  tenantId  String?
+  details   Json?
+  
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model SecurityLog {
+  id        String   @id @default(uuid())
+  action    String   
+  
+  userId    String?
+  ipAddress String?
+  userAgent String?
+  device    String? // ADDED
+  location  String? // ADDED
+  details   Json?
 
   createdAt DateTime @default(now())
 
-  deliveries NotificationDelivery[]
-
-  @@map("notifications")
-}
-
-model NotificationDelivery {
-  id             String   @id @default(uuid())
-  notificationId String
-  userId         String
-
-  status         String
-  readAt         DateTime?
-  sentAt         DateTime @default(now())
-
-  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("notification_deliveries")
+  @@map("security_logs")
 }
 
 // =================================================================================================
-// MASTER DATA: ADDRESS (Hierarchical)
+// ADDRESSES
 // =================================================================================================
 
 model Country {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  code      String @unique // ISO-2 (AZ, TR)
-  phoneCode String // +994, +90
-  
-  latitude  Float?
-  longitude Float?
-  isAllowed Boolean @default(true) // Geo-blocking
-  
-  cities    City[]
+  code      String   @unique
+  phoneCode String
 
+  cities    City[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   @@map("countries")
 }
 
 model City {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  latitude  Float?
-  longitude Float?
-
   countryId String
-  country   Country    @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
   districts District[]
-
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   @@map("cities")
 }
 
 model District {
   id        String   @id @default(uuid())
   name      String
-  latitude  Float?
-  longitude Float?
-
-  cityId  String
-  city    City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
-
+  cityId    String
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   @@map("districts")
 }
 
-model Timezone {
-  id        String   @id @default(uuid())
-  name      String   @unique // Asia/Baku
-  offset    String?  // +04:00
-  description String?
-  isActive  Boolean  @default(true)
+// =================================================================================================
+// BILLING & SUBSCRIPTION
+// =================================================================================================
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  SUSPENDED
+  TRIALING
+}
 
-  @@map("timezones")
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Package {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  priceMonthly  Decimal  @db.Decimal(10, 2)
+  priceYearly   Decimal  @db.Decimal(10, 2)
+  currency      String   @default("AZN")
+  
+  maxUsers      Int      @default(5) 
+  maxStorageGB  Int      @default(10)
+  maxBranches   Int      @default(1)
+  
+  features      String?  
+
+  isActive      Boolean  @default(true)
+  isPopular     Boolean  @default(false)
+
+  subscriptions Subscription[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("packages")
+}
+
+model Subscription {
+  id              String             @id @default(cuid())
+  tenantId        String             @unique
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  packageId       String
+  package         Package            @relation(fields: [packageId], references: [id])
+  
+  status          SubscriptionStatus @default(ACTIVE)
+  billingCycle    BillingCycle       @default(MONTHLY)
+  
+  startDate       DateTime           @default(now())
+  nextBillingDate DateTime
+  endDate         DateTime?          
+  trialEndsAt     DateTime?
+
+  items           SubscriptionItem[]
+  invoices        Invoice[]
+  paymentMethods  PaymentMethod[]
+  
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@map("subscriptions")
+}
+
+model SubscriptionItem {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  name           String
+  type           String       
+  quantity       Int          @default(1)
+  unitPrice      Decimal      @db.Decimal(10, 2)
+  
+  addedAt        DateTime     @default(now())
+
+  @@map("subscription_items")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  
+  number         String        @unique 
+  status         InvoiceStatus @default(DRAFT)
+  
+  amountDue      Decimal       @db.Decimal(10, 2)
+  amountPaid     Decimal       @db.Decimal(10, 2) @default(0)
+  amountRemaining Decimal      @db.Decimal(10, 2)
+  currency       String        @default("AZN")
+  
+  dueDate        DateTime
+  paidAt         DateTime?
+  
+  pdfUrl         String?
+  
+  items          Json?         
+  transactions   Transaction[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("invoices")
+}
+
+model PaymentMethod {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  
+  type           String       
+  provider       String       
+  token          String?      
+  last4          String?
+  expiryMonth    Int?
+  expiryYear     Int?
+  
+  isDefault      Boolean      @default(false)
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("payment_methods")
+}
+
+model Transaction {
+  id             String            @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice           @relation(fields: [invoiceId], references: [id])
+  
+  amount         Decimal           @db.Decimal(10, 2)
+  currency       String            @default("AZN")
+  status         TransactionStatus
+  
+  providerTxId   String?           
+  failureReason  String?
+  
+  processedAt    DateTime          @default(now())
+
+  @@map("transactions")
+}
+
+model UsageLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  metric    String   
+  value     Float
+  timestamp DateTime @default(now())
+  
+  @@map("usage_logs")
 }
 
 // =================================================================================================
-// DOCUMENT ENGINE (Templates)
-// =================================================================================================
-
-model DocumentTemplate {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  category    String
-  isActive    Boolean  @default(true)
-
-  versions    TemplateVersion[]
-  createdAt   DateTime @default(now())
-
-  @@map("document_templates")
-}
-
-model TemplateVersion {
-  id         String   @id @default(uuid())
-  templateId String
-  version    String
-  content    String
-
-  status     String
-  createdAt  DateTime @default(now())
-
-  template   DocumentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@map("template_versions")
-}
-
-// =================================================================================================
-// STORAGE & UI (Files, Menus)
+// UTILS & MENU
 // =================================================================================================
 
 model File {
@@ -297,107 +419,87 @@ model File {
   size         Int
   path         String
   bucket       String?
-
-  publicUrl    String?
   
-  // Categorization
-  module       String   @default("GENERAL") // HR, CRM
-  usage        String   // PROFILE_PHOTO, PASSPORT, CONTRACT
+  publicUrl    String?
+  uploadedBy   String? 
+  user         User?   @relation(fields: [uploadedBy], references: [id]) 
+  
+  usage        String? // e.g. "AVATAR"
+  module       String? // ADDED: e.g. "GENERAL", "INVOICE"
 
-  uploadedBy   String
   createdAt    DateTime @default(now())
-
-  user         User     @relation(fields: [uploadedBy], references: [id])
-
   @@map("files")
 }
 
 model Menu {
-  id    String @id @default(uuid())
-  name  String
-  slug  String @unique
+  id        String  @id @default(uuid())
+  name      String
+  slug      String? @unique
+  
+  items     MenuItem[]
 
-  items MenuItem[]
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@map("menus")
 }
 
 model MenuItem {
-  id       String  @id @default(uuid())
-  menuId   String
+  id          String  @id @default(uuid())
+  title       String
+  icon        String?
+  path        String?
+  order       Int     @default(0)
+  
+  menuId      String
+  menu        Menu    @relation(fields: [menuId], references: [id], onDelete: Cascade)
 
-  title    String
-  icon     String?
-  path     String?
-
-  parentId String?
-  parent   MenuItem?  @relation("MenuHierarchy", fields: [parentId], references: [id])
-  children MenuItem[] @relation("MenuHierarchy")
+  parentId    String?
+  parent      MenuItem?  @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children    MenuItem[] @relation("MenuHierarchy")
 
   permissionId String?
   permission   Permission? @relation(fields: [permissionId], references: [id])
 
-  order    Int     @default(0)
-
-  menu     Menu    @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@map("menu_items")
 }
 
-// =================================================================================================
-// LOGS & POLICIES
-// =================================================================================================
-
-model SecurityLog {
+model Notification {
   id        String   @id @default(uuid())
-  userId    String
-  action    String
-  ipAddress String
-  userAgent String?
-  device    String?
-  location  String?
-  details   String?
+  subject   String
+  body      String
+  priority  String
+  type      String
+  senderId  String?
+  targetFilter String? 
   createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("security_logs")
+  deliveries NotificationDelivery[]
+  @@map("notifications")
 }
 
-model AccessPolicy {
-  id               String   @id @default(uuid())
-  userId           String
-  name             String
-
-  allowedDays      String // SQLite array workaround: "0,1,2,3,4,5"
-  allowedStartHour Int?
-  allowedEndHour   Int?
-  allowedIps       String // SQLite array workaround: "192.168.1.1,10.0.0.1"
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("access_policies")
+model NotificationDelivery {
+  id             String   @id @default(uuid())
+  notificationId String
+  userId         String
+  status         String
+  readAt         DateTime?
+  sentAt         DateTime @default(now())
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notification_deliveries")
 }
 
-model AuditLog {
-  id        String   @id @default(uuid())
-  action    String
-  module    String
-  details   String?  // SQLite Json workaround
-  ipAddress String?
-
-  userId    String?
-  tenantId  String?
-  branchId  String?
-
-  createdAt DateTime @default(now())
-
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
-
-  @@map("audit_logs")
+model CuratorAssignment {
+  id             String   @id @default(uuid())
+  userId         String
+  targetTenantId String?
+  targetBranchId String?
+  canView        Boolean @default(true)
+  canEdit        Boolean @default(false)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("curator_assignments")
 }

@@ -18,16 +18,19 @@ export const PERMISSIONS = {
         APPROVALS: {
             VIEW: { slug: 'system:approvals:view', description: 'View system approvals', scope: 'SYSTEM' },
         },
-        PACKAGES: {
-            VIEW: { slug: 'system:packages:read', description: 'View service packages', scope: 'SYSTEM' },
-            CREATE: { slug: 'system:packages:create', description: 'Create packages', scope: 'SYSTEM' },
-            UPDATE: { slug: 'system:packages:update', description: 'Update packages', scope: 'SYSTEM' },
-            DELETE: { slug: 'system:packages:delete', description: 'Delete packages', scope: 'SYSTEM' },
-            MANAGE: { slug: 'system:packages:manage', description: 'Manage package details', scope: 'SYSTEM' },
-        },
-        SUBSCRIPTIONS: {
-            VIEW: { slug: 'system:subscriptions:read', description: 'View active subscriptions', scope: 'SYSTEM' },
-            MANAGE: { slug: 'system:subscriptions:manage', description: 'Manage billing cycles', scope: 'SYSTEM' },
+        BILLING: {
+            VIEW: { slug: 'system:billing:read', description: 'Access billing system', scope: 'SYSTEM' },
+            PACKAGES: {
+                VIEW: { slug: 'system:packages:read', description: 'View service packages', scope: 'SYSTEM' },
+                CREATE: { slug: 'system:packages:create', description: 'Create packages', scope: 'SYSTEM' },
+                UPDATE: { slug: 'system:packages:update', description: 'Update packages', scope: 'SYSTEM' },
+                DELETE: { slug: 'system:packages:delete', description: 'Delete packages', scope: 'SYSTEM' },
+                MANAGE: { slug: 'system:packages:manage', description: 'Manage package details', scope: 'SYSTEM' },
+            },
+            SUBSCRIPTIONS: {
+                VIEW: { slug: 'system:subscriptions:read', description: 'View active subscriptions', scope: 'SYSTEM' },
+                MANAGE: { slug: 'system:subscriptions:manage', description: 'Manage billing cycles', scope: 'SYSTEM' },
+            }
         },
         USERS: {
             VIEW: { slug: 'system:users:read', description: 'View system admins', scope: 'SYSTEM' },

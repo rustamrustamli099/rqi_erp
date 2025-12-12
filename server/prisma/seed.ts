@@ -136,27 +136,15 @@ async function main() {
         }
     });
 
-    // 2.1 Packages (Service Plans)
+    // 2. Subscription System (Single Menu with Tabs)
     await prisma.menuItem.create({
         data: {
             menuId: platformSidebar.id,
-            title: 'Paketlər',
-            path: '/admin/packages',
-            icon: 'Package', // Lucide icon
-            order: 25,
-            permissionId: await getPermId('system:packages:read')
-        }
-    });
-
-    // 2.2 Subscriptions (Active Billings)
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'Abunəliklər',
-            path: '/admin/subscriptions',
+            title: 'Abunə Sistemi',
+            path: '/admin/billing',
             icon: 'CreditCard',
-            order: 26,
-            permissionId: await getPermId('system:subscriptions:read')
+            order: 25,
+            permissionId: await getPermId('system:billing:read')
         }
     });
 

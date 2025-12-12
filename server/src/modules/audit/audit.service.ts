@@ -19,10 +19,11 @@ export class AuditService {
         return this.prisma.auditLog.create({
             data: {
                 action: data.action,
+                resource: data.endpoint || data.module, // Map endpoint to resource
                 module: data.module,
                 details: data.details ? JSON.stringify(data.details) : undefined,
                 ipAddress: data.ipAddress || 'unknown',
-                userId: data.userId || undefined, // undefined tells Prisma to skip/set NULL if optional
+                userId: data.userId || undefined,
                 tenantId: data.tenantId || null,
                 branchId: data.branchId,
             },
