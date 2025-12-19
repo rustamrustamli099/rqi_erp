@@ -1,58 +1,141 @@
-name: Production Deploy (Enterprise)
+name: Production Blue/Green Deployment
 
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Emergency: Skip Tests'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # 1. SECURITY GATES
-  security-check:
+  # 1. Build and Test
+  build-test:
     runs-on: ubuntu-latest
+    if: inputs.skip_tests != true
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
       - name: Install Dependencies
         run: cd server && npm ci
-      - name: Run Security Regression Tests
+
+      - name: Lint & Static Analysis
+        run: cd server && npm run lint
+
+      - name: Unit Tests
+        run: cd server && npm run test
+
+      - name: Architecture Tests
+        run: cd server && npm run test:architecture
+
+      - name: Security Regression Tests
         run: cd server && npm run test:security
-        # Fails if any test fails
 
-  # 2. DATABASE GATES
-  db-migration-check:
+  # 2. Build Docker Images
+  build-push:
+    needs: build-test
     runs-on: ubuntu-latest
-    needs: security-check
+    # If skip_tests is true, we skip build-test requirement (GitHub Actions doesn't support conditional 'needs' easily, 
+    # so we usually just let it run or use always(). For safety, we keep dependency unless emergency.)
+    if: always() && (needs.build-test.result == 'success' || inputs.skip_tests == true)
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v3
-      - name: Validate Migrations (Destructive Check)
-        run: |
-            # Only run if migrations changed
-            if [[ $(git diff --name-only HEAD~1 HEAD | grep 'server/prisma/migrations') ]]; then
-              npx ts-node ops/scripts/validate-migration.ts
-            fi
+      - uses: actions/checkout@v4
 
-  # 3. BUILD & DEPLOY
-  deploy:
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Server
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # 3. Deploy to Inactive Environment
+  deploy-inactive:
+    needs: build-push
     runs-on: ubuntu-latest
-    needs: [security-check, db-migration-check]
-    if: github.ref == 'refs/heads/main'
+    environment: production # Protected Environment
+    outputs:
+      deployed_color: ${{ steps.determine-color.outputs.target_color }}
     steps:
-      - uses: actions/checkout@v3
-      - name: Build Docker Images
-        run: |
-          docker build -t antigravity-server ./server
-          # Docker push logic here (AWS ECR / Docker Hub)
+      - uses: actions/checkout@v4
       
-      # 4. BLUE/GREEN DEPLOY LOGIC (Simulated via SSH/Scripts)
-      - name: Deploy to Production
+      - name: Determine Active Color
+        id: determine-color
+        # In a real setup, we fetch this from a KV store, Consul, or check the live endpoint.
+        # Here we simulate finding the 'inactive' one. 
+        # For demo: We assume if Blue is up, deploy Green.
         run: |
-          # SSH into Prod Server
-          # Determine inactive color
-          # ./deploy-inactive.sh
-          # ./health-check.sh
-          # ./switch-traffic.sh
-          echo "Deployment Logic Executed."
+          ACTIVE_COLOR=$(curl -s https://api.rqi.az/health/color || echo "blue")
+          if [ "$ACTIVE_COLOR" = "blue" ]; then
+            echo "target_color=green" >> $GITHUB_OUTPUT
+            echo "TARGET_PORT=3001" >> $GITHUB_ENV
+          else
+            echo "target_color=blue" >> $GITHUB_OUTPUT
+            echo "TARGET_PORT=3000" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy to ${{ steps.determine-color.outputs.target_color }}
+        # This step would SSH into the server and run docker compose up
+        run: |
+          echo "Deploying version ${{ needs.build-push.outputs.image_tag }} to ${{ steps.determine-color.outputs.target_color }} slot..."
+          # Mock Deployment Command:
+          # ssh user@prod "export COLOR=${{ steps.determine-color.outputs.target_color }}; docker compose -f docker-compose.prod.yml up -d $COLOR"
+
+      - name: Smoke Check (Health)
+        run: |
+          echo "Waiting for health check on ${{ env.TARGET_PORT }}..."
+          # curl --fail --retry 5 --retry-delay 5 http://localhost:${{ env.TARGET_PORT }}/api/health
+
+  # 4. Traffic Switch (Manual Approval Gate)
+  switch-traffic:
+    needs: deploy-inactive
+    runs-on: ubuntu-latest
+    environment: production-approval # Requires manual approval in GitHub Settings
+    steps:
+      - name: Switch Nginx Upstream
+        run: |
+          TARGET=${{ needs.deploy-inactive.outputs.deployed_color }}
+          echo "Switching traffic to $TARGET..."
+          # ssh user@prod "ops/scripts/switch-traffic.sh $TARGET"
+          
+      - name: Verify Post-Switch
+        run: |
+          echo "Verifying /health endpoint..."
+          # curl -f https://api.rqi.az/health

@@ -1,0 +1,39 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Identify Current & Previous Color
+        id: colors
+        run: |
+          # Fetch currently active color
+          CURRENT=$(curl -s https://api.rqi.az/health/color || echo "blue")
+          if [ "$CURRENT" = "blue" ]; then
+            echo "target=green" >> $GITHUB_OUTPUT
+          else
+            echo "target=blue" >> $GITHUB_OUTPUT
+          fi
+          echo "Rolling back from $CURRENT to other slot."
+
+      - name: Execute Traffic Switch
+        run: |
+          TARGET=${{ steps.colors.outputs.target }}
+          echo "Switching Nginx to $TARGET (Rollback)..."
+          # Real command:
+          # ssh user@prod "ops/scripts/switch-traffic.sh $TARGET"
+
+      - name: Log Incident
+        run: |
+          echo "Rollback executed. Reason: ${{ inputs.reason }}"
+          # Could send Slack notification here
