@@ -226,8 +226,8 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
             className="sm:max-w-[700px] h-[85vh] flex flex-col"
         >
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col h-full">
-                    <ScrollArea className="flex-1 pr-4 -mr-4">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col h-full overflow-hidden">
+                    <ScrollArea className="flex-1 pr-4">
                         <div className="space-y-4 p-1">
                             {/* SCOPE SELECTION FIRST */}
                             <FormField

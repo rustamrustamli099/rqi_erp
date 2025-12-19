@@ -9,6 +9,7 @@ export type NotificationCategory =
     | 'APPROVALS'
     | 'SECURITY'
     | 'BILLING'
+    | 'SYSTEM'
 
 export interface NotificationItem {
     id: string

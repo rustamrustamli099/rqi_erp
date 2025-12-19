@@ -95,14 +95,16 @@ export function TenantCreateDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Yeni Tenant Yarat</DialogTitle>
-                    <DialogDescription>
-                        Şirkət məlumatlarını daxil edin və plan seçin.
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+            <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col p-0 gap-0">
+                <div className="p-6 flex-none border-b">
+                    <DialogHeader>
+                        <DialogTitle>Yeni Tenant Yarat</DialogTitle>
+                        <DialogDescription>
+                            Şirkət məlumatlarını daxil edin və plan seçin.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
 
                     <Accordion type="single" collapsible className="w-full" defaultValue="org">
 
@@ -326,13 +328,15 @@ export function TenantCreateDialog({
 
                     </Accordion>
 
-                    <DialogFooter className="mt-4">
+                </div>
+                <div className="p-6 border-t bg-muted/20 flex-none">
+                    <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Ləğv et</Button>
-                        <Button type="submit" className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+                        <Button type="submit" onClick={handleSubmit} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                             <Check className="w-4 h-4 mr-2" /> Tenantı Yarat
                         </Button>
                     </DialogFooter>
-                </form>
+                </div>
             </DialogContent>
         </Dialog>
     )

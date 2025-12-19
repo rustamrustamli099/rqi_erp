@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAuthStore } from '../../store'; // Adjust import based on actual store location
+// Adapted for Redux Token-Based Auth
+import { usePermissions } from '../../app/auth/hooks/usePermissions';
 
 interface PermissionGateProps {
     permission: string;
@@ -8,11 +8,8 @@ interface PermissionGateProps {
 }
 
 export const PermissionGate: React.FC<PermissionGateProps> = ({ permission, children, fallback = null }) => {
-    // Assuming useAuthStore has a user object with permissions array
-    const { user } = useAuthStore();
-
-    // Check if user has the required permission
-    const hasPermission = user?.permissions?.includes(permission);
+    const { can } = usePermissions();
+    const hasPermission = can(permission);
 
     if (!hasPermission) {
         return <>{fallback}</>;
@@ -21,8 +18,7 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({ permission, chil
     return <>{children}</>;
 };
 
-// Also export a hook for logic usage
 export const usePermission = (permission: string) => {
-    const { user } = useAuthStore();
-    return user?.permissions?.includes(permission) || false;
+    const { can } = usePermissions();
+    return can(permission);
 };

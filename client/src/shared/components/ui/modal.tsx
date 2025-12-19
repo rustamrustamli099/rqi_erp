@@ -39,7 +39,7 @@ export function Modal({
                     <DialogTitle>{title}</DialogTitle>
                     {description && <DialogDescription>{description}</DialogDescription>}
                 </DialogHeader>
-                <div className="grid gap-4 py-4">{children}</div>
+                <div className="grid gap-4 py-4 flex-1 min-h-0">{children}</div>
                 {footer && <DialogFooter>{footer}</DialogFooter>}
             </DialogContent>
         </Dialog>
