@@ -1,0 +1,21 @@
+{
+    "settings": "Tənzimləmələr",
+    "roles_permissions": "Rollar və İcazələr",
+    "manage_roles": "İstifadəçi rollarını və giriş hüquqlarını idarə edin.",
+    "create_role": "Yeni Rol Yarat",
+    "search_roles": "Rolları axtar...",
+    "general": "Ümumi",
+    "audit_logs": "Audit Logları",
+    "integrations": "İnteqrasiyalar",
+    "system_preferences": "Sistem Seçimləri",
+    "role_name": "Rol Adı",
+    "description": "Təsvir",
+    "users": "İstifadəçilər",
+    "actions": "Əməliyyatlar",
+    "view_permissions": "İcazələrə Bax",
+    "edit_role": "Düzəliş Et",
+    "delete_role": "Sil",
+    "save_changes": "Yadda Saxla",
+    "cancel": "Ləğv Et",
+    "system": "Sistem"
+}

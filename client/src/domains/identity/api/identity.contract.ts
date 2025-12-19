@@ -1,0 +1,64 @@
+import { api } from "@/shared/lib/api";
+
+// Define User type to avoid circular dependency
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    status: "Active" | "Inactive";
+    lastActive?: string;
+    page?: string;
+    isVerified?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    restrictions?: any;
+}
+
+import { MOCK_USERS } from "@/shared/constants/reference-data";
+
+export interface CreateUserRequest {
+    name: string;
+    email: string;
+    role: string;
+    status: "Active" | "Inactive";
+    sendInvitation?: boolean;
+}
+
+export interface UpdateUserRequest {
+    name?: string;
+    role?: string;
+    status?: "Active" | "Inactive";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    restrictions?: any;
+}
+
+export const identityApi = {
+    getUsers: async (): Promise<User[]> => {
+        try {
+            // Try real API
+            const response = await api.get<User[]>("/users");
+            return response.data;
+        } catch (e) {
+            console.warn("Using mock users");
+            return MOCK_USERS as User[];
+        }
+    },
+
+    createUser: async (data: CreateUserRequest): Promise<User> => {
+        const response = await api.post<User>("/users", data);
+        return response.data;
+    },
+
+    updateUser: async (id: number, data: UpdateUserRequest): Promise<User> => {
+        const response = await api.patch<User>(`/users/${id}`, data);
+        return response.data;
+    },
+
+    deleteUser: async (id: number): Promise<void> => {
+        await api.delete(`/users/${id}`);
+    },
+
+    inviteUser: async (id: number): Promise<void> => {
+        await api.post(`/users/${id}/invite`, {});
+    }
+}

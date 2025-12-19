@@ -1,0 +1,877 @@
+import { useState, useMemo } from "react"
+import { Settings2 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import {
+    Plus, Trash2, Edit,
+    CheckCircle2, User, Users, ArrowRight, Check, ChevronsUpDown,
+    XCircle, FileText, Activity, MoreHorizontal, UserPlus, AlertOctagon, RefreshCw, ShieldCheck, UserCheck, AlertTriangle
+} from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { DataTable } from "@/components/ui/data-table"
+import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter"
+import { FilterDrawer } from "@/components/ui/filter-drawer"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import type { ColumnDef } from "@tanstack/react-table"
+
+// Mock Roles
+const ROLES = [
+    { id: "role_admin", name: "Super Admin" },
+    { id: "role_hr", name: "HR Manager" },
+    { id: "role_finance", name: "Finance Director" },
+    { id: "role_ceo", name: "CEO" },
+    { id: "role_legal", name: "Legal Counsel" },
+    { id: "role_it", name: "IT Manager" },
+    ...Array.from({ length: 20 }).map((_, i) => ({ id: `role_dummy_${i}`, name: `Dummy Role ${i}` }))
+]
+
+// Mock Users
+const USERS = [
+    { id: "u1", name: "Rüstəm Qüdrətov", email: "rustem@rqi.az", role: "CEO" },
+    { id: "u2", name: "Nigar Əliyeva", email: "nigar.a@rqi.az", role: "HR Manager" },
+    { id: "u3", name: "Vüsal Məmmədov", email: "vusal.m@rqi.az", role: "Finance Director" },
+    { id: "u4", name: "Kənan Qasımov", email: "kenan.q@rqi.az", role: "Super Admin" },
+    { id: "u5", name: "Leyla Həsənova", email: "leyla.h@rqi.az", role: "Legal Counsel" },
+    ...Array.from({ length: 50 }).map((_, i) => ({ id: `user_dummy_${i}`, name: `User ${i}`, email: `user${i}@test.com`, role: "User" }))
+]
+
+interface ApprovalStage {
+    id: string
+    level: number
+    roleIds: string[]
+    userIds: string[]
+    method: 'SEQUENTIAL' | 'PARALLEL'
+    minApprovals?: number
+    name?: string
+    verification?: ('2FA' | 'SMS' | 'EMAIL')[]
+}
+
+interface RequestLog {
+    id: string
+    action: 'APPROVE' | 'REJECT' | 'CREATE' | 'DELEGATE' | 'ESCALATE'
+    actorId: string
+    actorName: string
+    timestamp: string
+    comment?: string
+    stageName?: string
+}
+
+interface ApprovalRequest {
+    id: string
+    ruleId: string
+    entityId: string
+    entityName: string
+    status: 'PENDING' | 'APPROVED' | 'REJECTED'
+    currentLevel: number
+    currentStageName: string
+    createdAt: string
+    logs: RequestLog[]
+}
+
+interface ApprovalRule {
+    id: string
+    model: string
+    action: string
+    stages: ApprovalStage[]
+    isEnabled: boolean
+    description: string
+}
+
+const INITIAL_RULES: ApprovalRule[] = [
+    {
+        id: "rule_1",
+        model: "tenant",
+        action: "create",
+        isEnabled: true,
+        description: "Yeni Tenat Yaradılması",
+        stages: [
+            { id: "stg_1", level: 1, roleIds: ["role_finance"], userIds: [], method: "SEQUENTIAL", name: "Maliyyə Təsdiqi" },
+            { id: "stg_2", level: 2, roleIds: ["role_admin"], userIds: [], method: "SEQUENTIAL", name: "Final Təsdiq" }
+        ]
+    }
+]
+
+const MOCK_REQUESTS: ApprovalRequest[] = [
+    {
+        id: "req_1",
+        ruleId: "rule_1",
+        entityId: "tnt_101",
+        entityName: "Global Construction LLC",
+        status: "PENDING",
+        currentLevel: 1,
+        currentStageName: "Maliyyə Təsdiqi",
+        createdAt: "2023-10-25 14:30",
+        logs: [
+            { id: "log_1", action: "CREATE", actorId: "u_1", actorName: "Sistem Admin", timestamp: "2023-10-25 14:30", stageName: "Başlanğıc" }
+        ]
+    },
+    {
+        id: "req_2",
+        ruleId: "rule_1",
+        entityId: "tnt_102",
+        entityName: "Tech Solutions Inc.",
+        status: "APPROVED",
+        currentLevel: 3,
+        currentStageName: "Bitmişdir",
+        createdAt: "2023-10-20 09:15",
+        logs: [
+            { id: "log_2", action: "CREATE", actorId: "u_1", actorName: "Sistem Admin", timestamp: "2023-10-20 09:15" },
+            { id: "log_3", action: "APPROVE", actorId: "u_finance", actorName: "Maliyyə Direktoru", timestamp: "2023-10-21 10:00", comment: "Sənədlər qaydasındadır", stageName: "Maliyyə Təsdiqi" },
+            { id: "log_4", action: "APPROVE", actorId: "u_admin", actorName: "Baş Admin", timestamp: "2023-10-22 11:30", stageName: "Final Təsdiq" }
+        ]
+    }
+]
+
+export function WorkflowConfigTab() {
+    const [rules, setRules] = useState<ApprovalRule[]>(INITIAL_RULES)
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [editingRule, setEditingRule] = useState<ApprovalRule | null>(null)
+
+    // Form State
+    const [formModel, setFormModel] = useState("tenant")
+    const [formAction, setFormAction] = useState("create")
+    const [formDesc, setFormDesc] = useState("")
+    const [formStages, setFormStages] = useState<ApprovalStage[]>([])
+
+    const [activeTab, setActiveTab] = useState("config")
+    const [requests, setRequests] = useState<ApprovalRequest[]>(MOCK_REQUESTS)
+
+    // UI Helpers
+    const [activeStageIdx, setActiveStageIdx] = useState<number>(0)
+    const [assignmentType, setAssignmentType] = useState<"ROLE" | "USER">("ROLE")
+    const [openCombobox, setOpenCombobox] = useState(false)
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
+    const [selectedRequestForLog, setSelectedRequestForLog] = useState<ApprovalRequest | null>(null)
+
+    // --- Actions ---
+    const handleApprove = (reqId: string) => {
+        setRequests(prev => prev.map(req => {
+            if (req.id !== reqId) return req
+            const isFinal = req.currentLevel >= 2
+            return {
+                ...req,
+                currentLevel: isFinal ? req.currentLevel : req.currentLevel + 1,
+                status: isFinal ? 'APPROVED' : 'PENDING',
+                currentStageName: isFinal ? 'Bitmişdir' : 'Final Təsdiq',
+                logs: [...req.logs, { id: `log_${Date.now()}`, action: 'APPROVE', actorId: 'me', actorName: 'Cari İstifadəçi', timestamp: new Date().toLocaleString("az-AZ"), stageName: req.currentStageName, comment: 'Təsdiq edildi' }]
+            }
+        }))
+        toast.success("Müraciət təsdiqləndi")
+    }
+
+    const handleReject = (reqId: string) => {
+        setRequests(prev => prev.map(req => {
+            if (req.id !== reqId) return req
+            return {
+                ...req, status: 'REJECTED',
+                logs: [...req.logs, { id: `log_${Date.now()}`, action: 'REJECT', actorId: 'me', actorName: 'Cari İstifadəçi', timestamp: new Date().toLocaleString("az-AZ"), stageName: req.currentStageName, comment: 'İmtina edildi' }]
+            }
+        }))
+        toast.error("Müraciət imtina edildi")
+    }
+
+    // --- DataTable Columns Configuration ---
+    const columns = useMemo<ColumnDef<ApprovalRequest>[]>(() => [
+        {
+            accessorKey: "id",
+            header: "Müraciət ID",
+            cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue("id")}</span>,
+        },
+        {
+            accessorKey: "entityName",
+            header: "Obyekt (Tenant/Doc)",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium text-sm">{row.getValue("entityName")}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{row.original.entityId}</span>
+                </div>
+            )
+        },
+        {
+            accessorKey: "currentStageName",
+            header: "Cari Mərhələ",
+            cell: ({ row }) => <Badge variant="outline">{row.getValue("currentStageName")}</Badge>,
+        },
+        {
+            accessorKey: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.getValue("status") as string
+                const variant = status === 'APPROVED' ? 'default' : status === 'REJECTED' ? 'destructive' : 'secondary'
+                const className = status === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : ''
+                return <Badge variant={variant} className={className}>{status}</Badge>
+            },
+            filterFn: (row, id, value) => value.includes(row.getValue(id)),
+        },
+        {
+            accessorKey: "createdAt",
+            header: "Tarix",
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.getValue("createdAt")}</span>,
+        },
+        {
+            id: "actions",
+            header: "Əməliyyatlar",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => toast.info(`Viewing details for ${row.original.id}`)}>
+                            <FileText className="mr-2 h-4 w-4" /> Detallı Bax (Display)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSelectedRequestForLog(row.original)}>
+                            <Activity className="mr-2 h-4 w-4" /> Audit Tarixçəsi (Logs)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {row.original.status === 'PENDING' && (
+                            <>
+                                <DropdownMenuItem onClick={() => handleApprove(row.original.id)} className="text-green-600 focus:text-green-700 focus:bg-green-50">
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Təsdiqlə (Approve)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleReject(row.original.id)} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                                    <XCircle className="mr-2 h-4 w-4" /> İmtina (Reject)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast.warning("Deleqasiya dialoqu açılacaq...")}>
+                                    <UserPlus className="mr-2 h-4 w-4 text-blue-500" /> Delegasiya (Delegate)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast.error("Eskalasiya edildi!")}>
+                                    <AlertTriangle className="mr-2 h-4 w-4 text-orange-500" /> Eskalasiya (Escalate)
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => toast.error("Proses admin tərəfindən ləğv edildi.")}>
+                            <AlertOctagon className="mr-2 h-4 w-4 text-destructive" /> Ləğv Et (Cancel Process)
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )
+        }
+    ], [])
+
+    // ... handlers existing ...
+    const openCreateDialog = () => {
+        setEditingRule(null)
+        setFormModel("tenant")
+        setFormAction("create")
+        setFormDesc("")
+        setFormStages([{ id: `stg_${Date.now()}`, level: 1, roleIds: ["role_admin"], userIds: [], method: "SEQUENTIAL", name: "Mərhələ 1" }])
+        setIsDialogOpen(true)
+        setActiveStageIdx(0)
+    }
+
+    const openEdit = (rule: ApprovalRule) => {
+        setEditingRule(rule)
+        setFormModel(rule.model)
+        setFormAction(rule.action)
+        setFormDesc(rule.description)
+        setFormStages(JSON.parse(JSON.stringify(rule.stages)))
+        setIsDialogOpen(true)
+        setActiveStageIdx(0)
+    }
+
+    const addStage = () => {
+        const newStages = [
+            ...formStages,
+            { id: `stg_${Date.now()}`, level: formStages.length + 1, roleIds: [], userIds: [], method: "SEQUENTIAL" as const, minApprovals: 1, name: `Mərhələ ${formStages.length + 1}` }
+        ]
+        setFormStages(newStages)
+        setActiveStageIdx(newStages.length - 1)
+    }
+
+    const toggleRule = (id: string) => {
+        setRules(rules.map(r => r.id === id ? { ...r, isEnabled: !r.isEnabled } : r))
+        toast.success("Qayda statusu dəyişdirildi")
+    }
+
+    const deleteRule = (id: string) => {
+        setRuleToDelete(id)
+        setIsDeleteConfirmOpen(true)
+    }
+
+    const confirmDeleteRule = () => {
+        if (ruleToDelete) {
+            setRules(rules.filter(r => r.id !== ruleToDelete))
+            toast.success("Qayda silindi")
+            setIsDeleteConfirmOpen(false)
+            setRuleToDelete(null)
+        }
+    }
+
+
+    // Re-implemented helper functions for Form
+    const toggleRole = (idx: number, roleId: string) => {
+        const newStages = [...formStages]
+        if (newStages[idx].roleIds.includes(roleId)) newStages[idx].roleIds = newStages[idx].roleIds.filter(r => r !== roleId)
+        else newStages[idx].roleIds.push(roleId)
+        checkParallel(newStages, idx)
+        setFormStages(newStages)
+    }
+    const toggleUser = (idx: number, userId: string) => {
+        const newStages = [...formStages]
+        if (newStages[idx].userIds.includes(userId)) newStages[idx].userIds = newStages[idx].userIds.filter(u => u !== userId)
+        else newStages[idx].userIds.push(userId)
+        checkParallel(newStages, idx)
+        setFormStages(newStages)
+    }
+    const checkParallel = (stages: ApprovalStage[], index: number) => {
+        const totalApprovers = stages[index].roleIds.length + stages[index].userIds.length
+        if (totalApprovers > 1) { if (!stages[index].method) stages[index].method = 'PARALLEL' }
+        else stages[index].method = 'SEQUENTIAL'
+    }
+    const setStageMethod = (index: number, method: 'SEQUENTIAL' | 'PARALLEL') => {
+        const newStages = [...formStages]; newStages[index].method = method; setFormStages(newStages)
+    }
+    const removeStage = (index: number) => {
+        if (formStages.length <= 1) return;
+        const newStages = formStages.filter((_, i) => i !== index)
+        newStages.forEach((s, i) => s.level = i + 1)
+        setFormStages(newStages)
+        setActiveStageIdx(Math.max(0, index - 1))
+    }
+
+    // Security Confirmation Logic
+    const [isSecurityConfirmOpen, setIsSecurityConfirmOpen] = useState(false)
+    const [pendingSecurityChange, setPendingSecurityChange] = useState<{ idx: number, values: ('2FA' | 'SMS' | 'EMAIL')[], added: string } | null>(null)
+
+    // Delete Confirmation Logic
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+    const [ruleToDelete, setRuleToDelete] = useState<string | null>(null)
+
+    const confirmSecurityChange = () => {
+        if (pendingSecurityChange) {
+            const newStages = [...formStages]
+            newStages[pendingSecurityChange.idx].verification = pendingSecurityChange.values
+            setFormStages(newStages)
+            setPendingSecurityChange(null)
+            setIsSecurityConfirmOpen(false)
+            toast.success(`Təhlükəsizlik yeniləndi: +${pendingSecurityChange.added}`)
+        }
+    }
+    const handleSave = () => {
+        if (!formDesc) { toast.error("Təsvir yazın"); return }
+        const newRule: ApprovalRule = {
+            id: editingRule ? editingRule.id : `rule_${Date.now()}`,
+            model: formModel, action: formAction, description: formDesc,
+            isEnabled: editingRule ? editingRule.isEnabled : true, stages: formStages
+        }
+        if (editingRule) { setRules(rules.map(r => r.id === editingRule.id ? newRule : r)); toast.success("Qayda yeniləndi") }
+        else { setRules([...rules, newRule]); toast.success("Yeni qayda yaradıldı") }
+        setIsDialogOpen(false)
+    }
+
+    const AssignmentSelector = ({ stageIdx }: { stageIdx: number }) => {
+        const stage = formStages[stageIdx]
+        if (!stage) return null;
+        return (
+            <div className="space-y-4">
+                <RadioGroup value={assignmentType} onValueChange={(v: "ROLE" | "USER") => setAssignmentType(v)} className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="ROLE" id="r-role" /><Label htmlFor="r-role">Rol üzrə</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="USER" id="r-user" /><Label htmlFor="r-user">İstifadəçi üzrə</Label></div>
+                </RadioGroup>
+                <div className="p-4 border rounded-md bg-muted/10 min-h-[200px]">
+                    {assignmentType === 'ROLE' ? (
+                        <div className="space-y-4">
+                            <Label>Rolu Seçin</Label>
+                            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between">Rollar ({stage.roleIds.length})<Plus className="ml-2 h-4 w-4 opacity-50" /></Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[400px] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Rol axtar..." />
+                                        <CommandList>
+                                            <CommandEmpty>Tapılmadı.</CommandEmpty>
+                                            <CommandGroup>{ROLES.map((role) => (<CommandItem key={role.id} value={role.name} onSelect={() => toggleRole(stageIdx, role.id)}><CheckCircle2 className={cn("mr-2 h-4 w-4", stage.roleIds.includes(role.id) ? "opacity-100" : "opacity-0")} />{role.name}</CommandItem>))}</CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <div className="flex flex-wrap gap-2">{stage.roleIds.map(rid => (<Badge key={rid} variant="secondary" className="pl-1 pr-2 py-1"><Users className="w-3 h-3 mr-1" />{ROLES.find(r => r.id === rid)?.name}<button onClick={() => toggleRole(stageIdx, rid)} className="ml-1 hover:text-red"><Trash2 className="w-3 h-3" /></button></Badge>))}</div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <Label>İstifadəçini Seçin</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between">İstifadəçilər ({stage.userIds.length})<Plus className="ml-2 h-4 w-4 opacity-50" /></Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[400px] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Use axtar..." />
+                                        <CommandList>
+                                            <CommandEmpty>Tapılmadı.</CommandEmpty>
+                                            <CommandGroup>{USERS.map((user) => (<CommandItem key={user.id} value={user.name} onSelect={() => toggleUser(stageIdx, user.id)}><CheckCircle2 className={cn("mr-2 h-4 w-4", stage.userIds.includes(user.id) ? "opacity-100" : "opacity-0")} /><div className="flex flex-col"><span>{user.name}</span><span className="text-[10px] text-muted-foreground">{user.role}</span></div></CommandItem>))}</CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <div className="flex flex-wrap gap-2">{stage.userIds.map(uid => (<Badge key={uid} variant="secondary" className="pl-1 pr-2 py-1"><User className="w-3 h-3 mr-1" />{USERS.find(u => u.id === uid)?.name}<button onClick={() => toggleUser(stageIdx, uid)} className="ml-1 hover:text-red"><Trash2 className="w-3 h-3" /></button></Badge>))}</div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">Workflow Engine</h2>
+                        <p className="text-muted-foreground">Təsdiqləmə proseslərinin idarə edilməsi və monitorinqi.</p>
+                    </div>
+                    <TabsList>
+                        <TabsTrigger value="config" className="flex items-center gap-2"><Settings2 className="w-4 h-4" /> Konfiqurasiya</TabsTrigger>
+                        <TabsTrigger value="monitor" className="flex items-center gap-2 relative">
+                            <Activity className="w-4 h-4" /> Nəzarət
+                            {requests.filter(r => r.status === 'PENDING').length > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                </span>
+                            )}
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <TabsContent value="config">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 className="text-lg font-medium">Workflow Qaydaları</h3>
+                            <p className="text-sm text-muted-foreground">Hansı əməliyyatların təsdiq tələb etdiyini təyin edin.</p>
+                        </div>
+                        <Button onClick={openCreateDialog} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                            <Plus className="mr-2 h-4 w-4" /> Yeni Qayda
+                        </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {rules.map(rule => (
+                            <Card key={rule.id} className="group relative overflow-hidden border-muted hover:border-primary/50 transition-all hover:shadow-lg">
+                                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <Switch checked={rule.isEnabled} onCheckedChange={() => toggleRule(rule.id)} />
+                                </div>
+                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-start">
+                                        <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 border-blue-200">
+                                            {rule.model.toUpperCase()} • {rule.action.toUpperCase()}
+                                        </Badge>
+                                    </div>
+                                    <CardTitle className="text-lg">{rule.description}</CardTitle>
+                                    <CardDescription>Created: {new Date().toLocaleDateString()}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ScrollArea className="w-full whitespace-nowrap pb-4">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-4 ring-background">START</div>
+                                            <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
+                                            {rule.stages.sort((a, b) => a.level - b.level).map((stage) => (
+                                                <div key={stage.id} className="flex items-center space-x-2">
+                                                    <div className="relative group/stage">
+                                                        <div className="bg-card border rounded p-2 min-w-[100px] flex flex-col gap-1 items-center relative group/stage">
+                                                            <span className="text-[10px] font-bold text-muted-foreground">Step {stage.level}</span>
+                                                            <div className="flex -space-x-1">
+                                                                {stage.roleIds.slice(0, 3).map(rid => (<div key={rid} className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[8px] border-2 border-background" title="Role">R</div>))}
+                                                                {stage.userIds.slice(0, 3).map(uid => (<div key={uid} className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[8px] border-2 border-background" title="User">U</div>))}
+                                                                {(stage.roleIds.length + stage.userIds.length) > 3 && (<div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[8px] border-2 border-background">+{(stage.roleIds.length + stage.userIds.length) - 3}</div>)}
+                                                            </div>
+                                                            {stage.method === 'PARALLEL' && <Badge variant="outline" className="text-[8px] h-4 px-1 absolute -top-2 bg-background">Paralel</Badge>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
+                                            <div className="shrink-0 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold">END</div>
+                                        </div>
+                                        <ScrollBar orientation="horizontal" />
+                                    </ScrollArea>
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <Button variant="ghost" size="sm" onClick={() => openEdit(rule)}><Edit className="w-4 h-4" /></Button>
+                                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteRule(rule.id)}><Trash2 className="w-4 h-4" /></Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                        {rules.length === 0 && <div className="col-span-full text-center text-muted-foreground py-10 border border-dashed rounded bg-muted/5">Rule yoxdur</div>}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="monitor">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Müraciət Tarixçəsi (SAP Console)</CardTitle>
+                            <CardDescription>Bütün aktiv və tamamlanmış workflow proseslərinə nəzarət.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <DataTable
+                                columns={columns}
+                                data={requests}
+                                searchKey="entityName"
+                                filterPlaceholder="Obyekt adı ilə axtar..."
+                                toolbarContent={(table) => (
+                                    <div className="flex items-center gap-2">
+                                        <FilterDrawer
+                                            open={isFilterDrawerOpen}
+                                            onOpenChange={setIsFilterDrawerOpen}
+                                            resetFilters={() => table.resetColumnFilters()}
+                                        >
+                                            {table.getColumn("status") && (
+                                                <div className="space-y-2">
+                                                    <Label>Status üzrə</Label>
+                                                    <DataTableFacetedFilter
+                                                        column={table.getColumn("status")}
+                                                        title="Status"
+                                                        options={[
+                                                            { label: "Pending", value: "PENDING" },
+                                                            { label: "Approved", value: "APPROVED" },
+                                                            { label: "Rejected", value: "REJECTED" },
+                                                        ]}
+                                                    />
+                                                </div>
+                                            )}
+                                        </FilterDrawer>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="outline" size="icon" className="h-8 w-8 ml-2" onClick={() => toast.success("Məlumatlar yeniləndi")}>
+                                                        <RefreshCw className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Yenilə</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            {/* DIALOG */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>{editingRule ? 'Qaydanı Düzəlt' : 'Yeni Workflow'}</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-y-scroll py-2 px-1">
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="space-y-2">
+                                <Label>Model</Label>
+                                <Select value={formModel} onValueChange={setFormModel} disabled={!!editingRule}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="tenant">Tenant</SelectItem><SelectItem value="document">Document</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Action</Label>
+                                <Select value={formAction} onValueChange={setFormAction} disabled={!!editingRule}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="create">Create</SelectItem><SelectItem value="delete">Delete</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <Input value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Təsvir..." className="mb-6 font-medium" />
+
+                        <div className="flex items-center justify-between mb-4 border-b pb-2">
+                            <h4 className="font-semibold text-sm">Workflow Mərhələləri (Stages)</h4>
+                            <div className="flex items-center gap-2">
+                                {formStages.length >= 2 && (
+                                    <div className="flex items-center bg-muted/50 rounded-md p-1 border">
+                                        <span className="text-[10px] font-semibold text-muted-foreground px-2 uppercase">Təsdiq Növü:</span>
+                                        <div className="flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={cn("h-6 text-[10px] px-2", formStages.every(s => s.method === 'SEQUENTIAL') ? "bg-background shadow-sm text-foreground font-medium dark:bg-zinc-800" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
+                                                onClick={() => setFormStages(formStages.map(s => ({ ...s, method: 'SEQUENTIAL' })))}
+                                            >
+                                                Növbəli
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={cn("h-6 text-[10px] px-2", formStages.every(s => s.method === 'PARALLEL') ? "bg-background shadow-sm text-foreground font-medium dark:bg-zinc-800" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
+                                                onClick={() => setFormStages(formStages.map(s => ({ ...s, method: 'PARALLEL' })))}
+                                            >
+                                                Paralel
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                                <Button size="sm" variant="secondary" onClick={addStage}>
+                                    <Plus className="w-3 h-3 mr-1" /> Add Step
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-[200px_1fr] gap-6 h-[400px]">
+                            {/* Left Side: Stage List */}
+                            <ScrollArea className="border-r pr-4">
+                                <div className="space-y-2">
+                                    {formStages.map((stage, idx) => (
+                                        <div key={stage.id} onClick={() => setActiveStageIdx(idx)} className={`p-3 rounded border cursor-pointer transition-all flex items-center justify-between ${activeStageIdx === idx ? 'bg-primary text-primary-foreground border-primary shadow-md' : 'hover:bg-muted'}`}>
+                                            <div className="flex flex-col"><span className="font-bold text-xs">{stage.name || `Mərhələ ${idx + 1}`}</span><span className="text-[10px] opacity-80">{stage.roleIds.length + stage.userIds.length} Təsdiq edənlər</span></div>
+                                            {activeStageIdx === idx && <ArrowRight className="w-4 h-4" />}
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-2 rounded-full hover:bg-red-500 hover:text-white" onClick={(e) => { e.stopPropagation(); removeStage(idx) }} disabled={formStages.length === 1}><Trash2 className="w-3 h-3" /></Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+
+                            {/* Right Side: Config */}
+                            <div className="px-2">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-[200px]">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" role="combobox" className={cn("w-[200px] justify-between font-medium", !formStages[activeStageIdx]?.name && "text-muted-foreground")}>
+                                                    {formStages[activeStageIdx]?.name || "Mərhələ Adı Seçin"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[200px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Ad seç və ya yaz..." onValueChange={(search) => { if (search) { const newStages = [...formStages]; newStages[activeStageIdx].name = search; setFormStages(newStages); } }} />
+                                                    <CommandList>
+                                                        <CommandEmpty>İstifadəyə hazırdır (Yeni ad)</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {["Maliyyə Təsdiqi", "Hüquq Rəyi", "HR Təsdiqi", "Direktor Rəyi", "Final Təsdiq", "Texniki Baxış"].map((name) => (
+                                                                <CommandItem key={name} value={name} onSelect={(currentValue) => { const newStages = [...formStages]; newStages[activeStageIdx].name = currentValue; setFormStages(newStages); }}><Check className={cn("mr-2 h-4 w-4", formStages[activeStageIdx]?.name === name ? "opacity-100" : "opacity-0")} />{name}</CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                    {(formStages[activeStageIdx]?.roleIds.length + formStages[activeStageIdx]?.userIds.length) > 1 && (
+                                        <div className="flex bg-muted rounded p-1">
+                                            <Button variant="ghost" size="sm" className={`h-6 text-[10px] ${formStages[activeStageIdx]?.method === 'SEQUENTIAL' ? 'bg-background shadow-sm' : ''}`} onClick={() => setStageMethod(activeStageIdx, 'SEQUENTIAL')}>Növbəli</Button>
+                                            <Button variant="ghost" size="sm" className={`h-6 text-[10px] ${formStages[activeStageIdx]?.method === 'PARALLEL' ? 'bg-background shadow-sm' : ''}`} onClick={() => setStageMethod(activeStageIdx, 'PARALLEL')}>Paralel</Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-4 mb-4 border-b pb-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-semibold uppercase text-muted-foreground">Təhlükəsizlik</Label>
+                                        {/* Security Badge Display */}
+                                        <div className="flex gap-1">
+                                            {formStages[activeStageIdx]?.verification && formStages[activeStageIdx]?.verification?.length > 0 && formStages[activeStageIdx]?.verification?.map((v) => (
+                                                <Badge key={v} variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 text-[10px] px-2 py-0.5 h-5">
+                                                    <ShieldCheck className="w-3 h-3 mr-1" /> {v}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 pt-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="sec-2fa"
+                                                checked={formStages[activeStageIdx]?.verification?.includes('2FA')}
+                                                onCheckedChange={(c) => {
+                                                    const current = formStages[activeStageIdx]?.verification || []
+                                                    const newVal = c ? [...current, '2FA'] : current.filter(v => v !== '2FA')
+                                                    // Only confirm if adding security
+                                                    if (c) {
+                                                        setPendingSecurityChange({ idx: activeStageIdx, values: newVal as any, added: '2FA' })
+                                                        setIsSecurityConfirmOpen(true)
+                                                    } else {
+                                                        const newStages = [...formStages]; newStages[activeStageIdx].verification = newVal as any; setFormStages(newStages)
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="sec-2fa" className="cursor-pointer">2FA (Google Authenticator)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="sec-sms"
+                                                checked={formStages[activeStageIdx]?.verification?.includes('SMS')}
+                                                onCheckedChange={(c) => {
+                                                    const current = formStages[activeStageIdx]?.verification || []
+                                                    const newVal = c ? [...current, 'SMS'] : current.filter(v => v !== 'SMS')
+                                                    if (c) {
+                                                        setPendingSecurityChange({ idx: activeStageIdx, values: newVal as any, added: 'SMS' })
+                                                        setIsSecurityConfirmOpen(true)
+                                                    } else {
+                                                        const newStages = [...formStages]; newStages[activeStageIdx].verification = newVal as any; setFormStages(newStages)
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="sec-sms" className="cursor-pointer">SMS Kodu (OTP)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="sec-email"
+                                                checked={formStages[activeStageIdx]?.verification?.includes('EMAIL')}
+                                                onCheckedChange={(c) => {
+                                                    const current = formStages[activeStageIdx]?.verification || []
+                                                    const newVal = c ? [...current, 'EMAIL'] : current.filter(v => v !== 'EMAIL')
+                                                    if (c) {
+                                                        setPendingSecurityChange({ idx: activeStageIdx, values: newVal as any, added: 'EMAIL' })
+                                                        setIsSecurityConfirmOpen(true)
+                                                    } else {
+                                                        const newStages = [...formStages]; newStages[activeStageIdx].verification = newVal as any; setFormStages(newStages)
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="sec-email" className="cursor-pointer">E-poçt Kodu</Label>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-2">DİQQƏT: Çoxsaylı metod seçildikdə, istifadəçi hamısını təsdiqləməlidir (Məcburi).</p>
+                                </div>
+
+                                {formStages[activeStageIdx] && <AssignmentSelector stageIdx={activeStageIdx} />}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="pt-2 border-t mt-auto">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Ləğv et</Button>
+                        <Button onClick={handleSave}>Yadda Saxla</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* AUDIT LOG SHEET */}
+            <Sheet open={!!selectedRequestForLog} onOpenChange={(open) => !open && setSelectedRequestForLog(null)}>
+                {/* ... existing sheet content ... */}
+                <SheetContent className="sm:max-w-[540px]">
+                    <SheetHeader className="mb-6">
+                        <SheetTitle className="flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-primary" />
+                            Audit Tarixçəsi
+                        </SheetTitle>
+                        <SheetDescription>
+                            Workflow ID: <span className="font-mono text-primary font-medium">{selectedRequestForLog?.id}</span>
+                        </SheetDescription>
+                    </SheetHeader>
+
+                    {selectedRequestForLog && (
+                        <ScrollArea className="h-[calc(100vh-120px)] pr-4">
+                            <div className="relative pl-6 border-l-2 border-muted space-y-8">
+                                {selectedRequestForLog.logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log) => (
+                                    <div key={log.id} className="relative">
+                                        <div className={cn(
+                                            "absolute -left-[29px] top-1 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center",
+                                            log.action === 'REJECT' ? "bg-red-500 text-white" :
+                                                log.action === 'APPROVE' ? "bg-green-500 text-white" :
+                                                    log.action === 'CREATE' ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"
+                                        )}>
+                                            {log.action === 'APPROVE' && <CheckCircle2 className="w-3 h-3" />}
+                                            {log.action === 'REJECT' && <XCircle className="w-3 h-3" />}
+                                            {log.action === 'CREATE' && <Plus className="w-3 h-3" />}
+                                            {['DELEGATE', 'ESCALATE'].includes(log.action) && <UserCheck className="w-3 h-3" />}
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-semibold">{log.action === 'CREATE' ? 'Yaradıldı' : log.action === 'APPROVE' ? 'Təsdiqləndi' : log.action === 'REJECT' ? 'İmtina Edildi' : log.action}</span>
+                                                <span className="text-xs text-muted-foreground">{log.timestamp}</span>
+                                            </div>
+                                            <div className="text-sm text-foreground/80">
+                                                <span className="font-medium text-foreground">{log.actorName}</span> tərəfindən
+                                            </div>
+                                            {log.stageName && (
+                                                <Badge variant="outline" className="w-fit mt-1 text-[10px] h-5">{log.stageName}</Badge>
+                                            )}
+                                            {log.comment && (
+                                                <div className="bg-muted/50 p-2 rounded text-xs italic mt-1 border-l-2 border-primary/20">
+                                                    "{log.comment}"
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+            {/* Security Confirmation Dialog */}
+            <AlertDialog open={isSecurityConfirmOpen} onOpenChange={setIsSecurityConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Təhlükəsizlik Siyasətini Dəyişirsiniz</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Siz bu mərhələyə <b>{pendingSecurityChange?.added}</b> təsdiqləmə tələbi əlavə edirsiniz.
+                            Bu o deməkdir ki, təsdiq edən şəxslər əlavə identifikasiyadan keçməli olacaqlar.
+                            <br /><br />
+                            Davam etmək istədiyinizə əminsiniz?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPendingSecurityChange(null)}>İmtina</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmSecurityChange}>Təsdiqlə</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Qaydanı Silmək İstəyirsiniz?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Bu əməliyyat geri qaytarıla bilməz. Bu workflow qaydası həmişəlik silinəcək və əlaqəli bütün proseslər dayandırılacaq.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setRuleToDelete(null)}>Ləğv et</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDeleteRule} className="bg-destructive hover:bg-destructive/90">Sil</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    )
+}
