@@ -1,41 +1,49 @@
 version: '3.8'
 
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: antigravity_api_prod
+  # The "Blue" Service (Active)
+  app_blue:
+    image: rqi-erp:latest
+    container_name: erp_blue
     restart: always
-    ports:
-      - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/antigravity_erp?schema=public
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
-      - PORT=3000
-    depends_on:
-      - db
+    ports:
+      - "3001:3000"
     networks:
-      - app-network
+      - erp_net
 
-  db:
-    image: postgres:16-alpine
-    container_name: antigravity_db_prod
+  # The "Green" Service (Standby/New)
+  app_green:
+    image: rqi-erp:new
+    container_name: erp_green
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: antigravity_erp
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
     ports:
-      - "5435:5432" # Different host port to avoid conflict with dev
-    volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      - "3002:3000"
     networks:
-      - app-network
+      - erp_net
+
+  # Reverse Proxy / Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: erp_gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app_blue
+      - app_green
+    networks:
+      - erp_net
 
 networks:
-  app-network:
+  erp_net:
     driver: bridge
-
-volumes:
-  postgres_data_prod:

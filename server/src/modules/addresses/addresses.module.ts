@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AddressesController } from './addresses.controller';
-import { AddressesService } from './addresses.service';
+import { AddressesController } from './api/addresses.controller';
+import { AddressesUseCase } from './application/addresses.usecase';
 import { PrismaService } from '../../prisma.service';
 
 @Module({
     controllers: [AddressesController],
-    providers: [AddressesService, PrismaService], // Ensure PrismaService is available
+    providers: [AddressesUseCase, PrismaService], // Ensure PrismaService is available
 })
 export class AddressesModule { }

@@ -1,0 +1,11 @@
+
+node_modules
+npm-debug.log
+dist
+.git
+.github
+.dockerignore
+Dockerfile
+docker-compose*.yml
+test
+.dependency-cruiser.js

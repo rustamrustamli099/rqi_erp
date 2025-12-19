@@ -1,28 +1,36 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { LoggerModule } from 'nestjs-pino';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
+import { AuthModule } from './platform/auth/auth.module';
+import { IdentityModule } from './platform/identity/identity.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { BranchesModule } from './modules/branches/branches.module';
-import { AuditModule } from './modules/audit/audit.module';
+import { AuditModule } from './platform/audit/audit.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { TenantMiddleware } from './common/middleware/tenant-context.middleware';
-import { SystemModule } from './modules/system/system.module';
-import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { TenantMiddleware } from './platform/tenant-context/tenant-context.middleware';
+import { SystemModule } from './platform/console/system.module';
+import { IntegrationsModule } from './integrations/adapters/integrations.module';
+import { DomainEventsModule } from './shared-kernel/event-bus/domain-events.module';
+import { RedisModule } from './platform/redis/redis.module';
+import { SchedulerModule } from './platform/scheduler/scheduler.module';
+import { MaintenanceModule } from './platform/maintenance/maintenance.module';
+import { RetentionModule } from './platform/retention/retention.module';
+import { MonitoringModule } from './platform/observability/monitoring.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { FilesModule } from './modules/files/files.module';
 import { PrismaService } from './prisma.service';
-import { RolesModule } from './modules/roles/roles.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
-import { PackagesService } from './modules/packages/packages.service';
-import { PackagesController } from './modules/packages/packages.controller';
+import { MaintenanceGuard } from './platform/maintenance/maintenance.guard';
+import { CustomThrottlerGuard } from './platform/auth/throttler.guard';
+import { TenantContextGuard } from './platform/tenant-context/tenant-context.guard';
+import { PermissionsGuard } from './platform/auth/permissions.guard';
 import { PackagesModule } from './modules/packages/packages.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
-import { BillingService } from './modules/billing/billing.service';
+
 import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
@@ -36,32 +44,67 @@ import { PaymentModule } from './modules/payment/payment.module';
       envFilePath: '.env',
     }),
     AuthModule,
-    UsersModule,
+    IdentityModule,
     TenantsModule,
     BranchesModule,
     AuditModule,
     DashboardModule,
     SystemModule,
     IntegrationsModule,
+    DomainEventsModule,
+    RedisModule,
+    SchedulerModule,
+    MaintenanceModule,
+    RetentionModule,
+    MonitoringModule,
     MenusModule,
     MenusModule,
     FilesModule,
-    RolesModule,
     AddressesModule,
     PackagesModule,
     SubscriptionsModule,
-    PaymentModule
+    PaymentModule,
+    LoggerModule.forRoot({
+      pinoHttp: {
+        customProps: (req, res) => ({
+          context: 'HTTP',
+        }),
+        transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
+        serializers: {
+          req(req) {
+            req.headers = { ...req.headers };
+            delete req.headers['authorization']; // REDACT
+            delete req.headers['cookie']; // REDACT
+            return req;
+          },
+        },
+      },
+    }),
   ],
-  controllers: [AppController, PackagesController],
+  controllers: [AppController],
   providers: [
     AppService,
     PrismaService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CustomThrottlerGuard,
     },
-    PackagesService,
-    BillingService,
+    {
+      provide: APP_GUARD,
+      useClass: MaintenanceGuard,
+    },
+    {
+      provide: APP_GUARD, // Runs after AuthGuard (if AuthGuard was global, but it's not). 
+      // Important: This guard works best if Auth is checked first. 
+      // Since AuthGuard is local to controllers, this Global Guard runs for ALL requests.
+      // It blindly checks req.user. If req.user is missing (Public route), it passes.
+      // If req.user is present (Protected route), it enforces context.
+      useClass: TenantContextGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {

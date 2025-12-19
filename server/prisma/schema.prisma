@@ -41,6 +41,7 @@ model User {
   curatorAssignments     CuratorAssignment[]
   auditLogs              AuditLog[] 
   files                  File[]     
+  roles                  UserRole[] // Multi-Role Support
 
   @@map("users")
 }
@@ -74,6 +75,9 @@ model Branch {
   id        String   @id @default(uuid())
   name      String
   
+  address   String?
+  phone     String?
+  
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   
@@ -99,7 +103,8 @@ model Role {
   tenantId    String?
   tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  users       User[]
+  users       User[] // Legacy single-role relation (Deprecate)
+  userRoles   UserRole[] // Active multi-role relation
   permissions RolePermission[]
 
   createdAt   DateTime @default(now())
@@ -107,6 +112,22 @@ model Role {
 
   @@unique([tenantId, name])
   @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  tenantId  String?  // Specific scope for this assignment (if null, applies to SYSTEM or User's default tenant depending on logic)
+  
+  assignedAt DateTime @default(now())
+  assignedBy String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, tenantId])
+  @@map("user_roles")
 }
 
 model Permission {
@@ -502,4 +523,23 @@ model CuratorAssignment {
   canEdit        Boolean @default(false)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("curator_assignments")
+}
+
+// =================================================================================================
+// SYSTEM & CONFIGURATION
+// =================================================================================================
+
+model RetentionPolicy {
+  id        String   @id @default(uuid())
+  entity    String   // Target table/entity name
+  days      Int      // Retention period in days
+  action    String   // DELETE, ARCHIVE, SOFT_DELETE
+  isActive  Boolean  @default(true)
+  
+  lastRunAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("retention_policies")
 }

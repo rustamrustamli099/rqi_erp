@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # --- INFRASTRUCTURE ---
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- SERVER (BLUE) ---
+  server-blue:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: antigravity-server:latest
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      - REDIS_HOST=redis
+      - PORT=3000
+      - COLOR=blue
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --- SERVER (GREEN) ---
+  server-green:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: antigravity-server:latest
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      - REDIS_HOST=redis
+      - PORT=3000
+      - COLOR=green
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --- TRAFFIC SWITCHER (Load Balancer) ---
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - server-blue
+      - server-green
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+
+networks:
+  app-network:
+    driver: bridge
