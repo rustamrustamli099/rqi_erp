@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -27,7 +26,7 @@ import {
     PopoverTrigger,
 } from "@/shared/components/ui/popover"
 import { Badge } from "@/shared/components/ui/badge"
-import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, X, Grip, LayoutGrid, List } from "lucide-react"
+import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/shared/components/ui/button"
@@ -45,8 +44,15 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/shared/components/ui/accordion"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/shared/components/ui/dialog"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/components/ui/tabs"
-// DataTable removed
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination"
 import { DataTableToolbar } from "@/shared/components/ui/data-table-toolbar"
 import { PageHeader } from "@/shared/components/ui/page-header"
@@ -55,316 +61,10 @@ import { toast } from "sonner"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
 import { systemApi, type Role, type SystemPermission } from "@/domains/system-console/api/system.contract";
 import { PermissionMatrix } from "@/domains/system-console/feature-flags/PermissionMatrix";
-
-// Role type moved to API contract
-
-
-interface PermissionNode {
-    id: string
-    label: string
-    type: "group" | "module"
-    children?: PermissionNode[]
-}
-
-// Helper to get all leaf node IDs from a tree
-const getLeafIds = (nodes: PermissionNode[]): string[] => {
-    let ids: string[] = []
-    nodes.forEach(node => {
-        if (node.type === "group" && node.children) {
-            ids = [...ids, ...getLeafIds(node.children)]
-        } else {
-            ids.push(node.id)
-        }
-    })
-    return ids
-}
-
-// Updated Hierarchical Structure with Settings Sub-tabs
-const permissionsStructure: PermissionNode[] = [
-    {
-        id: "dashboard",
-        label: "Dashboard",
-        type: "module",
-    },
-    {
-        id: "users",
-        label: "İstifadəçilər",
-        type: "module",
-    },
-    {
-        id: "approvals",
-        label: "Təsdiqləmələr (Inbox)",
-        type: "module",
-    },
-    {
-        id: "admin",
-        label: "Admin Paneli",
-        type: "group",
-        children: [
-            {
-                id: "admin.tenants",
-                label: "Tenantlar",
-                type: "group",
-                children: [
-                    { id: "admin.tenants.manage", label: "İdarəetmə (CRUD)", type: "module" },
-                    { id: "admin.tenants.manage-scope", label: "Curator Təyini", type: "module" }
-                ]
-            },
-            { id: "admin.branches", label: "Filiallar", type: "module" },
-            { id: "admin.packages", label: "Paketlər", type: "module" },
-            { id: "admin.users", label: "İstifadəçilər", type: "module" },
-            { id: "admin.approvals", label: "Təsdiqləmə (Actions)", type: "module" },
-            {
-                id: "admin.settings",
-                label: "Tənzimləmələr",
-                type: "group",
-                children: [
-                    { id: "settings.general", label: "Ümumi", type: "module" },
-                    {
-                        id: "settings.dictionaries",
-                        label: "Soraqçalar",
-                        type: "group",
-                        children: [
-                            { id: "dictionaries.sectors", label: "Sektorlar", type: "module" },
-                            { id: "dictionaries.units", label: "Ölçü Vahidləri", type: "module" },
-                            { id: "dictionaries.currencies", label: "Valyutalar", type: "module" },
-                            { id: "dictionaries.address", label: "Ünvanlar (Master Data)", type: "module" },
-                            { id: "dictionaries.timezones", label: "Zaman Zonaları", type: "module" },
-                        ]
-                    },
-                    { id: "settings.roles", label: "İstifadəçi hüquqları", type: "module" },
-                    { id: "settings.workflows", label: "Təsdiqləmə Şablonları (Workflow)", type: "module" },
-                    { id: "settings.templates", label: "Sənəd Şablonları", type: "module" },
-                    { id: "settings.security", label: "Təhlükəsizlik", type: "module" },
-                    { id: "settings.audit", label: "Audit", type: "module" },
-                    { id: "settings.monitoring", label: "Monitorinq", type: "module" },
-                    { id: "settings.backups", label: "Backups", type: "module" },
-                    { id: "settings.notifications", label: "Bildirişlər", type: "module" },
-                    { id: "settings.integrations", label: "İnteqrasiyalar", type: "module" },
-                    { id: "settings.global-restrictions", label: "Qlobal Məhdudiyyətlər", type: "module" },
-                ]
-            }
-        ]
-    },
-    {
-        id: "hr",
-        label: "İnsan Resursları (HR)",
-        type: "group",
-        children: [
-            { id: "hr.employees", label: "İşçilər", type: "module" },
-            { id: "hr.attendance", label: "Davamiyyət", type: "module" },
-            { id: "hr.payroll", label: "Maaşlar", type: "module" },
-        ]
-    },
-    {
-        id: "finance",
-        label: "Maliyyə",
-        type: "group",
-        children: [
-            { id: "finance.invoices", label: "Fakturalar", type: "module" },
-            { id: "finance.payments", label: "Ödənişlər", type: "module" },
-            { id: "finance.reports", label: "Maliyyə Hesabatları", type: "module" },
-        ]
-    },
-    {
-        id: "crm",
-        label: "CRM",
-        type: "group",
-        children: [
-            { id: "crm.clients", label: "Müştərilər", type: "module" },
-            { id: "crm.deals", label: "Əqdlər", type: "module" },
-        ]
-    },
-    {
-        id: "inventory",
-        label: "Anbar",
-        type: "group",
-        children: [
-            { id: "inventory.products", label: "Məhsullar", type: "module" },
-            { id: "inventory.stock", label: "Qalıqlar", type: "module" },
-        ]
-    }
-]
-
-const PERMISSION_OPTIONS = [
-    { value: "hide", label: "Gizlətmək" },
-    { value: "view", label: "Görmək" },
-    { value: "create", label: "Yaratmaq" },
-    { value: "edit", label: "Redaktə etmək" },
-    { value: "delete", label: "Silmək" },
-    { value: "full", label: "Tam" },
-]
-
-// Permission Selector Component (Leaf Node)
-function PermissionSelector({ label, selected, onChange }: { label: string, selected: string[], onChange: (val: string[]) => void }) {
-    const [open, setOpen] = useState(false)
-
-    const handleSelect = (value: string) => {
-        let newSelected = [...selected]
-
-        if (value === "full") {
-            if (newSelected.includes("full")) {
-                newSelected = newSelected.filter(i => i !== "full")
-                if (newSelected.length === 0) newSelected = ["hide"]
-            } else {
-                newSelected = ["view", "create", "edit", "delete", "full"]
-            }
-        }
-        else if (value === "hide") {
-            newSelected = ["hide"]
-        }
-        else {
-            newSelected = newSelected.filter(i => i !== "hide")
-
-            if (newSelected.includes(value)) {
-                newSelected = newSelected.filter(i => i !== value)
-                newSelected = newSelected.filter(i => i !== "full")
-            } else {
-                newSelected.push(value)
-            }
-            if (newSelected.length === 0) newSelected = ["hide"]
-        }
-
-        onChange(newSelected)
-    }
-
-    return (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 px-3 rounded-sm gap-4 hover:bg-muted/40 transition-colors border border-transparent hover:border-muted-foreground/10">
-            <span className="text-sm font-medium min-w-[180px]">{label}</span>
-
-            <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="flex-1 justify-between min-h-[2.2rem] h-auto px-3 py-1.5 text-xs"
-                    >
-                        <div className="flex flex-wrap gap-1 items-center">
-                            {selected.length > 0 && selected[0] !== "hide" ? (
-                                selected.map(val => {
-                                    const option = PERMISSION_OPTIONS.find(o => o.value === val)
-                                    return (
-                                        <Badge key={val} variant="secondary" className="mr-1 py-0 px-2 text-[10px] font-normal h-5">
-                                            {option?.label || val}
-                                            <div
-                                                className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors p-0.5"
-                                                onClick={(e) => {
-                                                    e.preventDefault()
-                                                    e.stopPropagation()
-                                                    handleSelect(val)
-                                                }}
-                                            >
-                                                <X className="h-2.5 w-2.5" />
-                                            </div>
-                                        </Badge>
-                                    )
-                                })
-                            ) : (
-                                <span className="text-muted-foreground text-xs">Gizlətmək</span>
-                            )}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="end">
-                    <div className="flex flex-col gap-0.5">
-                        {PERMISSION_OPTIONS.map((option) => {
-                            const isSelected = selected.includes(option.value);
-                            return (
-                                <div
-                                    key={option.value}
-                                    className="flex items-center space-x-2 p-1.5 rounded-sm hover:bg-muted cursor-pointer transition-colors"
-                                    onClick={() => handleSelect(option.value)}
-                                >
-                                    <div className={cn(
-                                        "h-3.5 w-3.5 border rounded-sm flex items-center justify-center transition-colors",
-                                        isSelected ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground opacity-50"
-                                    )}>
-                                        {isSelected && <Check className="h-2.5 w-2.5" />}
-                                    </div>
-                                    <span className={cn("text-xs", isSelected ? "font-medium" : "")}>
-                                        {option.label}
-                                    </span>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </PopoverContent>
-            </Popover>
-        </div>
-    )
-}
-
-// Recursive Renderer
-interface PermissionRendererProps {
-    node: PermissionNode
-    rolePermissions: Record<string, string[]>
-    handlePermissionChange: (id: string, values: string[]) => void
-    handleGroupAction: (children: PermissionNode[], action: "full" | "hide") => void
-    level?: number
-}
-
-const PermissionNodeRenderer = ({ node, rolePermissions, handlePermissionChange, handleGroupAction, level = 0 }: PermissionRendererProps) => {
-    if (node.type === "group" && node.children) {
-        return (
-            <Accordion type="single" collapsible className={cn("rounded-md bg-background", level > 0 ? "border-l-2 border-primary/10 mt-2" : "border")}>
-                <AccordionItem value={node.id} className="border-0">
-                    <AccordionTrigger className={cn("hover:no-underline py-2 px-3 hover:bg-muted/30 transition-colors rounded-t-md", level === 0 ? "bg-muted/10" : "")}>
-                        <div className="flex items-center justify-between w-full mr-4">
-                            <span className={cn("font-semibold", level === 0 ? "text-lg" : "text-base")}>{node.label}</span>
-                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className="h-6 px-3 flex items-center justify-center rounded-md text-[10px] uppercase tracking-wider font-medium bg-primary/5 text-primary hover:bg-primary/10 cursor-pointer transition-colors"
-                                    onClick={(e) => { e.stopPropagation(); handleGroupAction(node.children!, "full") }}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') handleGroupAction(node.children!, "full") }}
-                                >
-                                    Tam
-                                </div>
-                                <div
-                                    role="button"
-                                    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
-                                    tabIndex={0}
-                                    className="h-6 px-3 flex items-center justify-center rounded-md text-[10px] uppercase tracking-wider font-medium bg-destructive/5 text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
-                                    onClick={(e) => { e.stopPropagation(); handleGroupAction(node.children!, "hide") }}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') handleGroupAction(node.children!, "hide") }}
-                                >
-                                    Gizlət
-                                </div>
-                            </div>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-2 px-2">
-                        <div className="space-y-1">
-                            {node.children.map((child) => (
-                                <PermissionNodeRenderer
-                                    key={child.id}
-                                    node={child}
-                                    rolePermissions={rolePermissions}
-                                    handlePermissionChange={handlePermissionChange}
-                                    handleGroupAction={handleGroupAction}
-                                    level={level + 1}
-                                />
-                            ))}
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion >
-        )
-    } else {
-        return (
-            <div className={cn(level === 0 ? "border rounded-md bg-background" : "")}>
-                <PermissionSelector
-                    label={node.label}
-                    selected={rolePermissions[node.id] || ["hide"]}
-                    onChange={(val) => handlePermissionChange(node.id, val)}
-                />
-            </div>
-        )
-    }
-}
+import { PermissionTreeEditor, type PermissionNode } from "./_components/PermissionTreeEditor"
+import { PermissionSlugs } from "@/app/security/permission-slugs"
+import { permissionsStructure } from "./_components/permission-data"
+import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
 
 // Main Page Component
 interface RolesPageProps {
@@ -401,12 +101,17 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const [currentRole, setCurrentRole] = useState<Role | null>(null)
     const [selectedRole, setSelectedRole] = useState<string>("")
     const [roleSearchOpen, setRoleSearchOpen] = useState(false)
-    const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({})
+
+    // Permission State
+    const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
+    const [originalPermissions, setOriginalPermissions] = useState<string[]>([]) // For diffing
 
     // Modals
     const [dialogOpen, setDialogOpen] = useState(false)
     const [dialogMode, setDialogMode] = useState<"create" | "edit" | "view">("create")
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+    const [isDiffOpen, setIsDiffOpen] = useState(false) // For review dialog
+
     const columns = useMemo<ColumnDef<Role>[]>(() => [
         {
             accessorKey: "name",
@@ -567,31 +272,44 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     // Reset permissions when role changes
     useEffect(() => {
         if (selectedRole) {
-            setRolePermissions({
-                "dashboard": ["view"],
-                "users": ["view"],
-                "settings.general": ["view", "edit"]
-            })
+            const mockRole = roles.find(r => r.name === selectedRole);
+            if (mockRole?.permissions) {
+                const perms = mockRole.permissions as unknown as string[];
+                setSelectedPermissions(perms);
+                setOriginalPermissions(perms);
+            } else {
+                // Fallback or empty
+                const defaults = [
+                    PermissionSlugs.PLATFORM.DASHBOARD.VIEW,
+                    PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ
+                ];
+                setSelectedPermissions(defaults);
+                setOriginalPermissions(defaults);
+            }
         } else {
-            setRolePermissions({})
+            setSelectedPermissions([]);
+            setOriginalPermissions([]);
         }
-    }, [selectedRole])
+    }, [selectedRole, roles])
 
-    const handlePermissionChange = (moduleId: string, newValues: string[]) => {
-        setRolePermissions(prev => ({ ...prev, [moduleId]: newValues }))
+    // Trigger review dialog
+    const handlePermissionsSaveClick = () => {
+        setIsDiffOpen(true);
     }
 
-    const handleGroupAction = (groupChildren: PermissionNode[], action: "full" | "hide") => {
-        const newPermissions = { ...rolePermissions }
-        const leafIds = getLeafIds(groupChildren)
-        leafIds.forEach(id => {
-            if (action === "full") {
-                newPermissions[id] = ["view", "create", "edit", "delete", "full"]
-            } else {
-                newPermissions[id] = ["hide"]
-            }
-        })
-        setRolePermissions(newPermissions)
+    // Actually save after confirmation
+    const confirmPermissionsSave = async () => {
+        // Logic to save permissions to backend
+        // const role = roles.find(r => r.name === selectedRole)
+        // await api.updatePermissions(role.id, selectedPermissions)
+
+        // Mock success
+        toast.success("İcazələr uğurla yeniləndi!");
+        console.log("Saving permissions for role:", selectedRole, selectedPermissions);
+
+        // In real app, we would refresh roles here to update 'originalPermissions'
+        setOriginalPermissions(selectedPermissions); // Optmistic update
+        setIsDiffOpen(false);
     }
 
     // UI Helpers for opening modals
@@ -737,7 +455,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                         </Popover>
                     </div>
 
-                    {/* 3. Permissions Layout: Recursive */}
+                    {/* 3. Permissions Layout: Tree Based */}
                     <Accordion type="single" collapsible value={selectedRole ? "permissions" : ""} className="w-full">
                         <AccordionItem value="permissions" className="border rounded-md bg-card overflow-hidden">
                             <AccordionTrigger className="hover:no-underline px-4 py-3 bg-muted/30 border-b">
@@ -748,22 +466,14 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="p-4 space-y-4">
-                                    {permissionsStructure
-                                        .filter(node => context === "admin" || node.id !== "admin") // Hide Admin group if tenant
-                                        .map((node) => (
-                                            <PermissionNodeRenderer
-                                                key={node.id}
-                                                node={node}
-                                                rolePermissions={rolePermissions}
-                                                handlePermissionChange={handlePermissionChange}
-                                                handleGroupAction={handleGroupAction}
-                                            />
-                                        ))}
+                                    <PermissionTreeEditor
+                                        permissions={permissionsStructure.filter(node => context === "admin" || node.id !== "admin")}
+                                        selectedSlugs={selectedPermissions}
+                                        onChange={setSelectedPermissions}
+                                    />
 
                                     <div className="pt-4 flex justify-end">
-                                        <Button size="lg" onClick={() => {
-                                            toast.success("İcazələr uğurla yadda saxlanıldı!")
-                                        }}>
+                                        <Button size="lg" onClick={handlePermissionsSaveClick}>
                                             Yadda Saxla
                                         </Button>
                                     </div>
@@ -799,6 +509,31 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 variant="destructive"
                 actionLabel="Sil"
             />
+
+            {/* Diff Review Modal */}
+            <Dialog open={isDiffOpen} onOpenChange={setIsDiffOpen}>
+                <DialogContent className="max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Dəyişiklikləri Təsdiqlə</DialogTitle>
+                        <DialogDescription>
+                            "{selectedRole}" rolu üçün aşağıdakı icazə dəyişiklikləri tətbiq ediləcək.
+                            Zəhmət olmasa diqqətlə yoxlayın.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <PermissionDiffViewer
+                        original={originalPermissions}
+                        modified={selectedPermissions}
+                        className="my-2"
+                    />
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setIsDiffOpen(false)}>Ləğv et</Button>
+                        <Button onClick={confirmPermissionsSave}>Təsdiqlə və Yadda Saxla</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     )
 }

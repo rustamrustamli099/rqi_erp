@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const admin_panel_permissions = {
+exports.admin_panel_permissions = void 0;
+exports.admin_panel_permissions = {
     dashboard: {
         perms: ['read']
     },

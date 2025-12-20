@@ -110,6 +110,9 @@ let AuthController = class AuthController {
     getProfile(req) {
         return req.user;
     }
+    getMe(req) {
+        return req.user;
+    }
     async impersonate(req, body, response) {
         const result = await this.authService.impersonate(req.user.userId, body.userId);
         const { access_token, refresh_token, expiresIn } = result;
@@ -190,6 +193,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getProfile", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Get)('me'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "getMe", null);
 __decorate([
     (0, common_1.Post)('impersonate'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

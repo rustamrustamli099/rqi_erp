@@ -14,7 +14,7 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const prisma_service_1 = require("../../prisma.service");
 const permission_cache_service_1 = require("./permission-cache.service");
-const audit_service_1 = require("../audit/audit.service");
+const audit_service_1 = require("../../system/audit/audit.service");
 let PermissionsGuard = class PermissionsGuard {
     reflector;
     prisma;

@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { AuditService } from '../../audit/audit.service';
+import { AuditService } from '../../../system/audit/audit.service';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
@@ -24,8 +24,7 @@ export class AuditInterceptor implements NestInterceptor {
                             userId: user.userId || user.id, // Support both JWT payload (sub/userId) and User Entity (id)
                             action: method,
                             module: url.split('/')[2] || 'unknown',
-                            method: method,
-                            endpoint: url,
+                            resource: url,
                             tenantId: user.tenantId,
                             branchId: user.branchId || null,
                             ipAddress: ip,

@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Building2, Check, ChevronRight, ChevronLeft, CreditCard, User, FolderOpen, MapPin, ShieldCheck, Box } from "lucide-react"
-import { MOCK_COUNTRIES, MOCK_MODULES, MOCK_PLANS } from "@/shared/constants/reference-data"
+import { MOCK_COUNTRIES, MOCK_MODULES, MOCK_PLANS, ENTREPRENEURSHIP_SUBJECTS } from "@/shared/constants/reference-data"
+import { Combobox } from "@/shared/components/ui/combobox"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { cn } from "@/shared/lib/utils"
 import { toast } from "sonner"
@@ -44,7 +45,8 @@ export function OnboardingWizard({ open, onOpenChange, onSubmit, sectors }: Onbo
     const [formData, setFormData] = useState<Partial<Tenant>>({
         usersCount: 5, // Default includes 5 users
         status: "ACTIVE",
-        plan: "standard"
+        plan: "standard",
+        entrepreneurshipSubject: "" // Added field
     })
     const [selectedModules, setSelectedModules] = useState<string[]>([])
     const [adminUser, setAdminUser] = useState({ email: "", password: "", fullName: "" })
@@ -135,6 +137,27 @@ export function OnboardingWizard({ open, onOpenChange, onSubmit, sectors }: Onbo
                         placeholder="1234567890"
                     />
                 </div>
+            </div>
+
+            {/* Added Entrepreneurship Subject */}
+            <div className="space-y-2">
+                <Label>Sahibkarlıq Subyekti <span className="text-red-500">*</span></Label>
+                <Select
+                    value={(formData as any).entrepreneurshipSubject || ""}
+                    onValueChange={v => setFormData({ ...formData, entrepreneurshipSubject: v } as any)}
+                >
+                    <SelectTrigger><SelectValue placeholder="Seçin" /></SelectTrigger>
+                    <SelectContent>
+                        {(Object.entries(ENTREPRENEURSHIP_SUBJECTS) as [string, { label: string, description: string }][]).map(([key, value]) => (
+                            <SelectItem key={key} value={key}>
+                                <div className="flex flex-col items-start text-left">
+                                    <span className="font-medium">{value.label}</span>
+                                    <span className="text-xs text-muted-foreground">{value.description}</span>
+                                </div>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
         </div>
     )
@@ -233,17 +256,32 @@ export function OnboardingWizard({ open, onOpenChange, onSubmit, sectors }: Onbo
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Ölkə</Label>
-                    <Select value={address.country} onValueChange={v => setAddress({ ...address, country: v })}>
-                        <SelectTrigger><SelectValue placeholder="Seçin" /></SelectTrigger>
-                        <SelectContent>{MOCK_COUNTRIES.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Combobox
+                        options={MOCK_COUNTRIES.map(c => ({ label: c.name, value: c.id }))}
+                        value={address.country}
+                        onSelect={v => setAddress({ ...address, country: v })}
+                        placeholder="Ölkə seçin"
+                    />
                 </div>
                 <div className="space-y-2">
                     <Label>Şəhər</Label>
-                    <Select value={address.city} onValueChange={v => setAddress({ ...address, city: v })} disabled={!cities.length}>
-                        <SelectTrigger><SelectValue placeholder="Seçin" /></SelectTrigger>
-                        <SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Combobox
+                        options={cities.map(c => ({ label: c.name, value: c.id }))}
+                        value={address.city}
+                        onSelect={v => setAddress({ ...address, city: v })}
+                        placeholder="Şəhər seçin"
+                        className={!cities.length ? "opacity-50 pointer-events-none" : ""}
+                    />
+                </div>
+                <div className="space-y-2 col-span-2">
+                    <Label>Rayon</Label>
+                    <Combobox
+                        options={regions.map(r => ({ label: r.name, value: r.id }))}
+                        value={address.region}
+                        onSelect={v => setAddress({ ...address, region: v })}
+                        placeholder="Rayon seçin"
+                        className={!regions.length ? "opacity-50 pointer-events-none" : ""}
+                    />
                 </div>
             </div>
             <div className="space-y-2">

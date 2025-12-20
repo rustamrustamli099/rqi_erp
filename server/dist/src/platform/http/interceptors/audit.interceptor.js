@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuditInterceptor = void 0;
 const common_1 = require("@nestjs/common");
 const operators_1 = require("rxjs/operators");
-const audit_service_1 = require("../../audit/audit.service");
+const audit_service_1 = require("../../../system/audit/audit.service");
 let AuditInterceptor = class AuditInterceptor {
     auditService;
     constructor(auditService) {
@@ -29,8 +29,7 @@ let AuditInterceptor = class AuditInterceptor {
                         userId: user.userId || user.id,
                         action: method,
                         module: url.split('/')[2] || 'unknown',
-                        method: method,
-                        endpoint: url,
+                        resource: url,
                         tenantId: user.tenantId,
                         branchId: user.branchId || null,
                         ipAddress: ip,

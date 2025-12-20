@@ -9,25 +9,13 @@ import { toast } from "sonner";
 import { Edit, Flag, Globe, Layers, Plus, Users, Archive } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
-
-interface FeatureFlag {
-    id: string;
-    key: string;
-    description: string;
-    scope: "Global" | "Tenant" | "Role" | "User";
-    status: boolean;
-    environment: "Production" | "Staging" | "Dev";
-    archived?: boolean;
-}
-
-const MOCK_FLAGS: FeatureFlag[] = [
-    { id: "1", key: "new_billing_ui", description: "Biling səhifəsinin yeni dizaynı", scope: "Global", status: true, environment: "Production" },
-    { id: "2", key: "beta_ai_assistant", description: "Süni intellekt köməkçisi", scope: "Tenant", status: false, environment: "Production" },
-    { id: "3", key: "experimental_reports", description: "Eksperimental hesabatlar", scope: "Role", status: true, environment: "Staging" },
-];
+import { useFeatureFlags, FeatureFlag } from "./context/FeatureFlagContext";
 
 export default function FeatureFlagsPage() {
-    const [flags, setFlags] = useState<FeatureFlag[]>(MOCK_FLAGS);
+    // Consume Global Context
+    const { flags, addFlag, updateFlag } = useFeatureFlags();
+
+    // UI State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);
 
@@ -38,18 +26,18 @@ export default function FeatureFlagsPage() {
 
     const handleSave = () => {
         if (editingFlag) {
-            setFlags(prev => prev.map(f => f.id === editingFlag.id ? { ...f, ...formData } as FeatureFlag : f));
+            updateFlag(editingFlag.id, formData);
             toast.success("Fləq yeniləndi");
         } else {
-            const newFlag = {
+            const newFlag: FeatureFlag = {
                 id: Date.now().toString(),
                 key: formData.key || "new_feature",
                 description: formData.description || "",
-                scope: formData.scope || "Global",
+                scope: formData.scope as any || "Global",
                 status: formData.status || false,
-                environment: formData.environment || "Production"
-            } as FeatureFlag;
-            setFlags(prev => [...prev, newFlag]);
+                environment: formData.environment as any || "Production"
+            };
+            addFlag(newFlag);
             toast.success("Yeni fləq yaradıldı");
         }
         setIsModalOpen(false);
@@ -63,7 +51,7 @@ export default function FeatureFlagsPage() {
             description: `Bu feature flag-i ${!current ? 'aktivləşdirmək' : 'deaktiv etmək'} istədiyinizə əminsiniz?`,
             variant: "default",
             action: () => {
-                setFlags(prev => prev.map(f => f.id === id ? { ...f, status: !current } : f));
+                updateFlag(id, { status: !current });
                 toast.success(`Fləq ${!current ? 'aktivləşdirildi' : 'deaktiv edildi'}`);
                 setConfirmState(prev => ({ ...prev, isOpen: false }));
             }
@@ -77,7 +65,7 @@ export default function FeatureFlagsPage() {
             description: "Bu feature flag-i arxivləmək istədiyinizə əminsiniz? O, siyahıdan gizlədiləcək.",
             variant: "destructive",
             action: () => {
-                setFlags(prev => prev.map(f => f.id === id ? { ...f, archived: true, status: false } : f));
+                updateFlag(id, { archived: true, status: false });
                 toast.success("Fləq arxivləndi");
                 setConfirmState(prev => ({ ...prev, isOpen: false }));
             }

@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
 import { PermissionCacheService } from './permission-cache.service';
-import { AuditService } from '../audit/audit.service';
+import { AuditService } from '../../system/audit/audit.service';
 export declare class PermissionsGuard implements CanActivate {
     private reflector;
     private prisma;

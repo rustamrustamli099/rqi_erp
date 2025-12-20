@@ -1,31 +1,52 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { usePermissions } from '@/app/auth/hooks/usePermissions';
+import { useAuth } from '@/domains/auth/context/AuthContext';
+import { Loader2 } from 'lucide-react';
+import React from 'react';
 
 interface ProtectedRouteProps {
-    permission?: string;
-    redirectPath?: string;
+    requiredPermissions?: string[];
+    requiredPermission?: string; // Support singular prop for convenience
+    mode?: 'any' | 'all';
+    children?: React.ReactNode;
 }
 
 export const ProtectedRoute = ({
-    permission,
-    redirectPath = "/login"
+    requiredPermissions = [],
+    requiredPermission,
+    mode = 'all',
+    children
 }: ProtectedRouteProps) => {
-    const { hasPermission, user } = usePermissions();
+    const { isAuthenticated, isLoading } = useAuth();
+    const { hasAll, hasAny } = usePermissions();
+    const location = useLocation();
 
-    console.log(`[ProtectedRoute] Checking permission: ${permission}, User: ${user?.id}, HasPermission: ${permission ? hasPermission(permission) : 'N/A'}`);
+    // Normalize permissions: Combine array and singular prop
+    const perms = [...requiredPermissions];
+    if (requiredPermission) perms.push(requiredPermission);
 
-    if (!user) {
-        console.log('[ProtectedRoute] No user, redirecting to login');
-        return <Navigate to={redirectPath} replace />;
+    if (isLoading) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
     }
 
-
-    if (permission && !hasPermission(permission)) {
-        console.log('[ProtectedRoute] Permission denied, redirecting to /');
-        return <Navigate to="/" replace />; // Redirect to home or unauthorized page
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    console.log('[ProtectedRoute] Access granted');
-    return <Outlet />;
+    // Permission Check
+    const hasAccess = mode === 'all'
+        ? hasAll(perms)
+        : hasAny(perms);
+
+    if (!hasAccess) {
+        // Redirect to 403 Forbidden with return URL
+        const returnUrl = encodeURIComponent(location.pathname + location.search);
+        return <Navigate to={`/403?returnUrl=${returnUrl}`} replace />;
+    }
+
+    return children ? <>{children}</> : <Outlet />;
 };
-

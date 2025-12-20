@@ -65,6 +65,7 @@ export class AuthService {
             sub: user.id,
             tenantId: user.tenantId,
             roles: roleNames, // Multi-Role
+            isOwner: (user as any).isOwner, // Owner Flag
             familyId // [SEC] Track specific chain of tokens
         };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' }); // Short-lived
@@ -96,6 +97,7 @@ export class AuthService {
                 email: user.email,
                 fullName: user.fullName,
                 roles: roleNames, // Multi-Role
+                isOwner: (user as any).isOwner, // Owner Flag
                 permissions: effectivePermissions // [UI] Snapshot for UI
             }
         };
@@ -153,6 +155,7 @@ export class AuthService {
             sub: user.id,
             tenantId: user.tenantId,
             roles: (user as any).roles?.map((ur: any) => ur.role?.name) || [],
+            isOwner: (user as any).isOwner,
             familyId // Preserve family chain
         };
         const accessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });

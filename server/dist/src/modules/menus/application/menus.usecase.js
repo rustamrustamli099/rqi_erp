@@ -12,39 +12,42 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenusUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../../prisma.service");
+const menu_definition_1 = require("../../../platform/menu/menu.definition");
 let MenusUseCase = class MenusUseCase {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async getSidebar(roleNames) {
-        const lowerRoles = roleNames.map(r => r.toLowerCase());
-        const isPlatformAdmin = lowerRoles.includes('owner') || lowerRoles.includes('superadmin');
-        const menuSlug = isPlatformAdmin ? 'platform_sidebar' : 'tenant_sidebar';
-        return this.prisma.menu.findUnique({
-            where: { slug: menuSlug },
-            include: {
-                items: {
-                    orderBy: { order: 'asc' },
-                    where: { parentId: null },
-                    include: {
-                        permission: true,
-                        children: {
-                            orderBy: { order: 'asc' },
-                            include: {
-                                permission: true,
-                                children: {
-                                    orderBy: { order: 'asc' },
-                                    include: {
-                                        permission: true
-                                    }
-                                }
-                            }
-                        }
+    async getSidebar(user) {
+        if (user.isOwner) {
+            return this.enrichMenu(menu_definition_1.ADMIN_MENU_TREE);
+        }
+        const userPermissions = new Set(user.permissions || []);
+        return this.filterMenu(menu_definition_1.ADMIN_MENU_TREE, userPermissions);
+    }
+    enrichMenu(items) {
+        return items.map(item => ({
+            ...item,
+            children: item.children ? this.enrichMenu(item.children) : undefined
+        }));
+    }
+    filterMenu(items, userPermissions) {
+        const filtered = [];
+        for (const item of items) {
+            const hasPermission = !item.permission || userPermissions.has(item.permission);
+            if (hasPermission) {
+                if (item.children) {
+                    const filteredChildren = this.filterMenu(item.children, userPermissions);
+                    if (filteredChildren.length > 0 || !item.children.length) {
+                        filtered.push({ ...item, children: filteredChildren });
                     }
                 }
+                else {
+                    filtered.push(item);
+                }
             }
-        });
+        }
+        return filtered;
     }
     async createDefaultMenu() {
         return;

@@ -9,7 +9,6 @@ import { AuthModule } from './platform/auth/auth.module';
 import { IdentityModule } from './platform/identity/identity.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { BranchesModule } from './modules/branches/branches.module';
-import { AuditModule } from './platform/audit/audit.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { TenantMiddleware } from './platform/tenant-context/tenant-context.middleware';
 import { SystemModule } from './platform/console/system.module';
@@ -18,6 +17,7 @@ import { DomainEventsModule } from './shared-kernel/event-bus/domain-events.modu
 import { RedisModule } from './platform/redis/redis.module';
 import { SchedulerModule } from './platform/scheduler/scheduler.module';
 import { MaintenanceModule } from './platform/maintenance/maintenance.module';
+import { AuditModule } from './system/audit/audit.module';
 import { RetentionModule } from './platform/retention/retention.module';
 import { MonitoringModule } from './platform/observability/monitoring.module';
 import { MenusModule } from './modules/menus/menus.module';
@@ -55,6 +55,7 @@ import { PaymentModule } from './modules/payment/payment.module';
     RedisModule,
     SchedulerModule,
     MaintenanceModule,
+    AuditModule,
     RetentionModule,
     MonitoringModule,
     MenusModule,

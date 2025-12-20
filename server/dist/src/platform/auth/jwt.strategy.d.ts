@@ -13,6 +13,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
         email: any;
         tenantId: any;
         role: any;
+        isOwner: any;
     }>;
 }
 export {};

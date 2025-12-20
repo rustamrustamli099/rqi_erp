@@ -11,7 +11,7 @@ import { SanitizationInterceptor } from './platform/http/interceptors/sanitizati
 import { SecurityLoggerInterceptor } from './platform/http/interceptors/security-logger.interceptor';
 import { PrismaService } from './prisma.service';
 import { AuditInterceptor } from './platform/http/interceptors/audit.interceptor';
-import { AuditService } from './platform/audit/audit.service';
+import { AuditService } from './system/audit/audit.service';
 import { AccessControlGuard } from './platform/auth/access-control.guard';
 
 import helmet from 'helmet';

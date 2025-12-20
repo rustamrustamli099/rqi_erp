@@ -18,7 +18,6 @@ const auth_module_1 = require("./platform/auth/auth.module");
 const identity_module_1 = require("./platform/identity/identity.module");
 const tenants_module_1 = require("./modules/tenants/tenants.module");
 const branches_module_1 = require("./modules/branches/branches.module");
-const audit_module_1 = require("./platform/audit/audit.module");
 const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
 const tenant_context_middleware_1 = require("./platform/tenant-context/tenant-context.middleware");
 const system_module_1 = require("./platform/console/system.module");
@@ -27,6 +26,7 @@ const domain_events_module_1 = require("./shared-kernel/event-bus/domain-events.
 const redis_module_1 = require("./platform/redis/redis.module");
 const scheduler_module_1 = require("./platform/scheduler/scheduler.module");
 const maintenance_module_1 = require("./platform/maintenance/maintenance.module");
+const audit_module_1 = require("./system/audit/audit.module");
 const retention_module_1 = require("./platform/retention/retention.module");
 const monitoring_module_1 = require("./platform/observability/monitoring.module");
 const menus_module_1 = require("./modules/menus/menus.module");
@@ -71,6 +71,7 @@ exports.AppModule = AppModule = __decorate([
             redis_module_1.RedisModule,
             scheduler_module_1.SchedulerModule,
             maintenance_module_1.MaintenanceModule,
+            audit_module_1.AuditModule,
             retention_module_1.RetentionModule,
             monitoring_module_1.MonitoringModule,
             menus_module_1.MenusModule,

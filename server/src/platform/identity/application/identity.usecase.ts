@@ -18,6 +18,10 @@ export class IdentityUseCase {
         return this.userRepository.findByEmail(email);
     }
 
+    async findAllUsers(tenantId: string) {
+        return this.userRepository.findAll(tenantId);
+    }
+
     async findUserById(id: string): Promise<User | null> {
         return this.userRepository.findById(id);
     }

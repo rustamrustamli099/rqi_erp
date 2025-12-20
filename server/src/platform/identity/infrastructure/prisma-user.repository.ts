@@ -17,6 +17,7 @@ export class PrismaUserRepository implements IUserRepository {
                 fullName: user.fullName,
                 tenantId: user.tenantId,
                 roleId: user.roleId,
+                isOwner: user.isOwner,
             },
             create: {
                 id: user.id,
@@ -25,6 +26,7 @@ export class PrismaUserRepository implements IUserRepository {
                 fullName: user.fullName,
                 tenantId: user.tenantId,
                 roleId: user.roleId,
+                isOwner: user.isOwner,
             }
         });
     }
@@ -52,7 +54,8 @@ export class PrismaUserRepository implements IUserRepository {
             raw.email,
             raw.password,
             raw.fullName || raw.name, // Handle both fields
-            true,
+            true, // isActive
+            raw.isOwner || false, // isOwner
             raw.tenantId,
             raw.roleId,
             raw.createdAt,

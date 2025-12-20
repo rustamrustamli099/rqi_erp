@@ -18,18 +18,34 @@ let AuditService = class AuditService {
         this.prisma = prisma;
     }
     async logAction(data) {
-        return this.prisma.auditLog.create({
-            data: {
-                action: data.action,
-                resource: data.endpoint || data.module,
-                module: data.module,
-                details: data.details ? JSON.stringify(data.details) : undefined,
-                ipAddress: data.ipAddress || 'unknown',
-                userId: data.userId || undefined,
-                tenantId: data.tenantId || null,
-                branchId: data.branchId,
-            },
-        });
+        try {
+            if (data.tenantId) {
+                const tenantExists = await this.prisma.tenant.findUnique({
+                    where: { id: data.tenantId },
+                    select: { id: true }
+                });
+                if (!tenantExists) {
+                    console.warn(`[AUDIT] Skipped log for non-existent tenant: ${data.tenantId}`);
+                    return;
+                }
+            }
+            await this.prisma.auditLog.create({
+                data: {
+                    action: data.action,
+                    resource: data.resource || 'SYSTEM',
+                    module: data.module || null,
+                    userId: data.userId || null,
+                    tenantId: data.tenantId || null,
+                    branchId: data.branchId || null,
+                    ipAddress: data.ipAddress || data.ip || null,
+                    userAgent: data.userAgent || null,
+                    details: data.details ? JSON.stringify(data.details) : undefined,
+                },
+            });
+        }
+        catch (error) {
+            console.error('[AUDIT] Failed to persist log:', error);
+        }
     }
 };
 exports.AuditService = AuditService;

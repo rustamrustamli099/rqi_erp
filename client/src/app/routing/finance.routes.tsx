@@ -1,7 +1,5 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom"
-import { ProtectedRoute } from "@/app/routing/ProtectedRoute"
-
-import BillingPage from "@/domains/billing/views/BillingPage"
+import { ProviderFinanceDashboard } from "@/domains/finance/dashboard/ProviderFinanceDashboard"
+import { ResellerDashboard } from "@/domains/finance/dashboard/ResellerDashboard"
 
 export default function FinanceRoutes() {
     const location = useLocation();
@@ -9,9 +7,14 @@ export default function FinanceRoutes() {
         <Routes key={location.pathname}>
             <Route element={<ProtectedRoute permission="system:billing:read" />}>
                 <Route path="billing" element={<BillingPage />} />
+                <Route path="dashboard" element={<ProviderFinanceDashboard />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="billing" replace />} />
+            <Route element={<ProtectedRoute permission="reseller:dashboard:read" />}>
+                <Route path="reseller" element={<ResellerDashboard />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Routes>
     )
 }

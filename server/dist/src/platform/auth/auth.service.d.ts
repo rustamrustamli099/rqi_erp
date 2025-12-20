@@ -18,6 +18,7 @@ export declare class AuthService {
             email: any;
             fullName: any;
             roles: string[];
+            isOwner: any;
             permissions: string[];
         };
     }>;
@@ -34,6 +35,7 @@ export declare class AuthService {
             email: any;
             fullName: any;
             roles: string[];
+            isOwner: any;
             permissions: string[];
         };
     }>;
@@ -46,6 +48,7 @@ export declare class AuthService {
             email: any;
             fullName: any;
             roles: string[];
+            isOwner: any;
             permissions: string[];
         };
     }>;

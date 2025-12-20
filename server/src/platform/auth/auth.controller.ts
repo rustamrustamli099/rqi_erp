@@ -146,6 +146,12 @@ export class AuthController {
     getProfile(@Request() req) {
         return req.user;
     }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('me')
+    getMe(@Request() req) {
+        return req.user;
+    }
     @Post('impersonate')
     @UseGuards(JwtAuthGuard)
     async impersonate(@Request() req, @Body() body: { userId: string }, @Res({ passthrough: true }) response: Response) {

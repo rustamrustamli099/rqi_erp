@@ -2,21 +2,22 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/components/ui/button"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useDispatch } from "react-redux"
 import { logout } from "@/domains/auth/state/authSlice"
-import { useTranslation } from "react-i18next"
 import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
     Menu,
+    LogOut,
+    User,
+    RefreshCw,
+    ShieldAlert
 } from "lucide-react"
 import * as LucideIcons from "lucide-react"
-import { MenusService, type MenuItem as ServiceMenuItem } from "@/app/navigation/menu.api";
-import { adminMenu } from "@/app/navigation/admin.menu";
-import { tenantMenu } from "@/app/navigation/tenant.menu";
+import { useMenu } from "@/app/navigation/useMenu";
+import { type MenuItem } from "@/app/navigation/menu.definitions";
 
 import {
     Tooltip,
@@ -34,7 +35,6 @@ import {
 } from "@/shared/components/ui/dropdown-menu"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar"
-
 import { Sheet, SheetContent, SheetTrigger } from "@/shared/components/ui/sheet"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible"
 import {
@@ -49,24 +49,6 @@ import {
 } from "@/shared/components/ui/alert-dialog"
 
 import logo from "@/assets/logo.png"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
-
-interface MenuItem {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    icon: any;
-    label: string;
-    href?: string;
-    children?: MenuItem[];
-    requiredPermission?: string;
-    badge?: number | string;
-}
-
-// Helper to get icon component
-const getIcon = (name: string | undefined) => {
-    if (!name) return LucideIcons.Circle;
-    // @ts-expect-error Index signature is missing in LucideIcons
-    return LucideIcons[name] || LucideIcons.Circle;
-};
 
 const DesktopMenuItem = ({
     item,
@@ -81,19 +63,32 @@ const DesktopMenuItem = ({
     collapsed: boolean,
     level?: number,
     isOpen?: boolean,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     navigate: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     location: any,
     onToggle?: (label: string) => void
 }) => {
     // Determine active state strictly (exact match or child match)
-    const isActiveLink = item.href === location.pathname;
-    const hasChildren = item.children && item.children.length > 0;
-    const isChildActive = hasChildren && item.children?.some(c => c.href === location.pathname);
+    // Note: item.path is optional for parents
+    const isActiveLink = item.path === location.pathname;
+
+    // FORCE FLAT RENDERING: User wants sub-menus to exist in data (for permissions/tabs) 
+    // but NOT be displayed in the sidebar. The sidebar should act as a flat list of top-level items.
+    const hasChildren = false; // item.children && item.children.length > 0;
+
+    const isChildActive = item.children?.some(c => c.path === location.pathname);
     const isMainActive = isActiveLink || isChildActive;
 
-    const Icon = item.icon;
+    // Icon handling: Item has component or string?
+    // In new definition it is component. In legacy it might be string. 
+    // We cover both.
+    let Icon = item.icon as any;
+    if (typeof item.icon === 'string') {
+        Icon = (LucideIcons as any)[item.icon] || LucideIcons.Circle;
+    }
+
+    // Fallback if no icon
+    if (!Icon && level === 0) Icon = LucideIcons.Circle;
+
     const iconSize = level > 0 ? "h-4 w-4" : "h-5 w-5";
     const isSubmenu = level > 0;
 
@@ -123,7 +118,7 @@ const DesktopMenuItem = ({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div className="flex items-center justify-center w-full h-full relative">
-                                            <Icon className={cn(iconSize, "shrink-0 transition-all", isSubmenu && "ml-1")} />
+                                            {Icon && <Icon className={cn(iconSize, "shrink-0 transition-all", isSubmenu && "ml-1")} />}
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent side="right">
@@ -133,7 +128,7 @@ const DesktopMenuItem = ({
                             </TooltipProvider>
                         ) : (
                             <>
-                                <Icon className={cn(iconSize, "shrink-0")} />
+                                {Icon && <Icon className={cn(iconSize, "shrink-0")} />}
                                 <div className="flex flex-1 items-center justify-between overflow-hidden">
                                     <span className="truncate font-medium">{item.label}</span>
                                     <ChevronDown
@@ -158,7 +153,7 @@ const DesktopMenuItem = ({
                                 level={level + 1}
                                 navigate={navigate}
                                 location={location}
-                                isOpen={isOpen} // simplistic recursion
+                                isOpen={isOpen}
                             />
                         ))}
                     </div>
@@ -179,10 +174,10 @@ const DesktopMenuItem = ({
                                 "w-full justify-center mb-1 h-10 px-0 hover:bg-muted/50",
                                 isMainActive && "bg-primary/15 text-primary font-semibold hover:bg-primary/20"
                             )}
-                            onClick={() => navigate(item.href!)}
+                            onClick={() => item.path && navigate(item.path)}
                         >
                             <div className="flex items-center justify-center w-full h-full">
-                                <Icon className={cn(iconSize, "shrink-0 transition-all", isSubmenu && "ml-1")} />
+                                {Icon && <Icon className={cn(iconSize, "shrink-0 transition-all", isSubmenu && "ml-1")} />}
                             </div>
                         </Button>
                     </TooltipTrigger>
@@ -200,18 +195,13 @@ const DesktopMenuItem = ({
                     "px-4"
                 )}
                 style={{ paddingLeft: `${16 + (level * 12)}px` }}
-                onClick={() => navigate(item.href!)}
+                onClick={() => item.path && navigate(item.path)}
             >
                 {isMainActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-r-full" />
                 )}
-                <Icon className={cn(iconSize, "shrink-0")} />
-                <span className="truncate font-medium flex-1 text-left">{item.label}</span>
-                {item.badge && (
-                    <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] flex items-center justify-center shadow-sm">
-                        {item.badge}
-                    </span>
-                )}
+                {Icon && <Icon className={cn(iconSize, "shrink-0")} />}
+                <span className={cn("truncate font-medium flex-1 text-left", !Icon && "pl-0")}>{item.label}</span>
             </Button>
         )
     )
@@ -249,7 +239,8 @@ export function DesktopSidebar() {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const location = useLocation()
-    const { t } = useTranslation()
+
+    const { menu, loading: menuLoading } = useMenu();
 
     const [collapsed, setCollapsed] = useState(() => {
         const saved = localStorage.getItem("sidebarCollapsed")
@@ -273,81 +264,13 @@ export function DesktopSidebar() {
         localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed))
     }, [collapsed])
 
-    const { hasPermission, user } = usePermissions()
-
-    const [menuItems, setMenuItems] = useState<MenuItem[]>([
-        {
-            icon: LucideIcons.LayoutDashboard,
-            label: t("İdarə etmə paneli"),
-            href: "/",
-        }
-    ]);
-
-    const [loading, setLoading] = useState(true);
-
-    // Load Menu based on Context
-    useEffect(() => {
-        // Simple check: start with /admin -> Admin Panel. Else -> Tenant Panel.
-        const isAdmin = location.pathname.startsWith('/admin');
-        let menus = isAdmin ? adminMenu : tenantMenu;
-
-        // ENTERPRISE SEPARATION:
-        // 1. If Tenant User (not SuperAdmin) tries to see Admin Menu -> Filter or Block
-        // Implementation: We rely on ProtectedRoute for blocking, but for Menu we hide System items.
-
-        // 2. Swagger / API Docs Visibility
-        // Requirement: "Swagger must NOT appear as a regular menu item for tenants"
-        // Requirement: "Admin Panel: Keep 'System Docs' as system-only section"
-
-        // Check if user is SuperAdmin (Mock Logic or Real)
-        // Assuming user.roles includes 'SUPER_ADMIN' or user.isSuperAdmin
-        // For now, checks if user has 'system:docs:read' or simply if they are strictly a tenant user
-
-        const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") || user?.email?.includes("admin"); // Temporary check
-
-        if (isAdmin) {
-            // Filter API Docs if not SuperAdmin
-            if (!isSuperAdmin) {
-                menus = menus.filter(m => m.label !== "API Docs");
-            }
-        } else {
-            // Tenant Panel
-            // Ensure Swagger is NOT present (It shouldn't be in tenantMenu, but double check)
-            menus = menus.filter(m => m.label !== "API Docs" && m.href !== "/admin/developer/docs");
-        }
-
-        // Transform for Sidebar (if needed, but structure matches)
-        // @ts-ignore
-        setMenuItems(menus);
-        setLoading(false);
-    }, [location.pathname, user]);
-
-    const filteredMenuItems = menuItems.filter(item => {
-        if (!item.requiredPermission) return true;
-        if (hasPermission(item.requiredPermission)) return true;
-
-        // Multi-Role Support: Check if ANY role is Owner/SuperAdmin
-        const userRoles: string[] = user?.roles || [];
-        // Fallback for transition if roles not populated but role is (legacy check, though we removed role string)
-        if (userRoles.length === 0 && (user as any)?.role) {
-            userRoles.push((user as any).role);
-        }
-
-        const isSuperUser = userRoles.some(r => {
-            const rName = typeof r === 'string' ? r : (r as any).name;
-            return rName?.toLowerCase() === 'owner' || rName?.toLowerCase() === 'superadmin';
-        });
-
-        return isSuperUser;
-    })
+    const filteredMenuItems = menu || [];
+    const loading = menuLoading;
 
     const handleLogout = async () => {
         try {
             await fetch('http://localhost:3000/api/v1/auth/logout', { method: 'POST' });
-        } catch {
-            // console.error("Logout failed", e);
-        }
-
+        } catch { }
         dispatch(logout())
         navigate('/login')
         setShowLogoutDialog(false)
@@ -405,17 +328,31 @@ export function DesktopSidebar() {
                                 />
                             ))}
                         </div>
-                    ) : filteredMenuItems.map((item, index) => (
-                        <DesktopMenuItem
-                            key={index}
-                            item={item}
-                            collapsed={collapsed}
-                            isOpen={openBaseMenus[item.label]}
-                            onToggle={toggleMenu}
-                            navigate={navigate}
-                            location={location}
-                        />
-                    ))}
+                    ) : filteredMenuItems.length > 0 ? (
+                        filteredMenuItems.map((item, index) => (
+                            <DesktopMenuItem
+                                key={index}
+                                item={item}
+                                collapsed={collapsed}
+                                isOpen={openBaseMenus[item.label]}
+                                onToggle={toggleMenu}
+                                navigate={navigate}
+                                location={location}
+                            />
+                        ))
+                    ) : (
+                        // EMPTY STATE (DEBUG-SAFE)
+                        !collapsed && (
+                            <div className="p-4 border border-dashed rounded-md text-center text-sm text-muted-foreground bg-muted/20">
+                                <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-amber-500 opacity-80" />
+                                <p className="font-semibold text-foreground">Navigasiya Yoxdur</p>
+                                <p className="text-xs mt-1 mb-3">Səlahiyyətiniz çatmır və ya menu yüklənmədi.</p>
+                                <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+                                    <RefreshCw className="h-3 w-3 mr-2" /> Yenilə
+                                </Button>
+                            </div>
+                        )
+                    )}
                 </div>
             </div>
 
@@ -441,7 +378,7 @@ export function DesktopSidebar() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56" side="right" sideOffset={10}>
                         <DropdownMenuItem onClick={() => navigate('/admin/profile')}>
-                            <LucideIcons.User className="mr-2 h-4 w-4" />
+                            <User className="mr-2 h-4 w-4" />
                             <span>Profil</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -449,7 +386,7 @@ export function DesktopSidebar() {
                             className="text-destructive focus:text-destructive"
                             onClick={() => setShowLogoutDialog(true)}
                         >
-                            <LucideIcons.LogOut className="mr-2 h-4 w-4" />
+                            <LogOut className="mr-2 h-4 w-4" />
                             <span>Çıxış</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

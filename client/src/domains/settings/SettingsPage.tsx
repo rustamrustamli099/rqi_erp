@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { cn } from "@/lib/utils"
+import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { Inline403 } from "@/shared/components/security/Inline403"
 // ...
 import { WorkflowConfigTab } from "@/shared/components/ui/WorkflowConfigTab"
 import { DictionariesTab } from "@/shared/components/ui/DictionariesTab"
@@ -103,8 +105,17 @@ const sidebarItems = [
 
 export default function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
+    const { can } = usePermissions()
     const activeTab = searchParams.get("tab") || "general"
     const [timezone, setTimezone] = useState("Asia/Baku")
+
+    if (!can('admin_panel.settings.read')) {
+        return (
+            <div className="p-8">
+                <Inline403 message="You do not have permission to view Settings." />
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">
@@ -217,18 +228,39 @@ export default function SettingsPage() {
                         )}
 
 
+
                         {/* 2. SMTP SETTINGS (SAP Style Logic) */}
-                        {activeTab === 'smtp' && <EmailSettingsTab />}
+                        {activeTab === 'smtp' && (
+                            can('admin_panel.settings.communication.smtp_email.read') ? (
+                                <EmailSettingsTab />
+                            ) : <Inline403 />
+                        )}
 
                         {/* 3. NOTIFICATIONS */}
-                        {activeTab === 'notifications' && <NotificationsTab />}
+                        {activeTab === 'notifications' && (
+                            can('admin_panel.settings.general.notification_engine.read') ? (
+                                <NotificationsTab />
+                            ) : <Inline403 />
+                        )}
 
                         {/* 5. SMS GATEWAY */}
-                        {activeTab === 'sms' && <SmsSettingsTab />}
+                        {activeTab === 'sms' && (
+                            can('admin_panel.settings.communication.smtp_sms.read') ? (
+                                <SmsSettingsTab />
+                            ) : <Inline403 />
+                        )}
 
                         {/* 6. SECURITY */}
-                        {activeTab === 'security' && <SecuritySettingsTab />}
-                        {activeTab === 'sso' && <SSOSettingsTab />}
+                        {activeTab === 'security' && (
+                            can('admin_panel.settings.security.security_policy.global_policy.read') ? (
+                                <SecuritySettingsTab />
+                            ) : <Inline403 />
+                        )}
+                        {activeTab === 'sso' && (
+                            can('admin_panel.settings.security.security_policy.global_policy.read') ? (
+                                <SSOSettingsTab />
+                            ) : <Inline403 />
+                        )}
 
 
                         {/* 7. APPROVALS HUB (Tabs) */}
@@ -269,12 +301,33 @@ export default function SettingsPage() {
                             </div>
                         )}
 
+
                         {/* --- EXISTING TABS MIGRATED --- */}
-                        {activeTab === 'billing-config' && <BillingConfigTab />}
-                        {activeTab === 'dictionaries' && <DictionariesTab />}
-                        {activeTab === 'templates' && <DocumentTemplatesTab />}
-                        {activeTab === 'workflow' && <WorkflowConfigTab />}
-                        {activeTab === 'roles' && <RolesPage />}
+                        {activeTab === 'billing-config' && (
+                            can('admin_panel.settings.system_configurations.billing_configurations.price_rules.read') ? (
+                                <BillingConfigTab />
+                            ) : <Inline403 />
+                        )}
+                        {activeTab === 'dictionaries' && (
+                            can('admin_panel.settings.read') ? (
+                                <DictionariesTab />
+                            ) : <Inline403 />
+                        )}
+                        {activeTab === 'templates' && (
+                            can('admin_panel.settings.system_configurations.document_templates.read') ? (
+                                <DocumentTemplatesTab />
+                            ) : <Inline403 />
+                        )}
+                        {activeTab === 'workflow' && (
+                            can('admin_panel.settings.system_configurations.workflow.configuration.read') ? (
+                                <WorkflowConfigTab />
+                            ) : <Inline403 />
+                        )}
+                        {activeTab === 'roles' && (
+                            can('admin_panel.users.roles.read') ? (
+                                <RolesPage />
+                            ) : <Inline403 />
+                        )}
 
                     </div>
                 </main>

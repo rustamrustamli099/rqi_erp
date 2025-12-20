@@ -36,6 +36,8 @@ import { UserFormDialog } from "@/shared/components/ui/UserFormDialog";
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { identityApi, type User } from "../api/identity.contract";
+import { useImpersonate } from "@/app/auth/hooks/useImpersonate";
+import { LogIn } from "lucide-react";
 
 const roleOptions = [
     { label: "Super Admin", value: "SuperAdmin" },
@@ -55,6 +57,7 @@ const statusOptions = [
 
 export function UsersListTab() {
     const [data, setData] = useState<User[]>([]);
+    const { impersonate } = useImpersonate();
 
     const fetchUsers = async () => {
 
@@ -277,6 +280,10 @@ export function UsersListTab() {
 
                             <DropdownMenuItem onClick={() => handleOpenRestrictions(user)}>
                                 <Timer className="mr-2 h-4 w-4" /> Məhdudiyyətlər
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem onClick={() => impersonate(user.id, user.name)}>
+                                <LogIn className="mr-2 h-4 w-4" /> Simulyasiya Et (Impersonate)
                             </DropdownMenuItem>
 
                             {!user.isVerified && (

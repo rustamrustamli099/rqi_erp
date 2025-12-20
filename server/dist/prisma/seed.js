@@ -1,312 +1,272 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
-const bcrypt = __importStar(require("bcrypt"));
 const prisma = new client_1.PrismaClient();
+const platform_permissions = {
+    dashboard: { perms: ['view'] },
+    tenants: { perms: ['read', 'create', 'update', 'delete'] },
+    branches: { perms: ['read', 'create', 'update', 'delete'] },
+    users: {
+        users: { perms: ['read', 'create', 'update', 'delete'] },
+        curators: { perms: ['read', 'create', 'update', 'delete'] },
+    },
+    billing: {
+        perms: ['read'],
+        marketplace: { perms: ['read', 'manage'] },
+        packages: { perms: ['read', 'manage'] },
+        plans: { perms: ['read', 'manage'] },
+        invoices: { perms: ['read', 'approve'] },
+        licenses: { perms: ['read', 'manage'] },
+    },
+    approvals: { perms: ['view', 'approve'] },
+    files: { perms: ['read', 'upload', 'delete'] },
+    guide: { perms: ['read', 'manage'] },
+    settings: {
+        perms: ['read'],
+        general: { perms: ['read', 'update'] },
+        communication: { perms: ['read', 'manage'] },
+        security: { perms: ['read', 'manage'] },
+        config: { perms: ['read', 'manage'] },
+    },
+    console: {
+        perms: ['read'],
+        dashboard: { perms: ['read'] },
+        audit: { perms: ['read', 'manage'] },
+        scheduler: { perms: ['read', 'execute'] },
+        retention: { perms: ['read', 'manage'] },
+        features: { perms: ['read', 'manage'] },
+        tools: { perms: ['read', 'execute'] },
+    },
+    dev: {
+        perms: ['read'],
+        api: { perms: ['read'] },
+        sdk: { perms: ['read'] },
+        webhooks: { perms: ['read', 'manage'] },
+    },
+};
+const ADMIN_MENU_TREE = [
+    { id: 'dashboard', label: 'İdarə etmə paneli', icon: 'LayoutDashboard', path: '/admin/dashboard', permission: 'platform.dashboard.view' },
+    { id: 'tenants', label: 'Tenantlar', icon: 'Building2', path: '/admin/tenants', permission: 'platform.tenants.read' },
+    { id: 'branches', label: 'Filiallar', icon: 'GitBranch', path: '/admin/branches', permission: 'platform.branches.read' },
+    {
+        id: 'users_group', label: 'İstifadəçilər', icon: 'Users', children: [
+            { id: 'users', label: 'İstifadəçilər', path: '/admin/users?tab=users', permission: 'platform.users.users.read' },
+            { id: 'curators', label: 'Kuratorlar', path: '/admin/users?tab=curators', permission: 'platform.users.curators.read' }
+        ]
+    },
+    {
+        id: 'billing', label: 'Bilinq', icon: 'CreditCard', children: [
+            { id: 'market_place', label: 'Marketplace', path: '/admin/billing?tab=market_place', permission: 'platform.billing.marketplace.read' },
+            { id: 'compact_packages', label: 'Kompakt Paketlər', path: '/admin/billing?tab=packages', permission: 'platform.billing.packages.read' },
+            { id: 'plans', label: 'Planlar', path: '/admin/billing?tab=plans', permission: 'platform.billing.plans.read' },
+            { id: 'invoices', label: 'Fakturalar', path: '/admin/billing?tab=invoices', permission: 'platform.billing.invoices.read' },
+            { id: 'licenses', label: 'Lisenziyalar', path: '/admin/billing?tab=licenses', permission: 'platform.billing.licenses.read' },
+        ]
+    },
+    { id: 'approvals', label: 'Təsdiqləmələr', icon: 'CheckSquare', path: '/admin/approvals', permission: 'platform.approvals.view' },
+    { id: 'files', label: 'Fayl Meneceri', icon: 'Folder', path: '/admin/files', permission: 'platform.files.read' },
+    { id: 'guide', label: 'Sistem Bələdçisi', icon: 'BookOpen', path: '/admin/guide', permission: 'platform.guide.read' },
+    {
+        id: 'settings', label: 'Tənzimləmələr', icon: 'Settings', children: [
+            {
+                id: 'general', label: 'Ümumi', icon: 'Sliders', children: [
+                    { id: 'company_profile', label: 'Şirkət Profili', path: '/admin/settings?tab=general', permission: 'platform.settings.general.read' },
+                    { id: 'notification_engine', label: 'Bildiriş Mühərriki', path: '/admin/settings?tab=notifications', permission: 'platform.settings.general.read' },
+                ]
+            },
+            {
+                id: 'communication', label: 'Kommunikasiya', icon: 'MessageSquare', children: [
+                    { id: 'smtp_email', label: 'SMTP Email', path: '/admin/settings?tab=smtp', permission: 'platform.settings.communication.read' },
+                    { id: 'smtp_sms', label: 'SMS Gateway', path: '/admin/settings?tab=sms', permission: 'platform.settings.communication.read' },
+                ]
+            },
+            {
+                id: 'security', label: 'Təhlükəsizlik', icon: 'Shield', children: [
+                    { id: 'policies', label: 'Siyasətlər', path: '/admin/settings?tab=security', permission: 'platform.settings.security.read' },
+                    { id: 'sso', label: 'SSO & OAuth', path: '/admin/settings?tab=sso', permission: 'platform.settings.security.read' },
+                    { id: 'rights', label: 'İstifadəçi Hüquqları', path: '/admin/settings?tab=roles', permission: 'platform.settings.security.read' },
+                ]
+            },
+            {
+                id: 'system_config', label: 'Sistem Konfiqurasiyası', icon: 'Database', children: [
+                    { id: 'billing_config', label: 'Bilinq Ayarları', path: '/admin/settings?tab=billing_config', permission: 'platform.settings.config.read' },
+                    {
+                        id: 'dictionaries', label: 'Soraqçalar', icon: 'Book', children: [
+                            { id: 'sectors', label: 'Sektorlar', path: '/admin/settings?tab=dictionaries&entity=sectors', permission: 'platform.settings.config.read' },
+                            { id: 'units', label: 'Ölçü Vahidləri', path: '/admin/settings?tab=dictionaries&entity=units', permission: 'platform.settings.config.read' },
+                            { id: 'currencies', label: 'Valyutalar', path: '/admin/settings?tab=dictionaries&entity=currencies', permission: 'platform.settings.config.read' },
+                            { id: 'time_zones', label: 'Saat Qurşaqları', path: '/admin/settings?tab=dictionaries&entity=time_zones', permission: 'platform.settings.config.read' },
+                            {
+                                id: 'addresses', label: 'Ünvanlar', children: [
+                                    { id: 'country', label: 'Ölkələr', path: '/admin/settings?tab=dictionaries&entity=country', permission: 'platform.settings.config.read' },
+                                    { id: 'city', label: 'Şəhərlər', path: '/admin/settings?tab=dictionaries&entity=city', permission: 'platform.settings.config.read' },
+                                    { id: 'district', label: 'Rayonlar', path: '/admin/settings?tab=dictionaries&entity=district', permission: 'platform.settings.config.read' },
+                                ]
+                            }
+                        ]
+                    },
+                    { id: 'templates', label: 'Sənəd Şablonları', path: '/admin/settings?tab=templates', permission: 'platform.settings.config.read' },
+                    { id: 'workflow', label: 'Workflow', path: '/admin/settings?tab=workflow', permission: 'platform.settings.config.read' },
+                ]
+            }
+        ]
+    },
+    {
+        id: 'system_console', label: 'Sistem Konsolu', icon: 'Terminal', children: [
+            { id: 'console_dash', label: 'Dashboard', path: '/admin/console?tab=dashboard', permission: 'platform.console.dashboard.read' },
+            { id: 'monitoring', label: 'Monitoring', path: '/admin/console?tab=monitoring', permission: 'platform.console.dashboard.read' },
+            { id: 'audit', label: 'Audit & Compliance', path: '/admin/console?tab=audit', permission: 'platform.console.audit.read' },
+            { id: 'scheduler', label: 'Job Scheduler', path: '/admin/console?tab=scheduler', permission: 'platform.console.scheduler.read' },
+            { id: 'retention', label: 'Data Retention', path: '/admin/console?tab=retention', permission: 'platform.console.retention.read' },
+            { id: 'feature_flags', label: 'Feature Flags', path: '/admin/console?tab=feature_flags', permission: 'platform.console.features.read' },
+            { id: 'policy_security', label: 'Policy Security', path: '/admin/console?tab=policy', permission: 'platform.console.audit.read' },
+            { id: 'feedback', label: 'Feedback', path: '/admin/console?tab=feedback', permission: 'platform.console.tools.read' },
+            { id: 'tools', label: 'Tools', path: '/admin/console?tab=tools', permission: 'platform.console.tools.read' },
+        ]
+    },
+    {
+        id: 'developer_hub', label: 'Developer Hub', icon: 'Code', children: [
+            { id: 'api', label: 'API Reference', path: '/admin/developer?tab=api', permission: 'platform.dev.api.read' },
+            { id: 'sdk', label: 'SDKs', path: '/admin/developer?tab=sdk', permission: 'platform.dev.sdk.read' },
+            { id: 'webhooks', label: 'Webhooks', path: '/admin/developer?tab=webhooks', permission: 'platform.dev.webhooks.read' },
+            { id: 'perm_map', label: 'Permission Map', path: '/admin/developer?tab=permissions', permission: 'platform.dev.read' },
+        ]
+    },
+];
+function flattenPermissions(obj, prefix = 'platform') {
+    let slugs = [];
+    for (const key in obj) {
+        if (key === 'perms' && Array.isArray(obj[key])) {
+            obj[key].forEach((action) => {
+                slugs.push(`${prefix}.${action}`);
+            });
+        }
+        else if (typeof obj[key] === 'object' && obj[key] !== null) {
+            const nextPrefix = prefix ? `${prefix}.${key}` : key;
+            slugs = slugs.concat(flattenPermissions(obj[key], nextPrefix));
+        }
+    }
+    return slugs;
+}
+function generateNameFromSlug(slug) {
+    return slug
+        .split('.')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).replace(/_/g, ' '))
+        .join(' - ');
+}
 async function main() {
-    console.log('Seeding database...');
-    let adminRole = await prisma.role.findFirst({ where: { name: 'admin' } });
-    if (!adminRole) {
-        adminRole = await prisma.role.create({
-            data: { name: 'admin', description: 'Administrator' }
+    console.log('🚀 Starting Database Seed...');
+    console.log('🧹 Cleaning Permissions and Menus...');
+    await prisma.menuItem.updateMany({ where: { permissionId: { not: null } }, data: { permissionId: null } });
+    await prisma.rolePermission.deleteMany({});
+    await prisma.menuItem.deleteMany({});
+    await prisma.menu.deleteMany({});
+    console.log('🌱 Seeding Permissions...');
+    const allSlugs = Array.from(new Set(flattenPermissions(platform_permissions)));
+    const permissionMap = new Map();
+    for (const slug of allSlugs) {
+        const parts = slug.split('.');
+        const moduleName = parts.length > 1 ? parts[1] : 'CORE';
+        const name = generateNameFromSlug(slug);
+        const perm = await prisma.permission.upsert({
+            where: { slug },
+            update: {
+                name: name,
+                module: moduleName
+            },
+            create: {
+                slug,
+                name: name,
+                description: `Permission for ${name}`,
+                module: moduleName
+            }
         });
+        permissionMap.set(slug, perm.id);
     }
-    let tenantRole = await prisma.role.findFirst({ where: { name: 'tenant_admin' } });
-    if (!tenantRole) {
-        tenantRole = await prisma.role.create({
-            data: { name: 'tenant_admin', description: 'Tenant Administrator' }
-        });
-    }
-    let ownerRole = await prisma.role.findFirst({ where: { name: 'owner' } });
+    console.log(`✅ Seeded ${allSlugs.length} permissions.`);
+    console.log('👑 Seeding Roles...');
+    const ownerRoleName = 'Owner';
+    let ownerRole = await prisma.role.findFirst({
+        where: { name: ownerRoleName, tenantId: null }
+    });
     if (!ownerRole) {
         ownerRole = await prisma.role.create({
-            data: { name: 'owner', description: 'System Owner (Super Admin)' }
-        });
-    }
-    const getPermId = async (slug) => {
-        const p = await prisma.permission.findUnique({ where: { slug } });
-        return p?.id;
-    };
-    const platformSidebar = await prisma.menu.upsert({
-        where: { slug: 'platform_sidebar' },
-        update: {},
-        create: { name: 'Platform Sidebar', slug: 'platform_sidebar' },
-    });
-    const tenantSidebar = await prisma.menu.upsert({
-        where: { slug: 'tenant_sidebar' },
-        update: {},
-        create: { name: 'Tenant Sidebar', slug: 'tenant_sidebar' },
-    });
-    const oldSidebar = await prisma.menu.findUnique({ where: { slug: 'admin_sidebar' } });
-    if (oldSidebar) {
-        await prisma.menuItem.deleteMany({ where: { menuId: oldSidebar.id } });
-        await prisma.menu.delete({ where: { id: oldSidebar.id } });
-    }
-    await prisma.menuItem.deleteMany({ where: { menuId: { in: [platformSidebar.id, tenantSidebar.id] } } });
-    console.log('Seeding Platform Sidebar...');
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'İdarə etmə paneli',
-            path: '/',
-            icon: 'LayoutDashboard',
-            order: 10,
-            permissionId: await getPermId('dashboard:view')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'İstifadəçilər',
-            path: '/admin/users',
-            icon: 'Users',
-            order: 15,
-            permissionId: await getPermId('system:users:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'Təsdiqləmələr',
-            path: '/admin/approvals',
-            icon: 'CheckSquare',
-            order: 16,
-            permissionId: await getPermId('admin:approvals:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'Tenantlar',
-            path: '/admin/tenants',
-            icon: 'Building',
-            order: 20,
-            permissionId: await getPermId('system:tenants:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'Tənzimləmələr',
-            path: '/admin/settings',
-            icon: 'Settings',
-            order: 50,
-            permissionId: await getPermId('system:config:general:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: platformSidebar.id,
-            title: 'Abunə Sistemi',
-            path: '/admin/billing',
-            icon: 'CreditCard',
-            order: 25,
-            permissionId: await getPermId('system:billing:read')
-        }
-    });
-    console.log('Seeding Tenant Sidebar...');
-    await prisma.menuItem.create({
-        data: {
-            menuId: tenantSidebar.id,
-            title: 'İdarə etmə paneli',
-            path: '/',
-            icon: 'LayoutDashboard',
-            order: 10,
-            permissionId: await getPermId('dashboard:view')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: tenantSidebar.id,
-            title: 'İstifadəçilər',
-            path: '/users',
-            icon: 'Users',
-            order: 20,
-            permissionId: await getPermId('users:read')
-        }
-    });
-    const configParent = await prisma.menuItem.create({
-        data: {
-            menuId: tenantSidebar.id,
-            title: 'Tənzimləmələr',
-            path: '/settings',
-            icon: 'Settings',
-            order: 30,
-            permissionId: await getPermId('config:roles:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: tenantSidebar.id,
-            parentId: configParent.id,
-            title: 'Rollar',
-            path: '/settings/roles',
-            icon: 'Shield',
-            order: 31,
-            permissionId: await getPermId('config:roles:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: tenantSidebar.id,
-            parentId: configParent.id,
-            title: 'Soraqçalar',
-            path: '/settings/dictionaries',
-            icon: 'Book',
-            order: 32,
-            title: 'Soraqçalar',
-            path: '/settings/dictionaries',
-            icon: 'Book',
-            order: 32,
-            permissionId: await getPermId('config:dict:currencies:read')
-        }
-    });
-    await prisma.menuItem.create({
-        data: {
-            menuId: tenantSidebar.id,
-            parentId: configParent.id,
-            title: 'Fayllar',
-            path: '/settings/files',
-            icon: 'FileText',
-            order: 33,
-            permissionId: await getPermId('config:dox_templates:read')
-        }
-    });
-    console.log('Seeding Permissions...');
-    function extractPermissions(obj, acc = []) {
-        for (const key in obj) {
-            const val = obj[key];
-            if (val && typeof val === 'object') {
-                if ('slug' in val && 'description' in val && 'scope' in val) {
-                    acc.push(val);
-                }
-                else {
-                    extractPermissions(val, acc);
-                }
-            }
-        }
-        return acc;
-    }
-    const { PERMISSIONS } = require('../src/common/constants/permissions');
-    const permissionList = extractPermissions(PERMISSIONS);
-    const allPermissions = [];
-    for (const perm of permissionList) {
-        const parts = perm.slug.split(':');
-        const moduleName = parts[0];
-        const p = await prisma.permission.upsert({
-            where: { slug: perm.slug },
-            update: { description: perm.description, module: moduleName, scope: perm.scope },
-            create: {
-                slug: perm.slug,
-                description: perm.description,
-                module: moduleName,
-                scope: perm.scope
-            }
-        });
-        allPermissions.push(p);
-    }
-    console.log(`Seeded ${allPermissions.length} permissions.`);
-    console.log('Assigning Permissions to Roles...');
-    await prisma.rolePermission.deleteMany({ where: { roleId: { in: [ownerRole.id, adminRole.id] } } });
-    for (const p of allPermissions) {
-        await prisma.rolePermission.create({
-            data: { roleId: ownerRole.id, permissionId: p.id }
-        });
-    }
-    for (const p of allPermissions) {
-        await prisma.rolePermission.create({
-            data: { roleId: adminRole.id, permissionId: p.id }
-        });
-    }
-    const pSettingsRead = await prisma.permission.findFirst({
-        where: { slug: { contains: 'system:config' } }
-    });
-    const passwordHash = await bcrypt.hash('password123', 10);
-    let defaultTenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
-    if (!defaultTenant) {
-        defaultTenant = await prisma.tenant.create({
             data: {
-                name: 'Default Tenant',
-                slug: 'default'
+                name: ownerRoleName,
+                description: 'System Owner (Full Access)',
+                isSystem: true,
+                tenantId: null
             }
         });
     }
-    const adminUser = await prisma.user.upsert({
-        where: { email: 'admin@example.com' },
-        update: {
-            roleId: ownerRole.id
-        },
-        create: {
-            email: 'admin@example.com',
-            password: passwordHash,
-            fullName: 'Admin User',
-            tenantId: defaultTenant.id,
-            roleId: ownerRole.id
-        }
+    console.log(`✅ Owner Role ID: ${ownerRole.id}`);
+    console.log('🔗 Assigning permissions to Owner...');
+    const rolePermissionsData = allSlugs.map(slug => ({
+        roleId: ownerRole.id,
+        permissionId: permissionMap.get(slug)
+    }));
+    await prisma.rolePermission.createMany({
+        data: rolePermissionsData,
+        skipDuplicates: true
     });
-    console.log('Seeding Sectors...');
-    const sectors = [
-        'Information Technology', 'Finance', 'Healthcare', 'Education',
-        'Construction', 'Retail', 'Logistics', 'Manufacturing', 'Other'
-    ];
-    for (const name of sectors) {
-        const slug = name.toLowerCase().replace(/ /g, '-');
-        await prisma.sector.upsert({
-            where: { slug },
-            update: {},
-            create: { name, slug }
-        });
+    console.log('✅ Permissions assigned to Owner.');
+    console.log('Navigation: Seeding Menus...');
+    const platformSidebar = await prisma.menu.create({
+        data: { name: 'Platform Sidebar', slug: 'platform_sidebar' }
+    });
+    async function seedMenuItems(items, parentId = null, menuId) {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            let permId = null;
+            if (item.permission) {
+                permId = permissionMap.get(item.permission);
+                if (!permId)
+                    console.warn(`⚠️ Warning: Permission '${item.permission}' for menu '${item.label}' not found in DB.`);
+            }
+            const createdItem = await prisma.menuItem.create({
+                data: {
+                    menuId: menuId,
+                    parentId: parentId,
+                    title: item.label,
+                    icon: item.icon,
+                    path: item.path,
+                    order: i,
+                    permissionId: permId
+                }
+            });
+            if (item.children && item.children.length > 0) {
+                await seedMenuItems(item.children, createdItem.id, menuId);
+            }
+        }
     }
-    console.log('Seeding Timezones...');
-    const timezones = [
-        { name: 'Asia/Baku', offset: '+04:00', description: 'Azerbaijan Time' },
-        { name: 'Europe/Istanbul', offset: '+03:00', description: 'Turkey Time' },
-        { name: 'Europe/London', offset: '+00:00', description: 'Greenwich Mean Time' },
-        { name: 'America/New_York', offset: '-05:00', description: 'Eastern Standard Time' },
-        { name: 'UTC', offset: '+00:00', description: 'Coordinated Universal Time' }
-    ];
-    for (const tz of timezones) {
-        await prisma.timezone.upsert({
-            where: { name: tz.name },
-            update: {},
-            create: tz
+    await seedMenuItems(ADMIN_MENU_TREE, null, platformSidebar.id);
+    console.log('✅ Menu tree seeded.');
+    console.log('🔧 Fixing User Access...');
+    const ownerUsers = await prisma.user.findMany({ where: { isOwner: true } });
+    for (const u of ownerUsers) {
+        console.log(`... Updating user ${u.email} to have Owner role`);
+        await prisma.user.update({
+            where: { id: u.id },
+            data: { roleId: ownerRole.id }
         });
+        const existingAssignment = await prisma.userRole.findFirst({
+            where: {
+                userId: u.id,
+                roleId: ownerRole.id
+            }
+        });
+        if (!existingAssignment) {
+            await prisma.userRole.create({
+                data: {
+                    userId: u.id,
+                    roleId: ownerRole.id,
+                    tenantId: u.tenantId
+                }
+            });
+        }
     }
-    console.log('Admin User created:', adminUser.email);
-    console.log('Seeding completed.');
+    console.log(`✅ Updated ${ownerUsers.length} owner users.`);
+    console.log('🎉 Seeding completed successfully!');
 }
 main()
     .catch((e) => {

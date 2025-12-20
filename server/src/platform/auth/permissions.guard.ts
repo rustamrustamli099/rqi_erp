@@ -2,7 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
 import { PermissionCacheService } from './permission-cache.service';
-import { AuditService } from '../audit/audit.service';
+import { AuditService } from '../../system/audit/audit.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -37,7 +37,9 @@ export class PermissionsGuard implements CanActivate {
         };
 
         try {
-            // 1. OWNER BYPASS
+            // 1. OWNER BYPASS - REMOVED for Strict DB Enforcement
+            // isOwner flag is no longer a magic pass. Permissions must be in DB.
+
             const userRole = (user as any).role;
             // 2. CACHE LOOKUP (Redis First)
             const scope = user.tenantId ? 'TENANT' : 'SYSTEM';

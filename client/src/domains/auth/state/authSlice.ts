@@ -9,6 +9,7 @@ export interface User {
     // role: string; // DEPRECATED: Use roles[]
     roles: string[]; // Multi-Role
     permissions: string[];
+    isOwner?: boolean;
     managedTenantIds?: string[];
 }
 
@@ -20,7 +21,7 @@ interface AuthState {
 
 // Mock initial state for development
 // Check local storage for existing token
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('accessToken');
 const userStr = localStorage.getItem('user');
 const user = userStr ? JSON.parse(userStr) : null;
 
@@ -41,14 +42,14 @@ const authSlice = createSlice({
             state.user = user
             state.token = token
             state.isAuthenticated = true
-            localStorage.setItem('token', token)
+            localStorage.setItem('accessToken', token)
             localStorage.setItem('user', JSON.stringify(user))
         },
         logout: (state) => {
             state.user = null
             state.token = null
             state.isAuthenticated = false
-            localStorage.removeItem('token')
+            localStorage.removeItem('accessToken')
             localStorage.removeItem('user')
         },
     },

@@ -5,6 +5,9 @@ export declare class RedisService implements OnModuleInit, OnModuleDestroy {
     private configService;
     private client;
     private readonly logger;
+    private memoryStore;
+    private isRedisConnected;
+    private lastErrorLogTime;
     constructor(configService: ConfigService);
     onModuleInit(): void;
     onModuleDestroy(): void;

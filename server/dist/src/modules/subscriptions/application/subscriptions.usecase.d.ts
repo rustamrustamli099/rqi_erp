@@ -44,10 +44,13 @@ export declare class SubscriptionsUseCase {
             id: string;
             name: string;
             slug: string;
+            parentTenantId: string | null;
             email: string | null;
             phone: string | null;
             website: string | null;
             status: string;
+            type: import("@prisma/client").$Enums.TenantType;
+            isSystem: boolean;
             address: Prisma.JsonValue | null;
             createdAt: Date;
             updatedAt: Date;

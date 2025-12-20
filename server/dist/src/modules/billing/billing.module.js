@@ -12,11 +12,14 @@ const schedule_1 = require("@nestjs/schedule");
 const billing_usecase_1 = require("./application/billing.usecase");
 const billing_event_listener_1 = require("./infrastructure/events/billing.event-listener");
 const billing_cron_1 = require("./infrastructure/cron/billing.cron");
+const billing_engine_1 = require("./application/billing.engine");
+const commission_service_1 = require("./application/commission.service");
 const prisma_service_1 = require("../../prisma.service");
 const prisma_subscription_repository_1 = require("./infrastructure/prisma-subscription.repository");
 const prisma_invoice_repository_1 = require("./infrastructure/prisma-invoice.repository");
 const packages_module_1 = require("../packages/packages.module");
 const billing_controller_1 = require("./api/billing.controller");
+const finance_controller_1 = require("./api/finance.controller");
 let BillingModule = class BillingModule {
 };
 exports.BillingModule = BillingModule;
@@ -26,7 +29,7 @@ exports.BillingModule = BillingModule = __decorate([
             schedule_1.ScheduleModule,
             packages_module_1.PackagesModule
         ],
-        controllers: [billing_controller_1.BillingController],
+        controllers: [billing_controller_1.BillingController, finance_controller_1.FinanceController],
         providers: [
             billing_usecase_1.BillingUseCase,
             billing_event_listener_1.BillingEventListener,
@@ -39,9 +42,11 @@ exports.BillingModule = BillingModule = __decorate([
             {
                 provide: 'IInvoiceRepository',
                 useClass: prisma_invoice_repository_1.PrismaInvoiceRepository,
-            }
+            },
+            billing_engine_1.BillingEngine,
+            commission_service_1.CommissionService
         ],
-        exports: [billing_usecase_1.BillingUseCase],
+        exports: [billing_usecase_1.BillingUseCase, billing_engine_1.BillingEngine, commission_service_1.CommissionService],
     })
 ], BillingModule);
 //# sourceMappingURL=billing.module.js.map

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/command"
 import { useNavigate } from "react-router-dom"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { PermissionSlugs } from "@/app/security/permission-slugs"
 
 export function GlobalSearchDialog() {
     const [open, setOpen] = React.useState(false)
@@ -71,7 +72,7 @@ export function GlobalSearchDialog() {
                         <CommandShortcut>🏠</CommandShortcut>
                     </CommandItem>
 
-                    {can('users.view') && (
+                    {can(PermissionSlugs.PLATFORM.USERS.READ) && (
                         <CommandItem
                             onSelect={() => runCommand(() => navigate("/admin/users"))}
                         >
@@ -80,7 +81,7 @@ export function GlobalSearchDialog() {
                         </CommandItem>
                     )}
 
-                    {can('tenants.view') && (
+                    {can(PermissionSlugs.PLATFORM.TENANTS.READ) && (
                         <CommandItem
                             onSelect={() => runCommand(() => navigate("/admin/tenants"))}
                         >
@@ -89,15 +90,15 @@ export function GlobalSearchDialog() {
                         </CommandItem>
                     )}
 
-                    {can('finance.view') && (
+                    {can(PermissionSlugs.PLATFORM.BILLING.READ) && (
                         <CommandItem
-                            onSelect={() => runCommand(() => navigate("/admin/finance"))}
+                            onSelect={() => runCommand(() => navigate("/admin/billing"))}
                         >
                             <CreditCard className="mr-2 h-4 w-4" />
-                            <span>Maliyyə</span>
+                            <span>Bilinq və Maliyyə</span>
                         </CommandItem>
                     )}
-                    {can('approvals.view') && (
+                    {can(PermissionSlugs.PLATFORM.APPROVALS.VIEW) && (
                         <CommandItem
                             onSelect={() => runCommand(() => navigate("/admin/approvals"))}
                         >
@@ -118,7 +119,7 @@ export function GlobalSearchDialog() {
                         <CommandShortcut>⌘P</CommandShortcut>
                     </CommandItem>
 
-                    {can('settings.view') && (
+                    {can(PermissionSlugs.PLATFORM.SETTINGS.READ) && (
                         <CommandItem
                             onSelect={() => runCommand(() => navigate("/admin/settings"))}
                         >
@@ -130,7 +131,7 @@ export function GlobalSearchDialog() {
                 </CommandGroup>
 
                 <CommandGroup heading="Alətlər">
-                    {can('system.console.view') && (
+                    {can(PermissionSlugs.PLATFORM.CONSOLE.READ) && (
                         <CommandItem
                             onSelect={() => runCommand(() => navigate("/admin/console"))}
                         >

@@ -1,4 +1,4 @@
-const admin_panel_permissions = {
+export const admin_panel_permissions = {
     dashboard: {
         perms: ['read']
     },

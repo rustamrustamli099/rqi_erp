@@ -1,66 +1,62 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma.service';
+import { ADMIN_MENU_TREE, MenuItem } from '../../../platform/menu/menu.definition';
 
 @Injectable()
 export class MenusUseCase {
     constructor(private readonly prisma: PrismaService) { }
 
-    async getSidebar(roleNames: string[]) {
-        // Determine which menu to serve
-        // If user has Owner or SuperAdmin role, they get the Platform Sidebar
-        // Otherwise they get the Tenant Sidebar
-        // Normalize roles to lowercase to be safe, or check specifically for 'owner'
-        const lowerRoles = roleNames.map(r => r.toLowerCase());
-        const isPlatformAdmin = lowerRoles.includes('owner') || lowerRoles.includes('superadmin');
-        const menuSlug = isPlatformAdmin ? 'platform_sidebar' : 'tenant_sidebar';
+    async getSidebar(user: any) {
+        // Source of Truth: Code (ADMIN_MENU_TREE)
+        // Filtering: Code (Permissions)
 
-        return this.prisma.menu.findUnique({
-            where: { slug: menuSlug },
-            include: {
-                items: {
-                    orderBy: { order: 'asc' },
-                    where: { parentId: null }, // Top level
-                    include: {
-                        permission: true, // Include Permission
-                        children: {
-                            orderBy: { order: 'asc' },
-                            include: {
-                                permission: true, // Include Permission
-                                children: {
-                                    orderBy: { order: 'asc' },
-                                    include: {
-                                        permission: true // Include Permission
-                                    }
-                                }
-                            }
-                        }
+        // 1. Owner Bypass
+        if (user.isOwner) {
+            return this.enrichMenu(ADMIN_MENU_TREE);
+        }
+
+        // 2. Permission Filtering
+        const userPermissions = new Set<string>((user.permissions as string[]) || []);
+
+        return this.filterMenu(ADMIN_MENU_TREE, userPermissions);
+    }
+
+    private enrichMenu(items: MenuItem[]): any[] {
+        return items.map(item => ({
+            ...item,
+            children: item.children ? this.enrichMenu(item.children) : undefined
+        }));
+    }
+
+    private filterMenu(items: MenuItem[], userPermissions: Set<string>): any[] {
+        const filtered: any[] = [];
+
+        for (const item of items) {
+            // Check Permission
+            const hasPermission = !item.permission || userPermissions.has(item.permission);
+
+            if (hasPermission) {
+                // If has children, filter them
+                if (item.children) {
+                    const filteredChildren = this.filterMenu(item.children, userPermissions);
+                    // Only include if item has no children requirement OR has visible children
+                    if (filteredChildren.length > 0 || !item.children.length) { // Keep parent if children exist or empty array allowed? Usually collapse empty parents.
+                        // Let's keep parent if it has a permission itself, even if children are empty? 
+                        // Or if it's a folder, hide if empty?
+                        // Simple logic: include filtered children. 
+                        filtered.push({ ...item, children: filteredChildren });
                     }
+                } else {
+                    filtered.push(item);
                 }
             }
-        });
+        }
+
+        return filtered;
     }
 
     async createDefaultMenu() {
-        // Seeding logic (call this manually or via seed script)
-        // Legacy seeding logic - Disabling in favor of seed.ts
+        // [DEPRECATED] DB Menu Seeding disabled.
         return;
-        /*
-        const exists = await this.prisma.menu.findUnique({ where: { slug: 'admin_sidebar' } });
-        if (exists) return;
-
-        return this.prisma.menu.create({
-            data: {
-                name: 'Admin Sidebar',
-                slug: 'admin_sidebar',
-                items: {
-                    create: [
-                        { title: 'Dashboard', icon: 'LayoutDashboard', path: '/admin', order: 1 },
-                        { title: 'Users & Curator', icon: 'Users', path: '/admin/users', order: 2, permission: { create: { slug: 'admin:users:read', module: 'Users' } } },
-                        { title: 'Settings', icon: 'Settings', path: '/admin/settings', order: 99 }
-                    ]
-                }
-            }
-        });
-        */
     }
 }

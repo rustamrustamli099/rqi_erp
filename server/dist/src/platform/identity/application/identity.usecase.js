@@ -27,6 +27,9 @@ let IdentityUseCase = class IdentityUseCase {
     async findUserByEmail(email) {
         return this.userRepository.findByEmail(email);
     }
+    async findAllUsers(tenantId) {
+        return this.userRepository.findAll(tenantId);
+    }
     async findUserById(id) {
         return this.userRepository.findById(id);
     }

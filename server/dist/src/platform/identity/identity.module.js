@@ -10,6 +10,7 @@ exports.IdentityModule = void 0;
 const common_1 = require("@nestjs/common");
 const identity_usecase_1 = require("./application/identity.usecase");
 const identity_controller_1 = require("./api/identity.controller");
+const users_controller_1 = require("./api/users.controller");
 const auth_module_1 = require("../auth/auth.module");
 const prisma_service_1 = require("../../prisma.service");
 const prisma_user_repository_1 = require("./infrastructure/prisma-user.repository");
@@ -22,7 +23,7 @@ exports.IdentityModule = IdentityModule;
 exports.IdentityModule = IdentityModule = __decorate([
     (0, common_1.Module)({
         imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
-        controllers: [identity_controller_1.IdentityController],
+        controllers: [identity_controller_1.IdentityController, users_controller_1.UsersController],
         providers: [
             identity_usecase_1.IdentityUseCase,
             prisma_service_1.PrismaService,

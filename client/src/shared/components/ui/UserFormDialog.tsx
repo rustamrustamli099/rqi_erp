@@ -27,53 +27,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { MultiSelect } from "@/shared/components/ui/multi-select"
 import { Combobox } from "@/shared/components/ui/combobox"
-import { Lock, Unlock, Shield, AlertCircle } from "lucide-react"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-
-const ROLES_BY_SCOPE = {
-    SYSTEM: ["SuperAdmin", "SystemAuditor", "SupportAdmin"],
-    TENANT: ["TenantAdmin", "Manager", "User", "Viewer", "FinanceUser", "HRManager"]
-};
-
-// Mock Permissions Data
-const PERMISSIONS_BY_ROLE: Record<string, string[]> = {
-    SuperAdmin: ["system:all", "tenant:all", "billing:all", "audit:read"],
-    SystemAuditor: ["audit:read", "system:read", "tenant:read"],
-    SupportAdmin: ["tenant:impersonate", "system:read", "ticket:manage"],
-    TenantAdmin: ["tenant:manage", "user:manage", "billing:read", "role:manage"],
-    Manager: ["user:read", "report:view", "approval:approve"],
-    FinanceUser: ["billing:view", "invoice:download", "payment:manage"],
-    HRManager: ["employee:manage", "leave:approve", "payroll:view"],
-    User: ["self:manage", "task:create", "task:read"],
-    Viewer: ["dashboard:view", "report:read"],
-};
-
-const PERMISSION_DESCRIPTIONS: Record<string, string> = {
-    "system:all": "Tam Sistem İdarəetməsi",
-    "tenant:all": "Bütün Tenantların İdarəsi",
-    "billing:all": "Tam Biling İdarəsi",
-    "audit:read": "Audit Loglarına Baxış",
-    "system:read": "Sistem Məlumatlarına Baxış",
-    "tenant:impersonate": "Tenant Login (Impersonation)",
-    "ticket:manage": "Texniki Dəstək",
-    "tenant:manage": "Tenant Konfiqurasiyası",
-    "user:manage": "İstifadəçi İdarəçiliyi",
-    "billing:read": "Biling Məlumatlarına Baxış",
-    "role:manage": "Rol İdarəçiliyi",
-    "report:view": "Hesabatlara Baxış",
-    "approval:approve": "Təsdiqləmə",
-    "billing:view": "Fakturalara Baxış",
-    "invoice:download": "Faktura Yükləmə",
-    "payment:manage": "Ödəniş Etmə",
-    "employee:manage": "Əməkdaş İdarəçiliyi",
-    "leave:approve": "Məzuniyyət Təsdiqi",
-    "payroll:view": "Əməkhaqqı Məlumatları",
-    "self:manage": "Şəxsi Profilin İdarəsi",
-    "task:create": "Tapşırıq Yaratma",
-    "task:read": "Tapşırıqlara Baxış",
-    "dashboard:view": "Dashboard Baxışı",
-    "report:read": "Hesabat Oxuma"
-};
+import type { Role } from "@/domains/system-console/api/system.contract"
 
 
 const MOCK_TENANTS = [
@@ -117,17 +72,17 @@ interface UserFormDialogProps {
     initialData?: {
         name: string;
         email: string;
-        role: string; // Legacy single role string
+        role: string; // Legacy single role string or comma separated
         status: "Active" | "Inactive";
         scope?: ScopeType;
         tenantId?: string;
     } | null
     onSubmit: (values: z.infer<typeof formSchema>) => void
     mode: "create" | "edit"
-    allowedRoles?: string[]
+    availableRoles: Role[] // Dynamic roles from API
 }
 
-export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode, allowedRoles }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode, availableRoles = [] }: UserFormDialogProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -143,26 +98,6 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
 
     // Watch scope to filter roles
     const selectedScope = form.watch("scope") as ScopeType;
-    const selectedRoles = form.watch("roles");
-
-    // EFFECT: Consolidate Permissions
-    const [activePermissions, setActivePermissions] = useState<string[]>([]);
-
-    useEffect(() => {
-        if (!selectedRoles) {
-            setActivePermissions([]);
-            return;
-        }
-
-        const allPerms = new Set<string>();
-        selectedRoles.forEach(role => {
-            const rolePerms = PERMISSIONS_BY_ROLE[role] || [];
-            rolePerms.forEach(p => allPerms.add(p));
-        });
-        setActivePermissions(Array.from(allPerms).sort());
-
-    }, [selectedRoles]);
-
 
     useEffect(() => {
         if (open) {
@@ -176,9 +111,13 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
                     ? initialData.role.split(',').map(r => r.trim())
                     : [initialData.role];
 
-                // Infer scope from first role if system role exists
-                if (initialRoles.some(r => ROLES_BY_SCOPE.SYSTEM.includes(r))) {
-                    inferredScope = "SYSTEM";
+                // Infer scope from roles if possible (check against availableRoles)
+                // This is a best-guess if scope isn't explicit
+                const foundRole = availableRoles.find(r => initialRoles.includes(r.name));
+                if (foundRole && foundRole.scope) {
+                    inferredScope = foundRole.scope as ScopeType;
+                } else if (initialData.scope) {
+                    inferredScope = initialData.scope;
                 }
             }
 
@@ -192,13 +131,16 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
                 sendInvitation: mode === 'create',
             })
         }
-    }, [initialData, open, form, mode])
+    }, [initialData, open, form, mode, availableRoles])
 
     // Reset role when scope changes
     const handleScopeChange = (value: ScopeType) => {
         form.setValue("scope", value);
         form.setValue("roles", []); // CLEAR roles
-        form.setValue("tenantId", ""); // Clear tenant
+        // Optional: clear tenant if switching to SYSTEM
+        if (value === 'SYSTEM') {
+            form.setValue("tenantId", "");
+        }
     };
 
     const handleSubmit = (values: z.infer<typeof formSchema>) => {
@@ -210,12 +152,18 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
         ? "Yeni istifadəçi məlumatlarını daxil edin."
         : "İstifadəçi məlumatlarını yeniləyin."
 
-    // specific filtering
-    const availableRoleNames = allowedRoles
-        ? allowedRoles.filter(r => ROLES_BY_SCOPE[selectedScope].includes(r))
-        : ROLES_BY_SCOPE[selectedScope];
+    // Filter roles based on selected scope
+    // API roles usually come with 'scope' property. If legacy mock roles don't have it, assume custom logic.
+    // Ensure case-insensitive comparison if needed, or exact match.
+    const filteredRoles = availableRoles.filter(r =>
+        (r.scope?.toUpperCase() || "TENANT") === selectedScope ||
+        (selectedScope === "TENANT" && !r.scope) // Default to tenant if missing
+    );
 
-    const roleOptions = availableRoleNames.map(r => ({ label: r, value: r }));
+    const roleOptions = filteredRoles.map(r => ({ label: r.name, value: r.name }));
+    // Usually value should be ID, but legacy code seemed to use Name. 
+    // Keeping Name as value for now to match backend expectation if it expects role names. 
+    // Ideally refactor to use IDs.
 
     return (
         <Modal
@@ -366,29 +314,6 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
                                 )}
                             />
 
-                            {/* PERMISSION PREVIEW */}
-                            {activePermissions.length > 0 && (
-                                <div className="rounded-md border bg-muted/30 p-4 space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Shield className="w-4 h-4 text-emerald-600" />
-                                        <h4 className="font-semibold text-sm">Aktiv Səlahiyyətlər (Permissions)</h4>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {activePermissions.map(perm => (
-                                            <Badge key={perm} variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200">
-                                                {PERMISSION_DESCRIPTIONS[perm] || perm}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {activePermissions.length === 0 && selectedRoles.length > 0 && (
-                                <div className="rounded-md border border-dashed p-4 flex items-center justify-center text-muted-foreground text-sm gap-2">
-                                    <AlertCircle className="w-4 h-4" /> Bu rol üçün xüsusi səlahiyyətlər təyin edilməyib.
-                                </div>
-                            )}
-
-
                             {mode === 'create' && (
                                 <FormField
                                     control={form.control}
@@ -424,3 +349,4 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
         </Modal>
     )
 }
+

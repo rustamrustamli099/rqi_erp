@@ -96,6 +96,7 @@ let AuthService = class AuthService {
             sub: user.id,
             tenantId: user.tenantId,
             roles: roleNames,
+            isOwner: user.isOwner,
             familyId
         };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
@@ -114,6 +115,7 @@ let AuthService = class AuthService {
                 email: user.email,
                 fullName: user.fullName,
                 roles: roleNames,
+                isOwner: user.isOwner,
                 permissions: effectivePermissions
             }
         };
@@ -153,6 +155,7 @@ let AuthService = class AuthService {
             sub: user.id,
             tenantId: user.tenantId,
             roles: user.roles?.map((ur) => ur.role?.name) || [],
+            isOwner: user.isOwner,
             familyId
         };
         const accessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });

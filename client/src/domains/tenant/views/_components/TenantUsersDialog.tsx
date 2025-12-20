@@ -18,7 +18,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Trash, Mail, Shield, Edit, UserPlus, CheckCircle2, XCircle, MoreHorizontal, User as UserIcon } from "lucide-react"
+import { Trash, Mail, Shield, Edit, UserPlus, CheckCircle2, XCircle, MoreHorizontal, User as UserIcon, LogIn } from "lucide-react"
 import { toast } from "sonner"
 import {
     flexRender,
@@ -40,6 +40,7 @@ import {
 import { UserFormDialog } from "@/shared/components/ui/UserFormDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { DataTablePagination } from "@/components/ui/data-table-pagination"
+import { useImpersonate } from "@/app/auth/hooks/useImpersonate"
 
 interface TenantUser {
     id: string
@@ -65,6 +66,7 @@ const MOCK_USERS: TenantUser[] = [
 export function TenantUsersDialog({ open, onOpenChange, tenantId: _tenantId, tenantName }: TenantUsersDialogProps) {
     const [users, setUsers] = useState<TenantUser[]>(MOCK_USERS)
     const [sorting, setSorting] = useState<SortingState>([])
+    const { impersonate } = useImpersonate()
 
     // Form Dialog State
     const [isUserFormOpen, setIsUserFormOpen] = useState(false)
@@ -194,6 +196,10 @@ export function TenantUsersDialog({ open, onOpenChange, tenantId: _tenantId, ten
                                 <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => impersonate(user.id, user.name)}>
+                                <LogIn className="mr-2 h-4 w-4" /> Simulyasiya Et
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => confirmDelete(user)} className="text-red-600">
                                 <Trash className="mr-2 h-4 w-4" /> Sil
                             </DropdownMenuItem>

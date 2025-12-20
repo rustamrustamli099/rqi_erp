@@ -6,7 +6,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/components/ui/dialog"
-import { MOCK_COUNTRIES, MOCK_MODULES, MOCK_PLANS } from "@/shared/constants/reference-data"
+import { MOCK_COUNTRIES, MOCK_MODULES, MOCK_PLANS, ENTREPRENEURSHIP_SUBJECTS } from "@/shared/constants/reference-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,6 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Combobox } from "@/shared/components/ui/combobox"
 import type { Tenant, UserSector } from "@/types/schema"
 import { useState, useMemo } from "react"
 
@@ -165,7 +166,7 @@ export function TenantCreateDialog({
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Sahibkarlıq</Label>
+                                        <Label>Sahibkarlıq Subyekti</Label>
                                         <Select
                                             value={entrepreneurshipSubject}
                                             onValueChange={setEntrepreneurshipSubject}
@@ -174,10 +175,14 @@ export function TenantCreateDialog({
                                                 <SelectValue placeholder="Seçin" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="MICRO">Mikro Sahibkar</SelectItem>
-                                                <SelectItem value="SMALL">Kiçik Sahibkar</SelectItem>
-                                                <SelectItem value="MEDIUM">Orta Sahibkar</SelectItem>
-                                                <SelectItem value="LARGE">İri Sahibkar</SelectItem>
+                                                {(Object.entries(ENTREPRENEURSHIP_SUBJECTS) as [string, { label: string, description: string }][]).map(([key, value]) => (
+                                                    <SelectItem key={key} value={key}>
+                                                        <div className="flex flex-col items-start text-left">
+                                                            <span className="font-medium">{value.label}</span>
+                                                            <span className="text-xs text-muted-foreground">{value.description}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -221,36 +226,32 @@ export function TenantCreateDialog({
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="space-y-2">
                                         <Label>Ölkə</Label>
-                                        <Select value={country} onValueChange={setCountry}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seçin" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {MOCK_COUNTRIES.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                        <Combobox
+                                            options={MOCK_COUNTRIES.map(c => ({ label: c.name, value: c.id }))}
+                                            value={country}
+                                            onSelect={setCountry}
+                                            placeholder="Ölkə seçin"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Şəhər</Label>
-                                        <Select value={city} onValueChange={setCity} disabled={!country}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seçin" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {cities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                        <Combobox
+                                            options={cities.map(c => ({ label: c.name, value: c.id }))}
+                                            value={city}
+                                            onSelect={setCity}
+                                            placeholder="Şəhər seçin"
+                                            className={!country ? "opacity-50 pointer-events-none" : ""}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Rayon</Label>
-                                        <Select value={region} onValueChange={setRegion} disabled={!cities.length}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seçin" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {regions.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                        <Combobox
+                                            options={regions.map(r => ({ label: r.name, value: r.id }))}
+                                            value={region}
+                                            onSelect={setRegion}
+                                            placeholder="Rayon seçin"
+                                            className={!city ? "opacity-50 pointer-events-none" : ""}
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-2">

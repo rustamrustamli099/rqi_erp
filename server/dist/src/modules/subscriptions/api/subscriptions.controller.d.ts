@@ -17,8 +17,8 @@ export declare class SubscriptionsController {
     }>;
     findAll(): Promise<({
         tenant: {
-            slug: string;
             name: string;
+            slug: string;
         };
         package: {
             name: string;
@@ -43,27 +43,14 @@ export declare class SubscriptionsController {
             id: string;
             name: string;
             slug: string;
+            parentTenantId: string | null;
             email: string | null;
             phone: string | null;
             website: string | null;
             status: string;
+            type: import(".prisma/client").$Enums.TenantType;
+            isSystem: boolean;
             address: import(".prisma/client").Prisma.JsonValue | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-        package: {
-            id: string;
-            name: string;
-            description: string | null;
-            priceMonthly: import("@prisma/client/runtime/library").Decimal;
-            priceYearly: import("@prisma/client/runtime/library").Decimal;
-            currency: string;
-            maxUsers: number;
-            maxStorageGB: number;
-            maxBranches: number;
-            features: string | null;
-            isActive: boolean;
-            isPopular: boolean;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -83,6 +70,22 @@ export declare class SubscriptionsController {
             createdAt: Date;
             updatedAt: Date;
         }[];
+        package: {
+            id: string;
+            name: string;
+            description: string | null;
+            priceMonthly: import("@prisma/client/runtime/library").Decimal;
+            priceYearly: import("@prisma/client/runtime/library").Decimal;
+            currency: string;
+            maxUsers: number;
+            maxStorageGB: number;
+            maxBranches: number;
+            features: string | null;
+            isActive: boolean;
+            isPopular: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
     } & {
         id: string;
         tenantId: string;

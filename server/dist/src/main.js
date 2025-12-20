@@ -15,7 +15,7 @@ const sanitization_interceptor_1 = require("./platform/http/interceptors/sanitiz
 const security_logger_interceptor_1 = require("./platform/http/interceptors/security-logger.interceptor");
 const prisma_service_1 = require("./prisma.service");
 const audit_interceptor_1 = require("./platform/http/interceptors/audit.interceptor");
-const audit_service_1 = require("./platform/audit/audit.service");
+const audit_service_1 = require("./system/audit/audit.service");
 const helmet_1 = __importDefault(require("helmet"));
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, { bufferLogs: true });

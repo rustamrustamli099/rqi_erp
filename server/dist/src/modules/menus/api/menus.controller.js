@@ -22,21 +22,19 @@ let MenusController = class MenusController {
         this.menusUseCase = menusUseCase;
     }
     async getSidebar(req) {
-        const role = req.user?.role;
-        const roles = role ? [role] : [];
-        return this.menusUseCase.getSidebar(roles);
+        return this.menusUseCase.getSidebar(req.user);
     }
 };
 exports.MenusController = MenusController;
 __decorate([
-    (0, common_1.Get)('sidebar'),
+    (0, common_1.Get)('menu'),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], MenusController.prototype, "getSidebar", null);
 exports.MenusController = MenusController = __decorate([
-    (0, common_1.Controller)('menus'),
+    (0, common_1.Controller)('me'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [menus_usecase_1.MenusUseCase])
 ], MenusController);

@@ -20,12 +20,15 @@ export const authApi = createApi({
             async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
                 try {
                     const { data: responseBody } = await queryFulfilled;
+                    console.log("[AuthApi] Login Response:", responseBody);
+
                     // Handle NestJS TransformInterceptor wrapping: { statusCode: 201, data: { access_token, user } }
                     // OR raw response if interceptor is disabled.
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const payload = (responseBody as any).data || responseBody;
 
                     if (payload && payload.access_token && payload.user) {
+                        console.log("[AuthApi] Dispatching Credentials...", payload.user);
                         dispatch(setCredentials({
                             user: {
                                 id: payload.user.id,
@@ -35,14 +38,15 @@ export const authApi = createApi({
                                 roles: payload.user.roles || [],
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 permissions: payload.user.permissions || [],
+                                isOwner: payload.user.isOwner || payload.isOwner || false,
                             } as any,
                             token: payload.access_token
                         }));
                     } else {
-                        // Unexpected response structure
+                        console.error("[AuthApi] Unexpected payload structure", payload);
                     }
-                } catch {
-                    // Login Failed
+                } catch (err) {
+                    console.error("[AuthApi] Login Failed", err);
                 }
             },
         }),

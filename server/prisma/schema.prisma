@@ -20,6 +20,7 @@ model User {
   password  String
   fullName  String?
   name      String?  
+  isOwner   Boolean  @default(false)
   
   hashedRefreshToken String?
   mfaSecret          String?          @map("mfa_secret")
@@ -51,12 +52,22 @@ model Tenant {
   name        String
   slug        String   @unique
   
+  parentTenantId String? 
+  parentTenant   Tenant? @relation("TenantHierarchy", fields: [parentTenantId], references: [id])
+  subTenants     Tenant[] @relation("TenantHierarchy")
+
   email       String?
   phone       String?
   website     String?
   
   status      String   @default("PENDING") 
+  type        TenantType @default(CUSTOMER)
+  isSystem    Boolean  @default(false)
+  
   address     Json?    
+
+  resellerProfile ResellerProfile?
+  ledgerEntries   LedgerEntry[]
 
   users       User[]
   branches    Branch[]
@@ -265,6 +276,23 @@ enum SubscriptionStatus {
   CANCELED
   SUSPENDED
   TRIALING
+}
+
+enum TenantType {
+  PROVIDER
+  CUSTOMER
+  RESELLER
+  PARTNER
+}
+
+enum LedgerAccountType {
+  CASH
+  REVENUE
+  ACCOUNTS_RECEIVABLE
+  ACCOUNTS_PAYABLE
+  LIABILITY
+  EXPENSE
+  COMMISSION_EXPENSE
 }
 
 enum BillingCycle {
@@ -541,5 +569,65 @@ model RetentionPolicy {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  
   @@map("retention_policies")
+}
+
+// =================================================================================================
+// ENTERPRISE PROVIDER & ACCOUNTING
+// =================================================================================================
+
+model ResellerProfile {
+  id              String   @id @default(uuid())
+  tenantId        String   @unique
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  resellerCode    String   @unique @default(cuid()) // Unique code for referrals
+  commissionRate  Decimal  @db.Decimal(5, 2) @default(10.00) // Percentage
+  totalRevenue    Decimal  @db.Decimal(15, 2) @default(0)
+  totalCommission Decimal  @db.Decimal(15, 2) @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("reseller_profiles")
+}
+
+model LedgerEntry {
+  id            String            @id @default(uuid())
+  tenantId      String            // The owner of this ledger (Provider, Reseller, or Customer)
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  debitAccount  LedgerAccountType
+  creditAccount LedgerAccountType
+  
+  amount        Decimal           @db.Decimal(15, 2)
+  currency      String            @default("AZN")
+  
+  referenceId   String?           // InvoiceID or TransactionID
+  referenceType String?           // "INVOICE", "PAYOUT"
+  description   String?
+  
+  postedAt      DateTime          @default(now())
+  
+  @@index([tenantId, postedAt])
+  @@map("ledger_entries")
+}
+
+model BillingTransaction {
+  id            String   @id @default(uuid())
+  // Platform-side transaction log (separate from Invoice Transaction)
+  // This tracks the raw gateway events for Platform Admin
+  
+  invoiceId     String?
+  amount        Decimal   @db.Decimal(10, 2)
+  currency      String    @default("AZN")
+  status        String    // SUCCESS, FAILED
+  gateway       String    // STRIPE, KAPITAL
+  gatewayTxId   String?
+  
+  rawResponse   Json?
+  
+  createdAt     DateTime  @default(now())
+  @@map("billing_transactions")
 }

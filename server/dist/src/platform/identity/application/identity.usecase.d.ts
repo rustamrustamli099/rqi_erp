@@ -6,6 +6,7 @@ export declare class IdentityUseCase {
     private readonly permissionCache;
     constructor(userRepository: IUserRepository, permissionCache: PermissionCacheService);
     findUserByEmail(email: string): Promise<User | null>;
+    findAllUsers(tenantId: string): Promise<User[]>;
     findUserById(id: string): Promise<User | null>;
     findUserWithPermissions(id: string): Promise<any>;
     updateRefreshToken(id: string, refreshToken: string): Promise<void>;

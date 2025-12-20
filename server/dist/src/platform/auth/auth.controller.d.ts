@@ -43,6 +43,7 @@ export declare class AuthController {
         message: string;
     }>;
     getProfile(req: any): any;
+    getMe(req: any): any;
     impersonate(req: any, body: {
         userId: string;
     }, response: Response): Promise<{
@@ -52,6 +53,7 @@ export declare class AuthController {
             email: any;
             fullName: any;
             roles: string[];
+            isOwner: any;
             permissions: string[];
         };
     }>;

@@ -21,6 +21,9 @@ let RedisService = RedisService_1 = class RedisService {
     configService;
     client;
     logger = new common_1.Logger(RedisService_1.name);
+    memoryStore = new Map();
+    isRedisConnected = false;
+    lastErrorLogTime = 0;
     constructor(configService) {
         this.configService = configService;
     }
@@ -32,16 +35,25 @@ let RedisService = RedisService_1 = class RedisService {
             host,
             port,
             password,
-            lazyConnect: true
-        });
-        this.client.on('error', (err) => {
-            this.logger.error('Redis connection error', err);
+            lazyConnect: true,
+            retryStrategy: (times) => {
+                const delay = Math.min(times * 50, 5000);
+                return delay;
+            }
         });
         this.client.on('connect', () => {
-            this.logger.log('Connected to Redis');
+            this.isRedisConnected = true;
+            this.logger.log('Connected to Redis - Switching to Redis Store');
         });
-        this.client.connect().catch(err => {
-            this.logger.error('Failed to connect to Redis on boot', err);
+        this.client.on('error', (err) => {
+            this.isRedisConnected = false;
+            const now = Date.now();
+            if (now - this.lastErrorLogTime > 10000) {
+                this.logger.warn(`Redis connection failed (using In-Memory Fallback): ${err.message}`);
+                this.lastErrorLogTime = now;
+            }
+        });
+        this.client.connect().catch(() => {
         });
     }
     onModuleDestroy() {
@@ -51,25 +63,71 @@ let RedisService = RedisService_1 = class RedisService {
         return this.client;
     }
     async get(key) {
-        return this.client.get(key);
+        if (this.isRedisConnected) {
+            try {
+                return await this.client.get(key);
+            }
+            catch (e) {
+                this.logger.warn(`Redis get failed, falling back to memory: ${e.message}`);
+            }
+        }
+        const entry = this.memoryStore.get(key);
+        if (!entry)
+            return null;
+        if (entry.expiry && Date.now() > entry.expiry) {
+            this.memoryStore.delete(key);
+            return null;
+        }
+        return entry.value;
     }
     async set(key, value, ttlSeconds) {
-        if (ttlSeconds) {
-            await this.client.set(key, value, 'EX', ttlSeconds);
+        if (this.isRedisConnected) {
+            try {
+                if (ttlSeconds) {
+                    await this.client.set(key, value, 'EX', ttlSeconds);
+                }
+                else {
+                    await this.client.set(key, value);
+                }
+                return;
+            }
+            catch (e) {
+                this.logger.warn(`Redis set failed, falling back to memory: ${e.message}`);
+            }
         }
-        else {
-            await this.client.set(key, value);
-        }
+        const expiry = ttlSeconds ? Date.now() + (ttlSeconds * 1000) : null;
+        this.memoryStore.set(key, { value, expiry });
     }
     async del(key) {
-        await this.client.del(key);
+        if (this.isRedisConnected) {
+            try {
+                await this.client.del(key);
+                return;
+            }
+            catch (e) { }
+        }
+        this.memoryStore.delete(key);
     }
     async acquireLock(key, ttlSeconds) {
-        const result = await this.client.set(key, 'LOCKED', 'EX', ttlSeconds, 'NX');
-        return result === 'OK';
+        if (this.isRedisConnected) {
+            try {
+                const result = await this.client.set(key, 'LOCKED', 'EX', ttlSeconds, 'NX');
+                return result === 'OK';
+            }
+            catch (e) { }
+        }
+        const entry = this.memoryStore.get(key);
+        if (entry && (!entry.expiry || Date.now() < entry.expiry)) {
+            return false;
+        }
+        this.memoryStore.set(key, {
+            value: 'LOCKED',
+            expiry: Date.now() + (ttlSeconds * 1000)
+        });
+        return true;
     }
     async releaseLock(key) {
-        await this.client.del(key);
+        await this.del(key);
     }
 };
 exports.RedisService = RedisService;

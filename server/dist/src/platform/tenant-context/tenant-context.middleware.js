@@ -15,7 +15,6 @@ let TenantMiddleware = class TenantMiddleware {
         if (authHeader) {
         }
         next();
-        next();
     }
 };
 exports.TenantMiddleware = TenantMiddleware;

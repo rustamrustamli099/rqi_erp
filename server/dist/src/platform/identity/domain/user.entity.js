@@ -8,17 +8,19 @@ class User extends aggregate_root_1.AggregateRoot {
     passwordHash;
     fullName;
     isActive;
+    isOwner;
     tenantId;
     roleId;
     createdAt;
     updatedAt;
-    constructor(id, email, passwordHash, fullName, isActive, tenantId, roleId, createdAt, updatedAt) {
+    constructor(id, email, passwordHash, fullName, isActive, isOwner, tenantId, roleId, createdAt, updatedAt) {
         super();
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
         this.isActive = isActive;
+        this.isOwner = isOwner;
         this.tenantId = tenantId;
         this.roleId = roleId;
         this.createdAt = createdAt;

@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { IdentityUseCase } from './application/identity.usecase';
 import { IdentityController } from './api/identity.controller';
+import { UsersController } from './api/users.controller';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../../prisma.service';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
@@ -10,7 +11,7 @@ import { IRoleRepository } from './domain/role.repository.interface';
 
 @Module({
     imports: [forwardRef(() => AuthModule)],
-    controllers: [IdentityController],
+    controllers: [IdentityController, UsersController],
     providers: [
         IdentityUseCase,
         PrismaService,

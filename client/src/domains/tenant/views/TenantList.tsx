@@ -221,8 +221,9 @@ export default function TenantList() {
     }, []);
 
     const handleLoginAsAdmin = useCallback((tenant: Tenant) => {
-        toast.info(`${tenant.name} admin panelinə keçid (Demo)`);
-    }, []);
+        toast.info("Zəhmət olmasa admin istifadəçisini siyahıdan seçin.");
+        prepareUsers(tenant);
+    }, [prepareUsers]);
 
     const handleModulesClick = useCallback((tenant: Tenant) => {
         setCurrentTenant(tenant);
