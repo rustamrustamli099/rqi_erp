@@ -16,7 +16,7 @@ import { FeatureFlagProvider } from "@/domains/system-console/feature-flags/cont
 // Auth Pages
 import { LoginPage, ForgotPasswordPage } from "@/domains/auth"
 import ForbiddenPage from "@/app/pages/ForbiddenPage";
-import AccessDeniedPage from "@/app/pages/AccessDeniedPage";
+import AccessDeniedPage from "@/domains/auth/views/AccessDeniedPage";
 import { ImpersonationBanner } from "@/shared/components/auth/ImpersonationBanner";
 import { RootRedirect } from "@/app/routing/RootRedirect";
 

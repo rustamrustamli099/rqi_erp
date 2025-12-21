@@ -1,0 +1,21 @@
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { PermissionsService } from '../application/permissions.service';
+import { PreviewPermissionsDto } from './dto/preview-permissions.dto';
+import { JwtAuthGuard } from '../../../../../platform/auth/jwt-auth.guard';
+import { PermissionsGuard } from '../../../../../platform/auth/permissions.guard';
+
+@ApiTags('Admin / Permissions')
+@Controller('admin/permissions')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiBearerAuth()
+export class PermissionsController {
+    constructor(private readonly permissionsService: PermissionsService) { }
+
+    @Post('preview')
+    @ApiOperation({ summary: 'Preview effective permissions and visible menus for a set of roles' })
+    @ApiResponse({ status: 200, description: 'Preview data calculated successfully.' })
+    async preview(@Body() dto: PreviewPermissionsDto) {
+        return this.permissionsService.previewPermissions(dto);
+    }
+}

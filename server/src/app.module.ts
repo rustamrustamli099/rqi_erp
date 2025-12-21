@@ -21,6 +21,9 @@ import { AuditModule } from './system/audit/audit.module';
 import { RetentionModule } from './platform/retention/retention.module';
 import { MonitoringModule } from './platform/observability/monitoring.module';
 import { MenusModule } from './modules/menus/menus.module';
+import { PermissionsModule } from './modules/admin/iam/permissions/permissions.module';
+import { RolesModule } from './modules/admin/iam/roles/roles.module';
+import { RoleApprovalsModule } from './modules/admin/iam/role-approvals/role-approvals.module';
 import { FilesModule } from './modules/files/files.module';
 import { PrismaService } from './prisma.service';
 import { AddressesModule } from './modules/addresses/addresses.module';
@@ -32,6 +35,7 @@ import { PackagesModule } from './modules/packages/packages.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 
 import { PaymentModule } from './modules/payment/payment.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
 
 @Module({
   imports: [
@@ -59,12 +63,15 @@ import { PaymentModule } from './modules/payment/payment.module';
     RetentionModule,
     MonitoringModule,
     MenusModule,
-    MenusModule,
+    PermissionsModule,
+    RolesModule,
     FilesModule,
     AddressesModule,
     PackagesModule,
     SubscriptionsModule,
     PaymentModule,
+    ComplianceModule,
+    RoleApprovalsModule,
     LoggerModule.forRoot({
       pinoHttp: {
         customProps: (req, res) => ({

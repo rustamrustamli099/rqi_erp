@@ -125,6 +125,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    // Absolute Security Rule: Zero-Permission Lockout
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            // Strict RBAC: Even Owners need permissions (assigned directly or via role)
+            // We allow access if permissions array is empty ONLY if we are already on the denied page
+            // or if it's a public route (though isAuthenticated shouldn't be true there ideally)
+            if (permissions.length === 0) {
+                const currentPath = window.location.pathname;
+                // Avoid infinite loop
+                if (currentPath !== '/access-denied' && !currentPath.startsWith('/login')) {
+                    console.warn("Security Alert: User has 0 permissions. Redirecting to Access Denied.");
+                    window.location.href = '/access-denied';
+                }
+            }
+        }
+    }, [isLoading, isAuthenticated, permissions]);
+
     // Initial Load & Impersonation Check
     useEffect(() => {
         const init = async () => {

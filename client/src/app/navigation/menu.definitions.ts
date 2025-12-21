@@ -149,6 +149,12 @@ export const PLATFORM_MENU: MenuItem[] = [
                 label: 'Konfiqurasiyalar',
                 path: '/admin/settings?tab=config',
                 requiredPermissions: [PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ]
+            },
+            {
+                id: 'settings.compliance',
+                label: 'Audit & Uyğunluq',
+                path: '/admin/settings?tab=compliance',
+                requiredPermissions: ['platform.settings.security.user_rights.compliance.read']
             }
         ]
     },

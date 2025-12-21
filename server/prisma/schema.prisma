@@ -105,11 +105,24 @@ model Branch {
 // RBAC (Roles & Permissions)
 // =================================================================================================
 
+enum RoleStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  ARCHIVED
+}
+
 model Role {
   id          String   @id @default(uuid())
   name        String
   description String?
   isSystem    Boolean  @default(false)
+  
+  status      RoleStatus @default(DRAFT)
+  approverId  String?
+  approvalNote String?
+  submittedById String?
 
   tenantId    String?
   tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -117,12 +130,34 @@ model Role {
   users       User[] // Legacy single-role relation (Deprecate)
   userRoles   UserRole[] // Active multi-role relation
   permissions RolePermission[]
+  changeRequests RoleChangeRequest[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
   @@unique([tenantId, name])
   @@map("roles")
+}
+
+model RoleChangeRequest {
+  id          String   @id @default(uuid())
+  scope       String   @default("TENANT")
+  
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  requestedBy String
+  approvedBy  String?
+  
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  
+  diffJson    Json
+  reason      String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("role_change_requests")
 }
 
 model UserRole {

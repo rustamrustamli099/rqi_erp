@@ -31,7 +31,15 @@ const platform_permissions = {
         perms: ['read'],
         general: { perms: ['read', 'update'] },
         communication: { perms: ['read', 'manage'] },
-        security: { perms: ['read', 'manage'] },
+        security: {
+            perms: ['read', 'manage'],
+            user_rights: {
+                role: { perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'select_permissions', 'submit', 'approve', 'reject'] },
+                permission: { perms: ['read', 'create', 'update'] },
+                permission_matrix: { perms: ['read'] },
+                compliance: { perms: ['read', 'download_soc2', 'download_iso'] },
+            }
+        },
         config: { perms: ['read', 'manage'] },
     },
     console: {

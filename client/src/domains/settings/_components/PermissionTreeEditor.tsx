@@ -241,7 +241,7 @@ function PermissionRow({
     )
 }
 
-export function PermissionTreeEditor({ permissions, selectedSlugs, onChange, className }: PermissionTreeEditorProps) {
+export function PermissionTreeEditor({ permissions = [], selectedSlugs = [], onChange, className }: PermissionTreeEditorProps) {
     const [searchTerm, setSearchTerm] = useState("")
 
     return (

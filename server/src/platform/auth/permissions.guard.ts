@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
 import { PermissionCacheService } from './permission-cache.service';
 import { AuditService } from '../../system/audit/audit.service';
+import { PermissionDryRunEngine } from '../../common/utils/dry-run.engine';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -93,9 +94,10 @@ export class PermissionsGuard implements CanActivate {
             }
 
             // 4. CHECK
-            const hasPermission = requiredPermissions.some(permission => userPermissionSlugs!.includes(permission));
+            // 4. CHECK (Using centralized Dry-Run Engine)
+            const validation = PermissionDryRunEngine.evaluate(userPermissionSlugs!, requiredPermissions);
 
-            if (!hasPermission) {
+            if (!validation.allowed) {
                 await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED', details: { ...auditContext.details, reason: 'Insufficient Permissions' } });
                 throw new ForbiddenException('Insufficient Permissions');
             }

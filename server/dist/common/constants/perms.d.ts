@@ -84,6 +84,12 @@ export declare const admin_panel_permissions: {
                 permission: {
                     perms: string[];
                 };
+                permission_matrix: {
+                    perms: string[];
+                };
+                compliance: {
+                    perms: string[];
+                };
             };
         };
         system_configurations: {

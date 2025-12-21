@@ -15,6 +15,7 @@ const core_1 = require("@nestjs/core");
 const prisma_service_1 = require("../../prisma.service");
 const permission_cache_service_1 = require("./permission-cache.service");
 const audit_service_1 = require("../../system/audit/audit.service");
+const dry_run_engine_1 = require("../../common/utils/dry-run.engine");
 let PermissionsGuard = class PermissionsGuard {
     reflector;
     prisma;
@@ -86,8 +87,8 @@ let PermissionsGuard = class PermissionsGuard {
                 userPermissionSlugs = dbPermissions;
                 await this.permissionCache.setPermissions(user.sub, userPermissionSlugs, user.tenantId, scope);
             }
-            const hasPermission = requiredPermissions.some(permission => userPermissionSlugs.includes(permission));
-            if (!hasPermission) {
+            const validation = dry_run_engine_1.PermissionDryRunEngine.evaluate(userPermissionSlugs, requiredPermissions);
+            if (!validation.allowed) {
                 await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED', details: { ...auditContext.details, reason: 'Insufficient Permissions' } });
                 throw new common_1.ForbiddenException('Insufficient Permissions');
             }

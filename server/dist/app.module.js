@@ -30,6 +30,9 @@ const audit_module_1 = require("./system/audit/audit.module");
 const retention_module_1 = require("./platform/retention/retention.module");
 const monitoring_module_1 = require("./platform/observability/monitoring.module");
 const menus_module_1 = require("./modules/menus/menus.module");
+const permissions_module_1 = require("./modules/admin/iam/permissions/permissions.module");
+const roles_module_1 = require("./modules/admin/iam/roles/roles.module");
+const role_approvals_module_1 = require("./modules/admin/iam/role-approvals/role-approvals.module");
 const files_module_1 = require("./modules/files/files.module");
 const prisma_service_1 = require("./prisma.service");
 const addresses_module_1 = require("./modules/addresses/addresses.module");
@@ -40,6 +43,7 @@ const permissions_guard_1 = require("./platform/auth/permissions.guard");
 const packages_module_1 = require("./modules/packages/packages.module");
 const subscriptions_module_1 = require("./modules/subscriptions/subscriptions.module");
 const payment_module_1 = require("./modules/payment/payment.module");
+const compliance_module_1 = require("./modules/compliance/compliance.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -75,12 +79,15 @@ exports.AppModule = AppModule = __decorate([
             retention_module_1.RetentionModule,
             monitoring_module_1.MonitoringModule,
             menus_module_1.MenusModule,
-            menus_module_1.MenusModule,
+            permissions_module_1.PermissionsModule,
+            roles_module_1.RolesModule,
             files_module_1.FilesModule,
             addresses_module_1.AddressesModule,
             packages_module_1.PackagesModule,
             subscriptions_module_1.SubscriptionsModule,
             payment_module_1.PaymentModule,
+            compliance_module_1.ComplianceModule,
+            role_approvals_module_1.RoleApprovalsModule,
             nestjs_pino_1.LoggerModule.forRoot({
                 pinoHttp: {
                     customProps: (req, res) => ({

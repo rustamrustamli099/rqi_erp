@@ -77,6 +77,13 @@ export const PermissionSlugs = {
             SECURITY: {
                 READ: 'platform.settings.security.read',
                 MANAGE: 'platform.settings.security.manage',
+                USER_RIGHTS: {
+                     COMPLIANCE: {
+                        READ: 'platform.settings.security.user_rights.compliance.read',
+                        DOWNLOAD_SOC2: 'platform.settings.security.user_rights.compliance.download_soc2',
+                        DOWNLOAD_ISO: 'platform.settings.security.user_rights.compliance.download_iso',
+                     }
+                }
             },
             CONFIG: {
                 READ: 'platform.settings.config.read',
@@ -121,8 +128,7 @@ export const PermissionSlugs = {
                 READ: 'platform.dev.webhooks.read',
                 MANAGE: 'platform.dev.webhooks.manage',
             }
-        }
-    },
+        },
 
     // TENANT SCOPE
     TENANT: {
@@ -138,7 +144,7 @@ export const PermissionSlugs = {
             MANAGE: 'tenant.settings.manage',
         }
     }
-} as const;
+} as const ;
 
 // Helper to check if a permission string matches a canonical slug pattern
 export const isCanonical = (slug: string) => /^(platform|tenant)\./.test(slug);
