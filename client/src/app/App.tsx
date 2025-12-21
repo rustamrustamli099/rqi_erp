@@ -28,14 +28,26 @@ const PaymentRequiredPage = lazy(() => import("@/domains/public/views/PaymentReq
 // Auth Pages (Keep direct for faster initial load, or lazy them too)
 import { LoginPage, ForgotPasswordPage } from "@/domains/auth"
 import ForbiddenPage from "@/app/pages/ForbiddenPage"; // Updated to new SAP-styled page
+import AccessDeniedPage from "@/app/pages/AccessDeniedPage";
 import { ImpersonationBanner } from "@/shared/components/auth/ImpersonationBanner";
 
 
 
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+
 // --- Auth Wrappers ---
 const AuthenticatedLayout = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
-  return isAuthenticated ? <MainLayout><Outlet /></MainLayout> : <Navigate to="/login" />
+  const { permissions, isLoading } = usePermissions()
+
+  if (isLoading) return <PageLoader />
+  if (!isAuthenticated) return <Navigate to="/login" />
+
+  if (!permissions || permissions.length === 0) {
+    return <Navigate to="/access-denied" replace />
+  }
+
+  return <MainLayout><Outlet /></MainLayout>
 }
 
 const AuthenticatedNoLayout = () => {
@@ -52,6 +64,7 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="rqi-theme">
+      <Toaster position="top-right" richColors />
       <HelpProvider>
         <AuthProvider>
           <FeatureFlagProvider>
@@ -67,6 +80,7 @@ function App() {
                   <Route element={<AuthenticatedNoLayout />}>
                     <Route path="/payment-required" element={<PaymentRequiredPage />} />
                     <Route path="/403" element={<ForbiddenPage />} />
+                    <Route path="/access-denied" element={<AccessDeniedPage />} />
                   </Route>
 
                   {/* Authenticated Routes WITH Sidebar */}

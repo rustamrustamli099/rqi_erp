@@ -149,8 +149,18 @@ export class AuthController {
 
     @UseGuards(AuthGuard('jwt'))
     @Get('me')
-    getMe(@Request() req) {
-        return req.user;
+    async getMe(@Request() req) {
+        // [RBAC] Hydrate Permissions strictly from DB
+        // Token only contains roles/ids. Frontend needs actual permission slugs.
+        const effectivePermissions = await this.authService.getEffectivePermissions(
+            req.user.userId || req.user.sub,
+            req.user.tenantId || null
+        );
+
+        return {
+            ...req.user,
+            permissions: effectivePermissions
+        };
     }
     @Post('impersonate')
     @UseGuards(JwtAuthGuard)

@@ -51,6 +51,12 @@ const platform_permissions = {
     },
 };
 
+const tenant_permissions = {
+    dashboard: { perms: ['view'] },
+    users: { perms: ['read', 'manage'] },
+    settings: { perms: ['read', 'manage'] },
+};
+
 const ADMIN_MENU_TREE = [
     { id: 'dashboard', label: 'İdarə etmə paneli', icon: 'LayoutDashboard', path: '/admin/dashboard', permission: 'platform.dashboard.view' },
     { id: 'tenants', label: 'Tenantlar', icon: 'Building2', path: '/admin/tenants', permission: 'platform.tenants.read' },
@@ -74,7 +80,7 @@ const ADMIN_MENU_TREE = [
     { id: 'files', label: 'Fayl Meneceri', icon: 'Folder', path: '/admin/files', permission: 'platform.files.read' },
     { id: 'guide', label: 'Sistem Bələdçisi', icon: 'BookOpen', path: '/admin/guide', permission: 'platform.guide.read' },
     {
-        id: 'settings', label: 'Tənzimləmələr', icon: 'Settings', children: [
+        id: 'settings', label: 'Tənzimləmələr', icon: 'Settings', path: '/admin/settings', children: [
             {
                 id: 'general', label: 'Ümumi', icon: 'Sliders', children: [
                     { id: 'company_profile', label: 'Şirkət Profili', path: '/admin/settings?tab=general', permission: 'platform.settings.general.read' },
@@ -192,26 +198,20 @@ async function main() {
 
     // 2. Seed Permissions
     console.log('🌱 Seeding Permissions...');
-    const allSlugs = Array.from(new Set(flattenPermissions(platform_permissions)));
+    const platformSlugs = flattenPermissions(platform_permissions, 'platform');
+    const tenantSlugs = flattenPermissions(tenant_permissions, 'tenant');
+    const allSlugs = Array.from(new Set([...platformSlugs, ...tenantSlugs]));
     const permissionMap = new Map<string, string>();
 
     for (const slug of allSlugs) {
-        const parts = slug.split('.');
-        const moduleName = parts.length > 1 ? parts[1] : 'CORE';
         const name = generateNameFromSlug(slug);
+        const module = slug.split('.')[1] || 'general';
+        const scope = slug.startsWith('tenant.') ? 'TENANT' : 'SYSTEM';
 
         const perm = await prisma.permission.upsert({
             where: { slug },
-            update: {
-                name: name,
-                module: moduleName
-            },
-            create: {
-                slug,
-                name: name,
-                description: `Permission for ${name}`,
-                module: moduleName
-            }
+            update: { name, module, scope },
+            create: { slug, name, module, scope }
         });
         permissionMap.set(slug, perm.id);
     }
@@ -263,10 +263,14 @@ async function main() {
             const item = items[i];
 
             // Resolve permission ID if present
-            let permId = null;
+            let permId: string | null = null;
             if (item.permission) {
-                permId = permissionMap.get(item.permission);
-                if (!permId) console.warn(`⚠️ Warning: Permission '${item.permission}' for menu '${item.label}' not found in DB.`);
+                const foundId = permissionMap.get(item.permission);
+                if (foundId) {
+                    permId = foundId;
+                } else {
+                    console.warn(`⚠️ Warning: Permission '${item.permission}' for menu '${item.label}' not found in DB.`);
+                }
             }
 
             const createdItem = await prisma.menuItem.create({

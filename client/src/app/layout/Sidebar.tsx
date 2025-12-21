@@ -340,19 +340,7 @@ export function DesktopSidebar() {
                                 location={location}
                             />
                         ))
-                    ) : (
-                        // EMPTY STATE (DEBUG-SAFE)
-                        !collapsed && (
-                            <div className="p-4 border border-dashed rounded-md text-center text-sm text-muted-foreground bg-muted/20">
-                                <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-amber-500 opacity-80" />
-                                <p className="font-semibold text-foreground">Navigasiya Yoxdur</p>
-                                <p className="text-xs mt-1 mb-3">Səlahiyyətiniz çatmır və ya menu yüklənmədi.</p>
-                                <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
-                                    <RefreshCw className="h-3 w-3 mr-2" /> Yenilə
-                                </Button>
-                            </div>
-                        )
-                    )}
+                    ) : null}
                 </div>
             </div>
 

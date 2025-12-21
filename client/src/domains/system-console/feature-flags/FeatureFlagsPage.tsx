@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Edit, Flag, Globe, Layers, Plus, Users, Archive } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
-import { useFeatureFlags, FeatureFlag } from "./context/FeatureFlagContext";
+import { useFeatureFlags, type FeatureFlag } from "./context/FeatureFlagContext";
 
 export default function FeatureFlagsPage() {
     // Consume Global Context

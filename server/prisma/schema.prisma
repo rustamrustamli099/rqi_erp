@@ -147,11 +147,21 @@ model Permission {
   slug        String   @unique 
   description String?
   module      String   
+  scope       String   @default("SYSTEM")
 
   roles       RolePermission[]
   menuItems   MenuItem[]
 
   @@map("permissions")
+}
+
+model PermissionSlugAlias {
+  id        String   @id @default(uuid())
+  oldSlug   String   @unique
+  newSlug   String
+  createdAt DateTime @default(now())
+
+  @@map("permission_slug_aliases")
 }
 
 model RolePermission {

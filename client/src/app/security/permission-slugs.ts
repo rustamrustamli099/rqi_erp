@@ -90,6 +90,7 @@ export const PermissionSlugs = {
             },
             AUDIT: {
                 READ: 'platform.console.audit.read',
+                MANAGE: 'platform.console.audit.manage',
             },
             SCHEDULER: {
                 READ: 'platform.console.scheduler.read',
@@ -147,7 +148,7 @@ export const isCanonical = (slug: string) => /^(platform|tenant)\./.test(slug);
 export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
     // Dashboard
     'dashboard.view': PermissionSlugs.PLATFORM.DASHBOARD.VIEW,
-    
+
     // Tenants
     'tenants.view': PermissionSlugs.PLATFORM.TENANTS.READ,
     'tenants.create': PermissionSlugs.PLATFORM.TENANTS.CREATE,
@@ -174,7 +175,7 @@ export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
     // Billing
     'billing.market_place.view': PermissionSlugs.PLATFORM.BILLING.MARKETPLACE.READ,
     'billing.market_place.manage': PermissionSlugs.PLATFORM.BILLING.MARKETPLACE.MANAGE,
-    
+
     'billing.compact_packages.view': PermissionSlugs.PLATFORM.BILLING.PACKAGES.READ,
     'billing.compact_packages.manage': PermissionSlugs.PLATFORM.BILLING.PACKAGES.MANAGE,
 

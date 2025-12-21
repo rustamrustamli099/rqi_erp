@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { PermissionSlugs } from "@/app/security/permission-slugs"
 import { Inline403 } from "@/shared/components/security/Inline403"
 // ...
 import { WorkflowConfigTab } from "@/shared/components/ui/WorkflowConfigTab"
@@ -67,36 +68,36 @@ const timezones = [
 ]
 
 // --- Sidebar Navigation Items ---
-const sidebarItems = [
+const ALL_SIDEBAR_ITEMS = [
     {
         title: "Ümumi Tənzimləmələr",
         items: [
-            { id: "general", label: "Şirkət Profili", icon: Settings },
-            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell },
+            { id: "general", label: "Şirkət Profili", icon: Settings, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ },
+            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ },
         ]
     },
     {
         title: "Kommunikasiya",
         items: [
-            { id: "smtp", label: "SMTP (Email)", icon: Mail },
-            { id: "sms", label: "SMS Gateway", icon: MessageSquare },
+            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ },
+            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ },
         ]
     },
     {
         title: "Təhlükəsizlik & Giriş",
         items: [
-            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield },
-            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck },
-            { id: "roles", label: "İstifadəçi hüquqları", icon: Users },
+            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ },
+            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ },
+            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ },
         ]
     },
     {
         title: "Sistem Konfiqurasiyası",
         items: [
-            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard },
-            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database },
-            { id: "templates", label: "Sənəd Şablonları", icon: FileText },
-            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow },
+            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
+            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
+            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
+            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
         ]
     }
 ]
@@ -106,16 +107,28 @@ const sidebarItems = [
 export default function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
     const { can } = usePermissions()
-    const activeTab = searchParams.get("tab") || "general"
     const [timezone, setTimezone] = useState("Asia/Baku")
 
-    if (!can('admin_panel.settings.read')) {
+    // Filter Menu based on Permissions
+    const visibleSidebarGroups = ALL_SIDEBAR_ITEMS.map(group => ({
+        ...group,
+        items: group.items.filter(item => can(item.permission))
+    })).filter(group => group.items.length > 0);
+
+    const allVisibleItems = visibleSidebarGroups.flatMap(g => g.items);
+
+    if (allVisibleItems.length === 0) {
         return (
             <div className="p-8">
                 <Inline403 message="You do not have permission to view Settings." />
             </div>
         )
     }
+
+    const currentTabId = searchParams.get("tab");
+    const activeTab = (currentTabId && allVisibleItems.some(i => i.id === currentTabId))
+        ? currentTabId
+        : allVisibleItems[0].id;
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">
@@ -129,7 +142,7 @@ export default function SettingsPage() {
             <div className="flex flex-1 flex-col md:flex-row gap-8 p-8 pt-4 min-h-0">
                 {/* SIDEBAR NAVIGATION */}
                 <aside className="md:w-64 flex-shrink-0 space-y-8 overflow-y-auto pr-2">
-                    {sidebarItems.map((group, idx) => (
+                    {visibleSidebarGroups.map((group, idx) => (
                         <div key={idx} className="space-y-2">
                             <h4 className="text-sm font-semibold text-muted-foreground tracking-tight px-2 uppercase text-xs">{group.title}</h4>
                             <div className="grid gap-1">
@@ -231,39 +244,39 @@ export default function SettingsPage() {
 
                         {/* 2. SMTP SETTINGS (SAP Style Logic) */}
                         {activeTab === 'smtp' && (
-                            can('admin_panel.settings.communication.smtp_email.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ) ? (
                                 <EmailSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 3. NOTIFICATIONS */}
                         {activeTab === 'notifications' && (
-                            can('admin_panel.settings.general.notification_engine.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ) ? (
                                 <NotificationsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 5. SMS GATEWAY */}
                         {activeTab === 'sms' && (
-                            can('admin_panel.settings.communication.smtp_sms.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ) ? (
                                 <SmsSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 6. SECURITY */}
                         {activeTab === 'security' && (
-                            can('admin_panel.settings.security.security_policy.global_policy.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ) ? (
                                 <SecuritySettingsTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'sso' && (
-                            can('admin_panel.settings.security.security_policy.global_policy.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ) ? (
                                 <SSOSettingsTab />
                             ) : <Inline403 />
                         )}
 
 
-                        {/* 7. APPROVALS HUB (Tabs) */}
+                        {/* 7. APPROVALS HUB (Legacy/Unreachable via Sidebar) */}
                         {activeTab === 'approval-hub' && (
                             <div className="h-full flex flex-col">
                                 <Tabs defaultValue="rules" className="h-full flex flex-col">
@@ -304,27 +317,27 @@ export default function SettingsPage() {
 
                         {/* --- EXISTING TABS MIGRATED --- */}
                         {activeTab === 'billing-config' && (
-                            can('admin_panel.settings.system_configurations.billing_configurations.price_rules.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
                                 <BillingConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'dictionaries' && (
-                            can('admin_panel.settings.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
                                 <DictionariesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'templates' && (
-                            can('admin_panel.settings.system_configurations.document_templates.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
                                 <DocumentTemplatesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'workflow' && (
-                            can('admin_panel.settings.system_configurations.workflow.configuration.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
                                 <WorkflowConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'roles' && (
-                            can('admin_panel.users.roles.read') ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ) ? (
                                 <RolesPage />
                             ) : <Inline403 />
                         )}

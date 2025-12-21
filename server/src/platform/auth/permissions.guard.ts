@@ -47,28 +47,43 @@ export class PermissionsGuard implements CanActivate {
 
             if (!userPermissionSlugs) {
                 // 3. DB FALLBACK (Cache Miss)
-                const userWithRole = await this.prisma.user.findUnique({
+                // 3. DB FALLBACK (Cache Miss) - Strict Multi-Role + Context
+                const userWithRoles = await this.prisma.user.findUnique({
                     where: { id: user.sub },
                     include: {
-                        role: {
+                        roles: { // Use valid UserRole relation
                             include: {
-                                permissions: {
-                                    include: { permission: true }
+                                role: {
+                                    include: {
+                                        permissions: {
+                                            include: { permission: true }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 });
 
-                if (!userWithRole || !userWithRole.role) {
-                    await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED_NO_ROLE' });
+                if (!userWithRoles) {
+                    await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED_USER_NOT_FOUND' });
                     return false;
                 }
 
                 const dbPermissions: string[] = [];
-                if (userWithRole.role.permissions) {
-                    userWithRole.role.permissions.forEach(rp => {
-                        if (rp.permission) dbPermissions.push(rp.permission.slug);
+                const contextTenantId = user.tenantId || null;
+
+                if (userWithRoles.roles) {
+                    userWithRoles.roles.forEach(ur => {
+                        // Strict Context Filter (Must match AuthService logic)
+                        // Include if assignment matches context
+                        const isMatch = ur.tenantId === contextTenantId;
+
+                        if (isMatch && ur.role && ur.role.permissions) {
+                            ur.role.permissions.forEach(rp => {
+                                if (rp.permission) dbPermissions.push(rp.permission.slug);
+                            });
+                        }
                     });
                 }
                 userPermissionSlugs = dbPermissions;

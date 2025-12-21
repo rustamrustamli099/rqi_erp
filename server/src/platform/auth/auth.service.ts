@@ -20,6 +20,31 @@ export class AuthService {
     // I will update revokeSessions from previous step to use this.redisService.
 
 
+    // [RBAC] Centralized Permission Calculation
+    async getEffectivePermissions(userId: string, contextTenantId: string | null): Promise<string[]> {
+        const userWithRole = await this.identityUseCase.findUserWithPermissions(userId);
+        if (!userWithRole) return [];
+
+        const permissions = new Set<string>();
+
+        // Support Multi-Role
+        if ((userWithRole as any)?.roles) {
+            (userWithRole as any).roles.forEach((ur: any) => {
+                // [RBAC] Strict Context Filter
+                const assignmentsTenantId = ur.tenantId || null;
+                const isMatch = assignmentsTenantId === contextTenantId;
+
+                // Permissions Logic (Owner bypass removed)
+                if (isMatch && ur.role && ur.role.permissions) {
+                    ur.role.permissions.forEach((rp: any) => {
+                        if (rp.permission) permissions.add(rp.permission.slug);
+                    });
+                }
+            });
+        }
+        return Array.from(permissions);
+    }
+
     async validateUser(email: string, pass: string): Promise<any> {
         const user = await this.identityUseCase.findUserByEmail(email);
         // Note: User entity uses 'passwordHash' in domain, but assuming mapToDomain maps to 'password' or we adjust here.
@@ -34,29 +59,31 @@ export class AuthService {
     }
 
     async login(user: any, rememberMe: boolean = false) {
-        // Fetch full permissions for the user's role
-        const userWithRole = await this.identityUseCase.findUserWithPermissions(user.id);
-        if (!userWithRole) {
-            throw new UnauthorizedException('User not found');
-        }
+        // [RBAC] Calculate Permissions via DB
+        const effectivePermissions = await this.getEffectivePermissions(user.id, user.tenantId || null);
 
-        const permissions = new Set<string>();
-        const roleNames: string[] = [];
-
-        // Support Multi-Role: loading from userWithRole.roles
-        if ((userWithRole as any)?.roles) {
-            (userWithRole as any).roles.forEach((ur: any) => {
-                if (ur.role) {
-                    roleNames.push(ur.role.name);
-                    if (ur.role.permissions) {
-                        ur.role.permissions.forEach((rp: any) => {
-                            if (rp.permission) permissions.add(rp.permission.slug);
-                        });
-                    }
-                }
+        // [SEC] BLOCK LOGIN IF NO PERMISSIONS
+        if (!effectivePermissions || effectivePermissions.length === 0) {
+            console.warn(`[AuthService] Login blocked for user ${user.email} due to zero permissions.`);
+            throw new ForbiddenException({
+                error: 'NO_ACCESS',
+                message: 'Sizin üçün hələ heç bir icazə təyin edilməyib'
             });
         }
-        const effectivePermissions = Array.from(permissions);
+
+        // Fetch full role details for UI (names only)
+        // Optimization: Could reuse userWithRole from getEffectivePermissions if refactored further, but consistent for now.
+        const userWithRole = await this.identityUseCase.findUserWithPermissions(user.id);
+
+        let roleNames: string[] = [];
+        const contextTenantId = user.tenantId || null;
+
+        if ((userWithRole as any)?.roles) {
+            roleNames = (userWithRole as any).roles
+                .filter((ur: any) => (ur.tenantId || null) === contextTenantId)
+                .map((ur: any) => ur.role?.name)
+                .filter(Boolean);
+        }
 
         // Generate Family ID for Refresh Token Rotation
         const familyId = crypto.randomUUID();

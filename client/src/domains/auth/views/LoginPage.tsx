@@ -12,6 +12,8 @@ import logo from "@/assets/logo.png"
 import { useLoginMutation } from "@/domains/auth/api/auth.contract"
 import { useAppSelector } from "@/store"
 
+import { toast } from "sonner";
+
 export default function LoginPage() {
     const [login, { isLoading }] = useLoginMutation()
     const [showPassword, setShowPassword] = useState(false)
@@ -31,12 +33,26 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError(null) // Clear previous errors
+        setError(null)
         try {
             await login({ email, password, rememberMe }).unwrap()
             navigate("/")
-        } catch {
-            setError("Invalid email or password")
+        } catch (err: any) {
+            const errorData = err?.data;
+            // NestJS Exception Filter wraps object in 'message' property
+            const isNoAccess = err?.status === 403 && (
+                errorData?.message?.error === 'NO_ACCESS' ||
+                errorData?.error === 'NO_ACCESS'
+            );
+
+            if (isNoAccess) {
+                toast.error("Giriş Məhdudlaşdırılıb", {
+                    description: "Hesabınız aktivdir, lakin sizə heç bir səlahiyyət təyin edilməyib. Zəhmət olmasa administratorla əlaqə saxlayın.",
+                    duration: 5000,
+                });
+            } else {
+                setError("Invalid email or password")
+            }
         }
     }
 

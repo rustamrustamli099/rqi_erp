@@ -6,13 +6,14 @@ interface MainLayoutProps {
     children: React.ReactNode
 }
 
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
 import { GlobalFeedbackTrigger } from "@/shared/components/GlobalFeedbackTrigger";
 import { GuideDrawer } from "@/domains/system-guide/views/GuideDrawer";
 import { GlobalSearchDialog } from "@/shared/components/GlobalSearchDialog";
 import { FloatingHelpButton } from "@/shared/components/FloatingHelpButton";
 
 export function MainLayout({ children }: MainLayoutProps) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user: _user } = usePermissions();
     const location = useLocation();

@@ -43,9 +43,9 @@ export const ProtectedRoute = ({
         : hasAny(perms);
 
     if (!hasAccess) {
-        // Redirect to 403 Forbidden with return URL
-        const returnUrl = encodeURIComponent(location.pathname + location.search);
-        return <Navigate to={`/403?returnUrl=${returnUrl}`} replace />;
+        if (!hasAccess) {
+            return <Navigate to="/admin/access-denied" replace />;
+        }
     }
 
     return children ? <>{children}</> : <Outlet />;

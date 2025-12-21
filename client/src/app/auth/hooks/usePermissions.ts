@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
 
 export const usePermissions = () => {
-    const { permissions, user, isImpersonating } = useAuth(); // permissions are already canonicalized in AuthContext
+    const { permissions, user, isImpersonating, isLoading } = useAuth(); // permissions are already canonicalized in AuthContext
 
     const hasPermission = useCallback((requiredPermission: string) => {
         return permissions.includes(requiredPermission);
@@ -18,5 +18,5 @@ export const usePermissions = () => {
         return requiredPermissions.some(perm => permissions.includes(perm));
     }, [permissions]);
 
-    return { hasPermission, can: hasPermission, hasAll, hasAny };
+    return { hasPermission, can: hasPermission, hasAll, hasAny, permissions, user, isImpersonating, isLoading };
 };
