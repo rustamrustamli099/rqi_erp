@@ -34,11 +34,7 @@ export function RoleFormDialog({ open, onOpenChange, mode, initialData, onSubmit
         if (open) {
             setName(initialData?.name || "");
             setDescription(initialData?.description || "");
-            // In a real app, initialData would have scope. mocking it or inferring.
-            // If context is tenant, forced to TENANT. 
-            // If existing role name implies System (e.g. SuperAdmin), set System? 
-            // For now, default to TENANT unless overridden by logic.
-            setScope('TENANT');
+            setScope(initialData?.scope || 'TENANT');
         }
     }, [open, initialData]);
 

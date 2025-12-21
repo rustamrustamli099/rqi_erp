@@ -26,7 +26,7 @@ import {
     PopoverTrigger,
 } from "@/shared/components/ui/popover"
 import { Badge } from "@/shared/components/ui/badge"
-import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List } from "lucide-react"
+import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List, History } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/shared/components/ui/button"
@@ -130,6 +130,15 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
             header: "Əhatə",
             cell: ({ row }) => <Badge variant="outline" className="text-[10px]">{row.getValue("scope")}</Badge>
         },
+        {
+            accessorKey: "permissions", // Using accessorFn below, key is for id
+            header: "İcazə Sayı",
+            cell: ({ row }) => {
+                const count = (row.original.permissions || []).length;
+                return <div className="text-center font-medium text-muted-foreground w-12">{count}</div>
+            },
+            accessorFn: (row) => (row.permissions || []).length,
+        },
         { accessorKey: "usersCount", header: "İstifadəçilər", cell: ({ row }) => <div className="text-center w-12">{row.getValue("usersCount")}</div> },
         {
             id: "actions",
@@ -147,6 +156,9 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                                 setDialogMode("view")
                                 setDialogOpen(true)
                             }}><Eye className="mr-2 h-4 w-4" /> Bax</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                                toast.info("Audit tarixçəsi tezliklə hazır olacaq");
+                            }}><History className="mr-2 h-4 w-4" /> Tarixçə</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setSelectedRole(role.name)}><Check className="mr-2 h-4 w-4" /> İcazələri Seç</DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem disabled={role.type === "system"} onClick={() => {
@@ -466,11 +478,33 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="p-4 space-y-4">
-                                    <PermissionTreeEditor
-                                        permissions={permissionsStructure.filter(node => context === "admin" || node.id !== "admin")}
-                                        selectedSlugs={selectedPermissions}
-                                        onChange={setSelectedPermissions}
-                                    />
+                                    {/* Scope-Aware Permission Filtering */}
+                                    {(() => {
+                                        const activeRoleObj = roles.find(r => r.name === selectedRole);
+                                        const roleScope = activeRoleObj?.scope || "TENANT";
+
+                                        const filteredTree = permissionsStructure.filter(node => {
+                                            // 1. Tenant Context Enforcer
+                                            if (context === "tenant") {
+                                                return node.scope === "TENANT" || node.scope === "COMMON";
+                                            }
+
+                                            // 2. Admin Context: Role-Scope Awareness
+                                            if (roleScope === "SYSTEM") {
+                                                return node.scope === "SYSTEM" || node.scope === "COMMON";
+                                            }
+                                            // Tenant Scope Role
+                                            return node.scope === "TENANT" || node.scope === "COMMON";
+                                        });
+
+                                        return (
+                                            <PermissionTreeEditor
+                                                permissions={filteredTree}
+                                                selectedSlugs={selectedPermissions}
+                                                onChange={setSelectedPermissions}
+                                            />
+                                        );
+                                    })()}
 
                                     <div className="pt-4 flex justify-end">
                                         <Button size="lg" onClick={handlePermissionsSaveClick}>

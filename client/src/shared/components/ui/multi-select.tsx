@@ -1,11 +1,14 @@
 import * as React from "react"
-import { X } from "lucide-react"
-
+import { Check, ChevronsUpDown, X, Search } from "lucide-react"
+import { cn } from "@/shared/lib/utils"
 import { Badge } from "@/shared/components/ui/badge"
-import { Command, CommandGroup, CommandItem } from "@/shared/components/ui/command"
-import { Command as CommandPrimitive } from "cmdk"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/shared/components/ui/popover"
 
-type Option = {
+export interface Option {
     label: string
     value: string
 }
@@ -16,6 +19,7 @@ interface MultiSelectProps {
     onChange: (selected: string[]) => void
     placeholder?: string
     className?: string
+    maxCount?: number
 }
 
 export function MultiSelect({
@@ -23,104 +27,134 @@ export function MultiSelect({
     selected,
     onChange,
     placeholder = "Select options...",
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    className: _className,
+    className,
+    maxCount = 3,
 }: MultiSelectProps) {
-    const inputRef = React.useRef<HTMLInputElement>(null)
     const [open, setOpen] = React.useState(false)
-    const [inputValue, setInputValue] = React.useState("")
+    const [searchTerm, setSearchTerm] = React.useState("")
 
-    const handleUnselect = React.useCallback((option: string) => {
-        onChange(selected.filter((s) => s !== option))
-    }, [onChange, selected])
+    const handleUnselect = (value: string) => {
+        onChange(selected.filter((s) => s !== value))
+    }
 
-    const handleKeyDown = React.useCallback(
-        (e: React.KeyboardEvent<HTMLDivElement>) => {
-            const input = inputRef.current
-            if (input) {
-                if (e.key === "Delete" || e.key === "Backspace") {
-                    if (input.value === "" && selected.length > 0) {
-                        handleUnselect(selected[selected.length - 1])
-                    }
-                }
-                if (e.key === "Escape") {
-                    input.blur()
-                }
-            }
-        },
-        [selected]
+    // Filter options
+    const filteredOptions = options.filter(option =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const selectables = options.filter((option) => !selected.includes(option.value))
+    const toggleSelection = (value: string) => {
+        console.log("[MultiSelect] Toggle:", value, "Current Selection:", selected)
+        if (selected.includes(value)) {
+            handleUnselect(value)
+        } else {
+            onChange([...selected, value])
+        }
+        // Keep open for multiple selection
+    }
 
     return (
-        <Command
-            onKeyDown={handleKeyDown}
-            className="overflow-visible bg-transparent"
-        >
-            <div
-                className="group border border-input px-3 py-2 text-sm ring-offset-background rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
-            >
-                <div className="flex gap-1 flex-wrap">
-                    {selected.map((value) => {
-                        const option = options.find((o) => o.value === value)
-                        return (
-                            <Badge key={value} variant="secondary">
-                                {option?.label || value}
-                                <button
-                                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            handleUnselect(value)
-                                        }
-                                    }}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault()
-                                        e.stopPropagation()
-                                    }}
-                                    onClick={() => handleUnselect(value)}
-                                >
-                                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                </button>
-                            </Badge>
-                        )
-                    })}
-                    {/* Avoid having the "Search" Icon */}
-                    <CommandPrimitive.Input
-                        ref={inputRef}
-                        value={inputValue}
-                        onValueChange={setInputValue}
-                        onBlur={() => setOpen(false)}
-                        onFocus={() => setOpen(true)}
-                        placeholder={placeholder}
-                        className="ml-2 bg-transparent outline-none placeholder:text-muted-foreground flex-1"
-                    />
-                </div>
-            </div>
-            <div className="relative mt-2">
-                {open && selectables.length > 0 ? (
-                    <div className="absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
-                        <CommandGroup className="h-full overflow-auto">
-                            {selectables.map((option) => (
-                                <CommandItem
-                                    key={option.value}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault()
-                                        e.stopPropagation()
-                                    }}
-                                    onSelect={(_value) => {
-                                        setInputValue("")
-                                        onChange([...selected, option.value])
-                                    }}
-                                    className={"cursor-pointer"}
-                                >
-                                    {option.label}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
+        <Popover open={open} onOpenChange={(val) => {
+            setOpen(val)
+            if (!val) setSearchTerm("")
+        }}>
+            <PopoverTrigger asChild>
+                <div
+                    className={cn(
+                        "flex min-h-[36px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                        className
+                    )}
+                >
+                    <div className="flex gap-1 flex-wrap items-center">
+                        {selected.length > 0 ? (
+                            <>
+                                {selected.slice(0, maxCount).map((val) => {
+                                    // Handle special pseudo-values like __ALL__ for display
+                                    const option = options.find((o) => o.value === val)
+                                    const label = option?.label || val
+
+                                    return (
+                                        <Badge key={val} variant="secondary" className="mr-1 mb-0.5 max-w-[150px] truncate">
+                                            {label}
+                                            <div
+                                                className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer inline-flex"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        handleUnselect(val)
+                                                    }
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleUnselect(val)
+                                                }}
+                                            >
+                                                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                            </div>
+                                        </Badge>
+                                    )
+                                })}
+                                {selected.length > maxCount && (
+                                    <Badge variant="secondary" className="rounded-sm px-1 font-normal bg-muted text-muted-foreground hover:bg-muted mb-0.5">
+                                        +{selected.length - maxCount} ...
+                                    </Badge>
+                                )}
+                            </>
+                        ) : (
+                            <span className="text-muted-foreground">{placeholder}</span>
+                        )}
                     </div>
-                ) : null}
-            </div>
-        </Command>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <div className="flex flex-col">
+                    <div className="flex items-center border-b px-3 py-2">
+                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                        <input
+                            className="flex h-6 w-full rounded-md bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="Axtar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto overflow-x-hidden p-1">
+                        {filteredOptions.length === 0 && (
+                            <div className="py-6 text-center text-sm text-muted-foreground">Nəticə tapılmadı.</div>
+                        )}
+                        {filteredOptions.map((option) => {
+                            const isSelected = selected.includes(option.value)
+                            return (
+                                <div
+                                    key={option.value}
+                                    className={cn(
+                                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors",
+                                        isSelected && "bg-accent/50"
+                                    )}
+                                    onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        toggleSelection(option.value)
+                                    }}
+                                >
+                                    <div className={cn(
+                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                        isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible"
+                                    )}>
+                                        <Check className={cn("h-4 w-4")} />
+                                    </div>
+                                    <span className="truncate">{option.label}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
     )
 }

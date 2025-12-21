@@ -8,15 +8,12 @@ import { store } from '@/store'
 import { Provider } from 'react-redux'
 import '@/i18n'
 
-import { Toaster } from 'sonner'
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
             {/* <React.StrictMode> */}
             <Provider store={store}>
                 <App />
-                <Toaster richColors position="top-center" />
             </Provider>
             {/* </React.StrictMode> */}
         </QueryClientProvider>

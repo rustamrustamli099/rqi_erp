@@ -1,29 +1,21 @@
-import { useState, useMemo, useEffect } from "react"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { useState, useMemo } from "react"
+import { Check, ChevronRight, ChevronDown, EyeOff, ShieldAlert, Search } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { MultiSelect } from "@/shared/components/ui/multi-select"
 import {
     Collapsible,
     CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { ChevronRight, ChevronDown, Check, Minus, Search, AlertTriangle, ShieldAlert } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-// --- Types ---
+} from "@/shared/components/ui/collapsible"
 
 export interface PermissionNode {
-    id: string // Slug for leaf, or unique key for group
+    id: string
     label: string
     description?: string
     isDangerous?: boolean
+    scope?: 'SYSTEM' | 'TENANT' | 'COMMON'
     children?: PermissionNode[]
 }
 
@@ -34,8 +26,6 @@ interface PermissionTreeEditorProps {
     className?: string
 }
 
-// --- Helper Functions ---
-
 const getLeafSlugs = (node: PermissionNode): string[] => {
     if (!node.children || node.children.length === 0) {
         return [node.id]
@@ -43,249 +33,263 @@ const getLeafSlugs = (node: PermissionNode): string[] => {
     return node.children.flatMap(getLeafSlugs)
 }
 
-// Flatten tree for searching
-const flattenTree = (nodes: PermissionNode[]): PermissionNode[] => {
-    let flat: PermissionNode[] = []
-    nodes.forEach(node => {
-        flat.push(node)
-        if (node.children) {
-            flat = [...flat, ...flattenTree(node.children)]
-        }
-    })
-    return flat
-}
-
-// Check status logic
-type CheckedState = "checked" | "unchecked" | "indeterminate"
-
-const getNodeState = (node: PermissionNode, selectedSlugs: string[]): CheckedState => {
-    // Leaf node
-    if (!node.children || node.children.length === 0) {
-        return selectedSlugs.includes(node.id) ? "checked" : "unchecked"
-    }
-
-    // Group node
-    const leafSlugs = getLeafSlugs(node)
-    const checkedLeaves = leafSlugs.filter(slug => selectedSlugs.includes(slug))
-
-    if (checkedLeaves.length === 0) return "unchecked"
-    if (checkedLeaves.length === leafSlugs.length) return "checked"
-    return "indeterminate"
-}
-
-// --- Components ---
-
 function PermissionRow({
     node,
     selectedSlugs,
-    onToggle,
+    onChange,
     level = 0,
     searchTerm = ""
 }: {
     node: PermissionNode
     selectedSlugs: string[]
-    onToggle: (node: PermissionNode, currentState: CheckedState) => void
+    onChange: (slugs: string[]) => void
     level?: number
     searchTerm?: string
 }) {
-    const [isOpen, setIsOpen] = useState(true)
-    const hasChildren = node.children && node.children.length > 0
-    const state = getNodeState(node, selectedSlugs)
+    // Determine if we should be open by default
+    const [isOpen, setIsOpen] = useState(level < 1 || !!searchTerm)
 
-    // Filter logic: If search term exists, only show if self or children match
+    const hasChildren = node.children && node.children.length > 0
+    // A node is a "Leaf Cluster" if it has children, but those children are the actual leaves (no grandchildren)
+    const isLeafCluster = hasChildren && node.children!.every(c => !c.children || c.children.length === 0)
+
+    const leafSlugs = useMemo(() => getLeafSlugs(node), [node])
+    const selectedCount = leafSlugs.filter(s => selectedSlugs.includes(s)).length
+
+    // Status Logic
+    const isFullAccess = selectedCount === leafSlugs.length && leafSlugs.length > 0
+    const isHidden = selectedCount === 0
+
+    // Handlers
+    const handleFullAccess = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        const newSlugs = new Set([...selectedSlugs, ...leafSlugs])
+        onChange(Array.from(newSlugs))
+    }
+
+    const handleHidden = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        // Just clear the selection for this node's leaves, DON'T disable
+        const newSlugs = selectedSlugs.filter(s => !leafSlugs.includes(s))
+        onChange(newSlugs)
+    }
+
+    // Search Logic
     const matchesSearch = useMemo(() => {
         if (!searchTerm) return true
         const term = searchTerm.toLowerCase()
         const selfMatch = node.label.toLowerCase().includes(term) || (node.description?.toLowerCase().includes(term))
         if (selfMatch) return true
-        // Check children
         if (node.children) {
-            const childMatch = node.children.some(c => {
-                // Simple check if any descendant matches (this is recursive in full tree but simplified here for prop drilling)
-                // For now, we rely on the parent ensuring this node is rendered only if relevant.
-                return true // Logic handled by parent map usually, but here we construct logical tree
-            })
-            // Re-implement search deep check would be expensive here. 
-            // Better strategy: Filter the TREE data before rendering.
-            return true
+            return node.children.some(c => JSON.stringify(c).toLowerCase().includes(term))
         }
         return false
     }, [node, searchTerm])
 
+    if (!matchesSearch) return null
 
-    const handleCheckboxChange = () => {
-        onToggle(node, state)
-    }
+    // --- CASE 1: LEAF CLUSTER (Smart MultiSelect - NO ACCORDION) ---
+    if (isLeafCluster) {
+        const realOptions = node.children!.map(c => ({ label: c.label, value: c.id }))
+        const smartOptions = [
+            { label: "✅ Tam İcazə", value: "__ALL__" },
+            { label: "🚫 Gizlət", value: "__NONE__" },
+            ...realOptions
+        ]
 
-    // Icon for dangerous permissions
-    const DangerousIcon = () => (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger>
-                    <ShieldAlert className="w-4 h-4 text-amber-500 ml-2" />
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Bu riskli icazədir. Ehtiyatla verin.</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    )
+        const clusterSelection = [
+            ...(isFullAccess ? ["__ALL__"] : []),
+            ...selectedSlugs.filter(s => realOptions.some(o => o.value === s))
+        ]
 
-    return (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-            <div
-                className={cn(
-                    "flex items-center py-2 px-2 hover:bg-muted/50 rounded-md transition-colors group",
-                    level > 0 && "ml-4 border-l pl-4"
-                )}
-            >
-                {/* Expand Toggle */}
-                {hasChildren ? (
-                    <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 mr-2 shrink-0">
-                            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </Button>
-                    </CollapsibleTrigger>
-                ) : (
-                    <div className="w-6 mr-2 shrink-0" /> // Spacer
-                )}
+        const handleSmartChange = (values: string[]) => {
+            console.log("[SmartChange] Input:", values, "State:", { isFullAccess, isHidden })
+            const hasAll = values.includes("__ALL__")
+            const hasNone = values.includes("__NONE__")
 
-                {/* Checkbox */}
-                <div
-                    className={cn(
-                        "flex items-center justify-center h-4 w-4 rounded-sm border border-primary mr-3 cursor-pointer transition-colors",
-                        state === "checked" ? "bg-primary text-primary-foreground" :
-                            state === "indeterminate" ? "bg-primary/50 text-primary-foreground" : "bg-transparent"
-                    )}
-                    onClick={handleCheckboxChange}
-                >
-                    {state === "checked" && <Check className="h-3 w-3" />}
-                    {state === "indeterminate" && <Minus className="h-3 w-3" />}
+            let newClusterSlugs: string[] = []
+
+            if (hasAll && !isFullAccess) {
+                console.log("-> Select ALL triggered")
+                newClusterSlugs = realOptions.map(o => o.value)
+            } else if (isFullAccess && !hasAll && !hasNone) {
+                console.log("-> Uncheck ALL triggered (Clearing)")
+                newClusterSlugs = []
+            } else if (hasNone && !isHidden) {
+                console.log("-> HIDE triggered (Clearing)")
+                newClusterSlugs = []
+            } else {
+                console.log("-> Standard Update")
+                newClusterSlugs = values.filter(v => v !== "__ALL__" && v !== "__NONE__")
+            }
+
+            const otherSlugs = selectedSlugs.filter(s => !leafSlugs.includes(s))
+            onChange([...otherSlugs, ...newClusterSlugs])
+        }
+
+        // Log render state specifically for debugging the mismatch
+        console.log(`[Render] ${node.label} Full:${isFullAccess} Sel:${clusterSelection.length} HasAll:${clusterSelection.includes("__ALL__")} Input:${isHidden ? "Placehold" : "Badges"}`)
+
+        return (
+            <div className={cn(
+                "flex flex-row items-center justify-between px-4 h-14 mb-2 rounded-lg transition-all border",
+                isFullAccess ? "bg-green-50/50 border-green-200 dark:bg-green-900/20 dark:border-green-800" : "bg-card border-border dark:bg-muted/5 dark:border-border hover:border-primary/20",
+                isHidden && "bg-muted/5 border-dashed border-muted-foreground/30 opacity-95",
+                level > 0 && "ml-6"
+            )}>
+                <div className="flex items-center gap-2 min-w-[200px]">
+                    <div className="w-6 h-6 mr-2 shrink-0" aria-hidden="true" />
+                    {node.scope === 'SYSTEM' && <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200 shadow-sm">SYS</Badge>}
+                    {node.scope === 'TENANT' && <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-orange-50 text-orange-700 border-orange-200 shadow-sm">ORQ</Badge>}
+
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-sm leading-none">{node.label}</span>
+                    </div>
+                    {node.isDangerous && <ShieldAlert className="w-4 h-4 text-amber-500" />}
                 </div>
 
-                {/* Label & Meta */}
-                <div className="flex-1 flex items-center justify-between cursor-pointer" onClick={handleCheckboxChange}>
-                    <div className="flex items-center">
-                        <span className={cn("text-sm font-medium", searchTerm && node.label.toLowerCase().includes(searchTerm.toLowerCase()) && "bg-yellow-100 dark:bg-yellow-900/40")}>
-                            {node.label}
-                        </span>
-                        {node.isDangerous && <DangerousIcon />}
-                    </div>
+                <div className="flex-1 max-w-xl pl-4">
+                    <MultiSelect
+                        options={smartOptions}
+                        selected={clusterSelection}
+                        onChange={handleSmartChange}
+                        placeholder={isFullAccess ? "Bütün icazələr seçilib" : isHidden ? "İcazələri seçin..." : `${clusterSelection.length} icazə seçilib`}
+                        className="bg-background shadow-sm h-9"
+                        maxCount={3}
+                    />
+                </div>
+            </div>
+        )
+    }
 
-                    {node.description && (
-                        <span className="text-xs text-muted-foreground hidden sm:block truncate max-w-[300px] ml-4">
-                            {node.description}
-                        </span>
+    // --- CASE 2: GROUP (ACCORDION WITH HEADER BUTTONS) ---
+    return (
+        <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full mb-2">
+            <div
+                className={cn(
+                    "flex flex-row items-center justify-between px-4 h-14 mb-2 rounded-lg transition-all border select-none cursor-pointer",
+                    isFullAccess ? "bg-green-50/50 border-green-200 dark:bg-green-900/20 dark:border-green-800" : "bg-card border-border dark:bg-muted/5 dark:border-border hover:border-primary/20",
+                    level > 0 && "ml-6"
+                )}
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 mr-2 shrink-0 text-muted-foreground/60 group-hover:text-foreground transition-colors">
+                    {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+
+                <div className="flex items-center gap-2 flex-1">
+                    <span className={cn("text-sm text-foreground/90", level === 0 ? "font-bold text-base uppercase tracking-tight" : "font-medium")}>
+                        {node.label}
+                    </span>
+                    {level === 0 && (
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1 text-muted-foreground font-normal">
+                            {leafSlugs.length} Module
+                        </Badge>
                     )}
+                </div>
+
+                {/* Group Header Actions - ONLY VISIBLE HERE */}
+                <div className="flex items-center gap-2 mr-1">
+                    <div className="flex gap-1 bg-background/50 rounded-md p-0.5 border border-transparent hover:border-border transition-all" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            variant={isFullAccess ? "default" : "ghost"}
+                            size="sm"
+                            className={cn("h-7 text-[10px] px-2.5 transition-all font-medium",
+                                isFullAccess ? "bg-green-600 hover:bg-green-700 text-white shadow-sm" : "text-muted-foreground hover:text-green-600 hover:bg-green-50"
+                            )}
+                            onClick={handleFullAccess}
+                            title="Bütün qrupu seç"
+                        >
+                            <Check className="w-3.5 h-3.5 mr-1" />
+                            Tam İcazə
+                        </Button>
+                        <div className="w-[1px] h-4 bg-border my-auto mx-0.5" />
+                        <Button
+                            variant={isHidden ? "destructive" : "ghost"}
+                            size="sm"
+                            className={cn("h-7 text-[10px] px-2.5 transition-all font-medium",
+                                isHidden ? "bg-red-500 hover:bg-red-600 text-white shadow-sm" : "text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                            )}
+                            onClick={handleHidden}
+                            title="Bütün qrupu sıfırla"
+                        >
+                            <EyeOff className="w-3.5 h-3.5 mr-1" />
+                            Gizlət
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {hasChildren && (
-                <CollapsibleContent>
-                    <div className="mt-1">
-                        {node.children!.map(child => (
-                            <PermissionRow
-                                key={child.id}
-                                node={child}
-                                selectedSlugs={selectedSlugs}
-                                onToggle={onToggle}
-                                level={level + 1}
-                                searchTerm={searchTerm}
-                            />
-                        ))}
-                    </div>
-                </CollapsibleContent>
-            )}
+            <CollapsibleContent>
+                <div className={cn(
+                    "pl-4 py-3 space-y-3",
+                    level === 0 ? "border border-t-0 rounded-b-md p-4 bg-muted/5 shadow-inner" : "border-l-2 ml-7 my-1 border-muted/50"
+                )}>
+                    {node.children!.map(child => (
+                        <PermissionRow
+                            key={child.id}
+                            node={child}
+                            selectedSlugs={selectedSlugs}
+                            onChange={onChange}
+                            level={level + 1}
+                            searchTerm={searchTerm}
+                        />
+                    ))}
+                </div>
+            </CollapsibleContent>
         </Collapsible>
     )
 }
 
-// --- Main Component ---
-
 export function PermissionTreeEditor({ permissions, selectedSlugs, onChange, className }: PermissionTreeEditorProps) {
     const [searchTerm, setSearchTerm] = useState("")
 
-    // Toggle Logic
-    const handleToggle = (node: PermissionNode, currentState: CheckedState) => {
-        let newSlugs = [...selectedSlugs]
-        const targetSlugs = getLeafSlugs(node)
-
-        if (currentState === "unchecked" || currentState === "indeterminate") {
-            // Select all children
-            // Add any that aren't already there
-            targetSlugs.forEach(slug => {
-                if (!newSlugs.includes(slug)) newSlugs.push(slug)
-            })
-        } else {
-            // Deselect all children
-            newSlugs = newSlugs.filter(slug => !targetSlugs.includes(slug))
-        }
-
-        onChange(newSlugs)
-    }
-
-    // Filtering logic
-    const filteredPermissions = useMemo(() => {
-        if (!searchTerm) return permissions
-
-        const filterNode = (node: PermissionNode): PermissionNode | null => {
-            const selfMatch = node.label.toLowerCase().includes(searchTerm.toLowerCase()) || (node.description?.toLowerCase().includes(searchTerm.toLowerCase()))
-
-            let filteredChildren: PermissionNode[] = []
-            if (node.children) {
-                filteredChildren = node.children.map(filterNode).filter(Boolean) as PermissionNode[]
-            }
-
-            if (selfMatch || filteredChildren.length > 0) {
-                return { ...node, children: filteredChildren.length > 0 ? filteredChildren : undefined }
-            }
-            return null
-        }
-
-        return permissions.map(filterNode).filter(Boolean) as PermissionNode[]
-    }, [permissions, searchTerm])
-
     return (
         <div className={cn("flex flex-col space-y-4", className)}>
-            {/* Search Bar */}
             <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="İcazələri axtar (ad, təsvir...)"
-                    className="pl-9"
+                    placeholder="İcazələri axtar (modul adı, kod, açıqlama)..."
+                    className="pl-9 bg-card py-5 shadow-sm border-muted-foreground/20 focus-visible:ring-primary/20"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            {/* Tree */}
-            <div className="border rounded-md p-4 min-h-[300px] max-h-[600px] overflow-y-auto bg-card">
-                {filteredPermissions.length > 0 ? (
-                    filteredPermissions.map(node => (
+            <div className="space-y-4 min-h-[400px]">
+                {permissions.length > 0 ? (
+                    permissions.map(node => (
                         <PermissionRow
                             key={node.id}
                             node={node}
                             selectedSlugs={selectedSlugs}
-                            onToggle={handleToggle}
+                            onChange={onChange}
                             searchTerm={searchTerm}
                         />
                     ))
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                        <Search className="h-10 w-10 mb-4 opacity-20" />
-                        <p>Heç nə tapılmadı</p>
+                    <div className="text-center py-16 text-muted-foreground flex flex-col items-center border-2 border-dashed rounded-xl bg-muted/5">
+                        <ShieldAlert className="w-12 h-12 text-muted-foreground/20 mb-3" />
+                        <p className="font-medium text-lg">Göstəriləcək icazə tapılmadı.</p>
+                        <p className="text-sm text-muted-foreground/60 mt-1">Axtarış sözünü dəyişin və ya filtrləri yoxlayın.</p>
                     </div>
                 )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-                <span>Seçilib: {selectedSlugs.length} icazə</span>
-                <div className="flex gap-4">
-                    <span className="flex items-center"><div className="w-3 h-3 bg-primary rounded-sm mr-1" /> Seçilib</span>
-                    <span className="flex items-center"><div className="w-3 h-3 bg-primary/50 rounded-sm mr-1" /> Qismən</span>
-                    <span className="flex items-center"><div className="w-3 h-3 border border-primary rounded-sm mr-1" /> Boş</span>
+            <div className="sticky bottom-0 bg-background/80 backdrop-blur-md p-4 border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] rounded-t-xl flex items-center justify-between z-10 transition-all">
+                <div className="flex items-center gap-3">
+                    <div className={cn("p-2.5 rounded-full transition-colors", selectedSlugs.length > 0 ? "bg-primary/10" : "bg-muted")}>
+                        <Check className={cn("w-5 h-5", selectedSlugs.length > 0 ? "text-primary" : "text-muted-foreground")} />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-xl leading-none tabular-nums tracking-tight">{selectedSlugs.length}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Seçilmiş Səlahiyyət</span>
+                    </div>
                 </div>
+                <Badge variant="outline" className="text-xs font-normal text-muted-foreground/80 bg-background/50 backdrop-blur px-3 py-1">
+                    Avtomatik yadda saxlanılır
+                </Badge>
             </div>
         </div>
     )

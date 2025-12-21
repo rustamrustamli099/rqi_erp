@@ -38,20 +38,20 @@ export default function LoginPage() {
             await login({ email, password, rememberMe }).unwrap()
             navigate("/")
         } catch (err: any) {
-            const errorData = err?.data;
-            // NestJS Exception Filter wraps object in 'message' property
-            const isNoAccess = err?.status === 403 && (
-                errorData?.message?.error === 'NO_ACCESS' ||
-                errorData?.error === 'NO_ACCESS'
-            );
+            toast.dismiss();
+            
+            const status = err?.status;
+            const data = err?.data;
 
-            if (isNoAccess) {
+            if (status === 403) {
                 toast.error("Giriş Məhdudlaşdırılıb", {
+                    id: "auth-forbidden",
                     description: "Hesabınız aktivdir, lakin sizə heç bir səlahiyyət təyin edilməyib. Zəhmət olmasa administratorla əlaqə saxlayın.",
                     duration: 5000,
                 });
             } else {
-                setError("Invalid email or password")
+                const msg = typeof data?.message === 'string' ? data.message : "Giriş mümkün olmadı";
+                setError(msg);
             }
         }
     }

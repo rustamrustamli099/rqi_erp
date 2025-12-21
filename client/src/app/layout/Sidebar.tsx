@@ -340,7 +340,22 @@ export function DesktopSidebar() {
                                 location={location}
                             />
                         ))
-                    ) : null}
+                    ) : (
+                        <div className={cn("flex flex-col items-center justify-center py-12 text-center px-4", collapsed && "hidden")}>
+                            <ShieldAlert className="h-8 w-8 text-muted-foreground/50 mb-3" />
+                            <p className="text-xs text-muted-foreground mb-3">
+                                Naviqasiya menyusu boşdur. Səlahiyyətlərinizi yoxlayın.
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs w-full"
+                                onClick={() => window.location.reload()}
+                            >
+                                <RefreshCw className="h-3 w-3 mr-2" /> Yenilə
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 

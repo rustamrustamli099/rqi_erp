@@ -13,8 +13,15 @@ import { HelpProvider } from "@/app/context/HelpContext";
 import { AuthProvider } from "@/domains/auth/context/AuthContext";
 import { FeatureFlagProvider } from "@/domains/system-console/feature-flags/context/FeatureFlagContext";
 
+// Auth Pages
+import { LoginPage, ForgotPasswordPage } from "@/domains/auth"
+import ForbiddenPage from "@/app/pages/ForbiddenPage";
+import AccessDeniedPage from "@/app/pages/AccessDeniedPage";
+import { ImpersonationBanner } from "@/shared/components/auth/ImpersonationBanner";
+import { RootRedirect } from "@/app/routing/RootRedirect";
+
 // Lazy Load Domains
-// const AuthRoutes = lazy(() => import("@/domains/auth/routes")) // AuthRoutes handled via Public API exports or MainLayout logic if needed. Actually we use LoginPage directly.
+// const AuthRoutes = lazy(() => import("@/domains/auth/routes")) 
 const AdminRoutes = lazy(() => import("@/app/routing/admin.routes"));
 const TenantRoutes = lazy(() => import("@/app/routing/tenant.routes"))
 const FinanceRoutes = lazy(() => import("@/app/routing/finance.routes"))
@@ -23,29 +30,17 @@ const HRRoutes = lazy(() => import("@/app/routing/hr.routes"))
 const DashboardRoutes = lazy(() => import("@/domains/dashboard").then(module => ({ default: module.DashboardRoutes })))
 const BranchesRoutes = lazy(() => import("@/domains/branches").then(module => ({ default: module.BranchesRoutes })))
 const PaymentRequiredPage = lazy(() => import("@/domains/public/views/PaymentRequiredPage"))
+const WorkspaceRoutes = lazy(() => import("@/app/routing/workspace.routes"));
 
-// Auth Pages (Keep direct for faster initial load, or lazy them too)
-// Auth Pages (Keep direct for faster initial load, or lazy them too)
-import { LoginPage, ForgotPasswordPage } from "@/domains/auth"
-import ForbiddenPage from "@/app/pages/ForbiddenPage"; // Updated to new SAP-styled page
-import AccessDeniedPage from "@/app/pages/AccessDeniedPage";
-import { ImpersonationBanner } from "@/shared/components/auth/ImpersonationBanner";
-
-
-
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
 
 // --- Auth Wrappers ---
 const AuthenticatedLayout = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
-  const { permissions, isLoading } = usePermissions()
+  // const { permissions, isLoading } = usePermissions() // Removed to prevent double loading or conflicts with RootRedirect which handles redirection. 
+  // Actually, keeping usePermissions hook here is good for global permission state, but we should handle redirection inside RootRedirect or specific guards.
+  // For now leaving simple auth check.
 
-  if (isLoading) return <PageLoader />
   if (!isAuthenticated) return <Navigate to="/login" />
-
-  if (!permissions || permissions.length === 0) {
-    return <Navigate to="/access-denied" replace />
-  }
 
   return <MainLayout><Outlet /></MainLayout>
 }
@@ -85,16 +80,17 @@ function App() {
 
                   {/* Authenticated Routes WITH Sidebar */}
                   <Route element={<AuthenticatedLayout />}>
-                    <Route path="/" element={<Navigate to="/admin" replace />} />
 
-                    {/* Shell Dashboard */}
-                    <Route path="/admin" element={
+                    {/* Intelligent Root Redirect */}
+                    <Route path="/" element={<RootRedirect />} />
+
+                    {/* Tenant Portal (Workspace) */}
+                    <Route path="/dashboard/*" element={
                       <DomainErrorBoundary domain="dashboard">
-                        <DashboardRoutes />
+                        <WorkspaceRoutes />
                       </DomainErrorBoundary>
                     } />
 
-                    {/* Domain Mounting Points */}
                     {/* Admin Panel */}
                     <Route path="/admin/*" element={
                       <DomainErrorBoundary domain="system">
@@ -162,4 +158,3 @@ function App() {
 }
 
 export default App
-

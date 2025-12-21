@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
-import DashboardPage from "@/domains/dashboard/views/DashboardPage";
+import AdminDashboard from "@/domains/dashboard/views/AdminDashboard";
 import UsersPage from "@/domains/identity/views/UsersPage";
 import ProfilePage from "@/domains/identity/views/ProfilePage";
 import SettingsPage from "@/domains/settings/SettingsPage";
@@ -26,7 +26,7 @@ export default function AdminRoutes() {
 
             <Route path="dashboard" element={
                 <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.DASHBOARD.VIEW}>
-                    <DashboardPage />
+                    <AdminDashboard />
                 </ProtectedRoute>
             } />
 
@@ -79,7 +79,7 @@ export default function AdminRoutes() {
                 </ProtectedRoute>
             } />
 
-            {/* Monitoring (Moved to System) */}
+            {/* Monitoring */}
             <Route path="monitoring/*" element={
                 <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.CONSOLE.DASHBOARD.READ}>
                     <MonitoringRoutes />
@@ -102,7 +102,6 @@ export default function AdminRoutes() {
 
             {/* Finance */}
             <Route path="finance" element={
-                // TODO: Define canonical slug for Finance if separate from Billing
                 <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.READ}>
                     <FinancePage />
                 </ProtectedRoute>
