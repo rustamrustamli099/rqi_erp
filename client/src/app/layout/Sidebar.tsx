@@ -50,11 +50,23 @@ import {
 
 import logo from "@/assets/logo.png"
 
+// Helper for Deep Navigation Logic
+const findDeepPath = (item: MenuItem): string | undefined => {
+    if (item.path) return item.path;
+    if (item.children) {
+        for (const child of item.children) {
+            const found = findDeepPath(child);
+            if (found) return found;
+        }
+    }
+    return undefined;
+};
+
 const DesktopMenuItem = ({
     item,
     collapsed,
     level = 0,
-    isOpen,
+    openMap,
     onToggle,
     navigate,
     location
@@ -62,17 +74,17 @@ const DesktopMenuItem = ({
     item: MenuItem,
     collapsed: boolean,
     level?: number,
-    isOpen?: boolean,
+    openMap?: Record<string, boolean>,
     navigate: any,
     location: any,
     onToggle?: (label: string) => void
 }) => {
     // Determine active state strictly (exact match or child match)
     // Note: item.path is optional for parents
+    const isOpen = openMap ? !!openMap[item.label] : false;
     const isActiveLink = item.path === location.pathname;
 
-    // FORCE FLAT RENDERING: User wants sub-menus to exist in data (for permissions/tabs) 
-    // but NOT be displayed in the sidebar. The sidebar should act as a flat list of top-level items.
+    // FORCE FLAT RENDERING: User requested revert to previous design
     const hasChildren = false; // item.children && item.children.length > 0;
 
     const isChildActive = item.children?.some(c => c.path?.split('?')[0] === location.pathname);
@@ -110,9 +122,21 @@ const DesktopMenuItem = ({
                         )}
                         style={!collapsed ? { paddingLeft: `${16 + (level * 12)}px` } : {}}
                         onClick={(e) => {
-                            // Fix: Explicitly handle toggle to ensure reliable expansion
                             e.stopPropagation();
-                            if (onToggle) onToggle(item.label);
+
+                            // Smart Logic: Recursive path resolution for deep nested menus
+                            const targetPath = findDeepPath(item);
+
+                            if (targetPath) {
+                                navigate(targetPath);
+                                // Optional: Auto-expand if not already open
+                                if (!isOpen && onToggle) {
+                                    onToggle(item.label);
+                                }
+                            } else {
+                                // Default implementation: Layout toggle
+                                if (onToggle) onToggle(item.label);
+                            }
                         }}
                     >
                         {isMainActive && (
@@ -158,7 +182,8 @@ const DesktopMenuItem = ({
                                 level={level + 1}
                                 navigate={navigate}
                                 location={location}
-                                isOpen={isOpen}
+                                openMap={openMap}
+                                onToggle={onToggle}
                             />
                         ))}
                     </div>
@@ -354,7 +379,7 @@ export function DesktopSidebar() {
                                 key={index}
                                 item={item}
                                 collapsed={collapsed}
-                                isOpen={openBaseMenus[item.label]}
+                                openMap={openBaseMenus}
                                 onToggle={toggleMenu}
                                 navigate={navigate}
                                 location={location}
