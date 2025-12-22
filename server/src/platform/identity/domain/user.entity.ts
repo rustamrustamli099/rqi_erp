@@ -12,7 +12,7 @@ export class User extends AggregateRoot<User> {
         // Schema has tenantId, branchId, roleId.
         // Schema has tenantId, branchId, roleId.
         public tenantId: string | null,
-        public roleId: string | null,
+
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) {

@@ -94,66 +94,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // FIX: Support nested user object (Backend sends { data: { user: { permissions: [] } } })
                 const userObj = responseData.user || responseData;
 
-                // MAPPING STRATEGY:
-                // Backend returns permissions as string[] (mixed legacy/canonical).
-                // We MUST normalize them to canonical here so frontend logic works.
-                const rawPerms: string[] = userObj.permissions || [];
+                // FIX: Broad search for permissions to handle different backend structures
+                // Priority: 1. user.permissions, 2. root.permissions, 3. data.permissions
+                const rawPerms: string[] = userObj.permissions ||
+                    responseData.permissions ||
+                    data.permissions ||
+                    [];
 
                 console.log("[AuthContext] Raw Perms Extracted:", rawPerms.length); // Debug log
 
+                // Mapped (Canonical)
                 const mappedPerms = rawPerms.map(p => {
                     if (isCanonical(p)) return p;
-                    // Try exact match
                     if (LEGACY_TO_CANONICAL_MAP[p]) return LEGACY_TO_CANONICAL_MAP[p];
                     return p;
                 });
 
-                // Dedup and Expand: Implicitly grant VIEW if ANY action is present
-                // This ensures backward compatibility for users with old roles (e.g. MANAGE but no VIEW)
-                const expandedPerms = new Set(mappedPerms);
-                const ACTIONS_IMPLYING_VIEW = ['.read', '.create', '.update', '.delete', '.manage', '.approve', '.export', '.import'];
-
-                // Step 1: Action Hydration (e.g. .read -> .view)
-                mappedPerms.forEach(perm => {
-                    if (typeof perm === 'string') {
-                        // Check if permission ends with any of the known actions
-                        for (const action of ACTIONS_IMPLYING_VIEW) {
-                            if (perm.endsWith(action)) {
-                                const viewPerm = perm.replace(action, '.view');
-                                expandedPerms.add(viewPerm);
-                                // We don't break here just in case, but typically one suffix matches.
-                            }
-                        }
-                    }
-                });
-
-                // Step 2: Bubble Up Logic (Implicit Parent Access) -- APPLIED VIA REWRITE
-                // Logic: if I have x.y.z.view, I imply x.y.view and x.view
-                const viewPerms = Array.from(expandedPerms).filter(p => typeof p === 'string' && p.endsWith('.view'));
-                viewPerms.forEach(perm => {
-                    const parts = perm.split('.');
-                    // platform.settings.general.view => parts length 4.
-                    // Loop: i=2 (general) -> platform.settings.general.view (already exists)
-                    // Loop: i=1 (settings) -> platform.settings.view (ADDED)
-                    // Loop: i=0 (platform) -> platform.view (ADDED) - though usually menu starts at level 1
-
-                    // Iterate backwards from length-2 down to 1
-                    for (let i = parts.length - 2; i >= 1; i--) {
-                        const subPath = parts.slice(0, i + 1).join('.') + '.view';
-                        expandedPerms.add(subPath);
-                    }
-                });
-
-                let uniquePerms = Array.from(expandedPerms);
-
-                console.log("[AuthContext] Effective Perms:", uniquePerms); // Debug Log
-
+                // STRICT IMMUTABILITY (User Request Phase 31)
+                // We do NOT expand permissions. We do NOT infer parents.
+                // We only deduplicate to be safe.
+                const uniquePerms = Array.from(new Set(mappedPerms));
+                
+                console.log("[AuthContext] FINAL PERMISSIONS (No Expansion):", uniquePerms);
                 setPermissionsState(uniquePerms);
 
-                // Also could update redux user if needed, but we keep local state for perms
             } else {
                 console.warn("Failed to refresh session - 401/403?");
-                // If 401, maybe logout? For now just warn.
             }
 
         } catch (e) {
@@ -163,22 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // Absolute Security Rule: Zero-Permission Lockout
-    useEffect(() => {
-        if (!isLoading && isAuthenticated) {
-            // Strict RBAC: Even Owners need permissions (assigned directly or via role)
-            // We allow access if permissions array is empty ONLY if we are already on the denied page
-            // or if it's a public route (though isAuthenticated shouldn't be true there ideally)
-            if (permissions.length === 0) {
-                const currentPath = window.location.pathname;
-                // Avoid infinite loop
-                if (currentPath !== '/access-denied' && !currentPath.startsWith('/login')) {
-                    console.warn("Security Alert: User has 0 permissions. Redirecting to Access Denied.");
-                    window.location.href = '/access-denied';
-                }
-            }
-        }
-    }, [isLoading, isAuthenticated, permissions]);
+    // Zero-Permission Lockout is now handled by AuthGate for flicker-free experience.
+    // useEffect(() => { ... }) removed.
 
     // Initial Load & Impersonation Check
     useEffect(() => {
@@ -193,15 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (isAuthenticated) {
                 await loadSessionData();
             } else {
-                // Not authenticated, verify if we have token but redux is empty (refresh case)
-                // If redux persistence is working, isAuthenticated is true.
-                // If not, we might be reloading. 
                 const token = localStorage.getItem('accessToken');
                 if (token) {
-                    // Try to restore session via loadSessionData?
-                    // Usually we rely on Redux persist. 
-                    // If Redux is empty but token exists, we should probably fetch /me and fill Redux.
-                    // For now, assum Redux persist works.
                     await loadSessionData();
                 } else {
                     setLoading(false);

@@ -1,38 +1,33 @@
 import { Navigate } from "react-router-dom"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
-import { PermissionSlugs } from "@/app/security/permission-slugs"
+import { useAuth } from "@/domains/auth/context/AuthContext"
+import { getFirstAllowedRoute } from "@/app/security/route-utils"
 import { PageLoader } from "@/shared/components/PageLoader"
 
 /**
  * RootRedirect
  * 
  * Intelligent redirection based on user scope/permissions.
- * - System Admins -> /admin/dashboard
- * - Tenant Users -> /dashboard
- * - No Permissions -> /access-denied
+ * Dynamically finds the first accessible route in the user's menu.
  */
 export function RootRedirect() {
-    const { user, permissions, isLoading } = usePermissions()
+    const { isAuthenticated, permissions, isLoading, activeTenantType } = useAuth();
 
     if (isLoading) {
         return <PageLoader />
     }
 
-    if (!user) {
+    if (!isAuthenticated) {
         return <Navigate to="/login" replace />
     }
 
-    // Priority 1: System Admin & Platform Staff
-    // We check for the canonical dashboard view permission which is auto-hydrated by AuthContext
-    if (permissions.includes(PermissionSlugs.PLATFORM.DASHBOARD.VIEW)) {
-        return <Navigate to="/admin/dashboard" replace />
+    // Dynamic Route Resolution (SAP-Grade)
+    // Instead of hardcoding /admin/dashboard, we find the first valid leaf node.
+    const targetRoute = getFirstAllowedRoute(permissions, activeTenantType);
+
+    // If no route found (even if perms exist), go to Access Denied
+    if (targetRoute === '/access-denied') {
+        return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />
     }
 
-    // Priority 2: Tenant User
-    if (permissions.includes(PermissionSlugs.TENANT.DASHBOARD.VIEW)) {
-        return <Navigate to="/dashboard" replace />
-    }
-
-    // Fallback: Access Denied
-    return <Navigate to="/access-denied" replace />
+    return <Navigate to={targetRoute} replace />
 }

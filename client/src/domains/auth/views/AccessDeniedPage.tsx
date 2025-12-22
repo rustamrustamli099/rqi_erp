@@ -1,15 +1,25 @@
 import { Button } from "@/shared/components/ui/button";
 import { ShieldAlert, LogOut } from "lucide-react";
 import { useAuth } from "@/domains/auth/context/AuthContext";
-// Assuming AuthContext exists and exposes logout. Need to check if not.
-// If useAuth relies on protected context, this page might need to be careful.
-// But AccessDenied is usually for Authenticated users with no Scope.
-// I'll try to import useAuth and navigate.
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 export default function AccessDeniedPage() {
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const location = useLocation();
+    const { logout, permissions } = useAuth();
+
+    useEffect(() => {
+        // Strict Security: Prevent users from manually accessing /access-denied
+        // EXCEPTION: Users with 0 permissions are sent here by AuthContext.
+        const isZeroPerm = permissions.length === 0;
+        const hasRedirectState = location.state?.error === 'access_denied_redirect';
+
+        if (!isZeroPerm && !hasRedirectState) {
+            console.warn("Manual access to /access-denied blocked. Redirecting to root.");
+            navigate('/', { replace: true });
+        }
+    }, [location, navigate, permissions]);
 
     const handleLogout = () => {
         logout();

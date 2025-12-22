@@ -73,32 +73,32 @@ const ALL_SIDEBAR_ITEMS = [
     {
         title: "Ümumi Tənzimləmələr",
         items: [
-            { id: "general", label: "Şirkət Profili", icon: Settings, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.VIEW },
-            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.VIEW },
+            { id: "general", label: "Şirkət Profili", icon: Settings, permission: 'platform.settings.general.view' },
+            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: 'platform.settings.general.notification_engine.view' },
         ]
     },
     {
         title: "Kommunikasiya",
         items: [
-            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW },
-            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW },
+            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: 'platform.settings.communication.view' },
+            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: 'platform.settings.communication.view' },
         ]
     },
     {
         title: "Təhlükəsizlik & Giriş",
         items: [
-            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW },
-            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW },
-            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW },
+            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: 'platform.settings.security.view' },
+            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: 'platform.settings.security.view' },
+            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: 'platform.settings.security.user_rights.role.view' },
         ]
     },
     {
         title: "Sistem Konfiqurasiyası",
         items: [
-            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
-            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
-            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
-            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
+            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: 'platform.settings.system_configurations.view' },
+            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: 'platform.settings.system_configurations.view' },
+            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: 'platform.settings.system_configurations.view' },
+            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: 'platform.settings.system_configurations.workflow.configuration.view' },
         ]
     }
 ]
@@ -108,7 +108,8 @@ const ALL_SIDEBAR_ITEMS = [
 export default function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
     const [timezone, setTimezone] = useState("Asia/Baku")
-    const { can, isLoading } = usePermissions()
+    const { can, isLoading, permissions } = usePermissions()
+    console.log("[SettingsPage] Permissions:", permissions);
 
     if (isLoading) {
         return (

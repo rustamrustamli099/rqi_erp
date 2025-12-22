@@ -19,6 +19,7 @@ const local_strategy_1 = require("./local.strategy");
 const mfa_service_1 = require("./mfa.service");
 const permission_service_1 = require("./permission.service");
 const permission_cache_service_1 = require("./permission-cache.service");
+const refresh_token_service_1 = require("./refresh-token.service");
 const prisma_service_1 = require("../../prisma.service");
 let AuthModule = class AuthModule {
 };
@@ -38,9 +39,9 @@ exports.AuthModule = AuthModule = __decorate([
                 inject: [config_1.ConfigService],
             }),
         ],
-        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, mfa_service_1.MfaService, prisma_service_1.PrismaService, permission_service_1.PermissionService, permission_cache_service_1.PermissionCacheService],
+        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, mfa_service_1.MfaService, prisma_service_1.PrismaService, permission_service_1.PermissionService, permission_cache_service_1.PermissionCacheService, refresh_token_service_1.RefreshTokenService],
         controllers: [auth_controller_1.AuthController],
-        exports: [auth_service_1.AuthService, jwt_1.JwtModule, permission_service_1.PermissionService, permission_cache_service_1.PermissionCacheService],
+        exports: [auth_service_1.AuthService, jwt_1.JwtModule, permission_service_1.PermissionService, permission_cache_service_1.PermissionCacheService, refresh_token_service_1.RefreshTokenService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

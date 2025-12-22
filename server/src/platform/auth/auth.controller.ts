@@ -26,7 +26,9 @@ export class AuthController {
         }
 
         const rememberMe = req.body.rememberMe === true;
-        const loginResult = await this.authService.login(req.user, rememberMe);
+        const ip = req.ip;
+        const agent = req.headers['user-agent'];
+        const loginResult = await this.authService.login(req.user, rememberMe, ip, agent);
         const { access_token, refresh_token, expiresIn } = loginResult;
 
         const days = expiresIn === '30d' ? 30 : 7;
@@ -44,7 +46,12 @@ export class AuthController {
     }
 
     @Post('logout')
-    async logout(@Res({ passthrough: true }) response: Response) {
+    async logout(@Request() req, @Res({ passthrough: true }) response: Response) {
+        const refreshToken = req.cookies['Refresh'];
+        if (refreshToken) {
+            await this.authService.logout(refreshToken);
+        }
+
         response.clearCookie('Refresh', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -90,20 +97,10 @@ export class AuthController {
         const refreshToken = req.cookies['Refresh'];
         if (!refreshToken) throw new UnauthorizedException('No Refresh Token found');
 
-        // We decode the token to get userId (or pass token to service to decode)
-        // Service.refreshTokens expects (userId, refreshToken)
-        // We can extract userId from the unverified decode or let service handle verification first.
-        // Better: AuthService.refreshTokens verifies it. But we need userId.
-        // Let's decode it quickly here or update service to take just token?
-        // Service currently takes (userId, refreshToken).
-        // Let's assume the payload has 'sub' as userId.
+        const ip = req.ip;
+        const agent = req.headers['user-agent'];
 
-        // Quick decode without verification (verification happens in service)
-        const jwt = require('jsonwebtoken'); // Or use JwtService decode
-        const decoded = jwt.decode(refreshToken) as any;
-        if (!decoded || !decoded.sub) throw new UnauthorizedException('Invalid Refresh Token format');
-
-        const result = await this.authService.refreshTokens(decoded.sub, refreshToken);
+        const result = await this.authService.refreshTokens(refreshToken, ip, agent);
 
         const { access_token, refresh_token: newRefreshToken } = result;
 

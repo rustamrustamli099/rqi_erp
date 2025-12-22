@@ -17,7 +17,7 @@ export declare class AuthController {
         mfaRequired?: undefined;
         userId?: undefined;
     }>;
-    logout(response: Response): Promise<{
+    logout(req: any, response: Response): Promise<{
         message: string;
     }>;
     verifyMfaLogin(body: {

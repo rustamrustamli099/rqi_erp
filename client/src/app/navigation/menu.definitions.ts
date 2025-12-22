@@ -52,7 +52,7 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'İstifadəçilər', // Users
     path: '/admin/users',
     icon: Users,
-    requiredPermissions: ['platform.users.users.view'],
+    // requiredPermissions: ['platform.users.users.view'],
     children: [{
         id: 'users.all',
         label: 'İstifadəçilər',
@@ -70,9 +70,9 @@ export const PLATFORM_MENU: MenuItem[] = [{
 {
     id: 'billing',
     label: 'Bilinq və Maliyyə', // Billing
-    path: '/admin/billing',
+    // path: '/admin/billing', // Removed for Container Mode
     icon: CreditCard,
-    requiredPermissions: ['platform.billing.view'],
+    // requiredPermissions: ['platform.billing.view'], // Removed for Bottom-Up Logic
     children: [{
         id: 'billing.marketplace',
         label: 'Marketplace',
@@ -129,9 +129,9 @@ export const PLATFORM_MENU: MenuItem[] = [{
 {
     id: 'settings',
     label: 'Tənzimləmələr', // Settings group
-    path: '/admin/settings',
+    // path: '/admin/settings', // Removed for Container Mode
     icon: Settings,
-    requiredPermissions: ['platform.settings.view'],
+    // requiredPermissions: ['platform.settings.view'], // Removed for Bottom-Up Logic
     children: [{
         id: 'settings.general',
         label: 'Ümumi',
@@ -240,9 +240,9 @@ export const PLATFORM_MENU: MenuItem[] = [{
 {
     id: 'console',
     label: 'Sistem Konsolu',
-    path: '/admin/console',
+    // path: '/admin/console', // Removed for Container Mode
     icon: Terminal,
-    requiredPermissions: ['platform.system_console.view'],
+    // requiredPermissions: ['platform.system_console.view'], // Removed for Bottom-Up Logic
     children: [{
         id: 'console.dashboard',
         label: 'Dashboard',
@@ -304,7 +304,7 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'Developer Hub', // Developer Hub group
     path: '/admin/developer',
     icon: Code,
-    requiredPermissions: ['platform.developer_hub.view'],
+    // requiredPermissions: ['platform.developer_hub.view'],
     children: [{
         id: 'dev.api',
         label: 'API İstinadları',

@@ -17,10 +17,8 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) =>
     }
 
     if (isAuthenticated) {
-        // Redirect logic based on role could be expanded here.
-        // For now, default to Admin Dashboard.
-        // If we have tenant users, we might check `activeTenantType` here.
-        return <Navigate to="/admin/dashboard" state={{ from: location }} replace />;
+        // Redirect to root, letting RootRedirect handle the correct dashboard/destination
+        return <Navigate to="/" state={{ from: location }} replace />;
     }
 
     return <>{children}</>;

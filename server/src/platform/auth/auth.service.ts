@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { RedisService } from '../redis/redis.service';
 import { PermissionCacheService } from './permission-cache.service';
 import * as crypto from 'crypto';
+import { RefreshTokenService } from './refresh-token.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,7 @@ export class AuthService {
         private permissionCache: PermissionCacheService,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         private redisService: RedisService, // Injected for revocation
+        private refreshTokenService: RefreshTokenService,
     ) { }
 
     // Fix permissionsCache usage to use redisService if needed, or just use redisService directly in revokeSessions.
@@ -58,7 +60,7 @@ export class AuthService {
         return null;
     }
 
-    async login(user: any, rememberMe: boolean = false) {
+    async login(user: any, rememberMe: boolean = false, ip?: string, agent?: string) {
         // [RBAC] Calculate Permissions via DB
         const effectivePermissions = await this.getEffectivePermissions(user.id, user.tenantId || null);
 
@@ -85,30 +87,23 @@ export class AuthService {
                 .filter(Boolean);
         }
 
-        // Generate Family ID for Refresh Token Rotation
-        const familyId = crypto.randomUUID();
+        // 1. Generate Opaque Refresh Token (Bank-Grade)
+        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
+        const refreshToken = rtResult.token;
+
+        // 2. Access Token
         const payload = {
             email: user.email,
             sub: user.id,
             tenantId: user.tenantId,
-            roles: roleNames, // Multi-Role
-            isOwner: (user as any).isOwner, // Owner Flag
-            familyId // [SEC] Track specific chain of tokens
+            roles: roleNames,
+            isOwner: (user as any).isOwner,
         };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' }); // Short-lived
 
         const expiresIn = rememberMe ? '30d' : '7d';
-        const refreshToken = this.jwtService.sign(payload, { expiresIn });
 
-        // [SEC] Store Family State in Redis
-        // key: rt_family:{userId}:{familyId} -> { current: "hash", valid: true }
-        await this.redisService.set(
-            `rt_family:${user.id}:${familyId}`,
-            JSON.stringify({ current: refreshToken, valid: true }),
-            rememberMe ? 86400 * 30 : 86400 * 7
-        );
-
-        // Update DB for legacy/backup (optional, but keeping it)
+        // Legacy/Backup
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
 
         // Cache permissions
@@ -130,78 +125,40 @@ export class AuthService {
         };
     }
 
-    async refreshTokens(userId: string, refreshToken: string) {
-        let payload: any;
+    async refreshTokens(refreshToken: string, ip?: string, agent?: string) {
+        // Rotate Token (Verifies, Revokes Old, Issues New, Checks Reuse)
+        let rtResult;
         try {
-            payload = this.jwtService.verify(refreshToken);
+            rtResult = await this.refreshTokenService.rotateToken(refreshToken, ip, agent);
         } catch (e) {
-            throw new ForbiddenException('Invalid Token');
+            throw new ForbiddenException('Invalid or Expired Refresh Token');
         }
 
-        const familyId = payload.familyId;
-        if (!familyId) {
-            // Fallback for legacy tokens without familyId (optional, or force logout)
-            throw new ForbiddenException('Legacy Token - Please Login Again');
-        }
-
-        // [SEC] Reuse Detection Check
-        const familyKey = `rt_family:${userId}:${familyId}`;
-        const familyStateStr = await this.redisService.get(familyKey);
-
-        if (!familyStateStr) {
-            throw new ForbiddenException('Session Expired');
-        }
-
-        const familyState = JSON.parse(familyStateStr);
-
-        if (!familyState.valid) {
-            // Reuse detected previously -> Family revoked
-            await this.revokeSessions(userId); // Nuke all sessions for safety
-            throw new ForbiddenException('Refresh Token Reuse Detected - Account Locked');
-        }
-
-        if (familyState.current !== refreshToken) {
-            // [CRITICAL] REUSE DETECTED!
-            // The client is using an OLD token (it was already rotated).
-            // This means they are likely an attacker replaing a stolen token.
-            // ACTION: Revoke the entire family immediately!
-            await this.redisService.set(familyKey, JSON.stringify({ ...familyState, valid: false }), 86400);
-
-            // Optional: Nuke generic sessions
-            await this.revokeSessions(userId);
-
-            throw new ForbiddenException('Security Alert: Token Reuse Detected');
-        }
-
-        // Standard Rotation
+        const userId = rtResult.userId;
         const user = await this.identityUseCase.findUserWithPermissions(userId);
         if (!user) throw new ForbiddenException('User Not Found');
 
-        const newPayload = {
+        // Regenerate Access Token
+        const roleNames = (user as any).roles?.map((ur: any) => ur.role?.name) || [];
+        const payload = {
             email: user.email,
             sub: user.id,
             tenantId: user.tenantId,
-            roles: (user as any).roles?.map((ur: any) => ur.role?.name) || [],
+            roles: roleNames,
             isOwner: (user as any).isOwner,
-            familyId // Preserve family chain
         };
-        const accessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
-        const newRefreshToken = this.jwtService.sign(newPayload, { expiresIn: '7d' });
-
-        // Update Family State
-        await this.redisService.set(
-            familyKey,
-            JSON.stringify({ current: newRefreshToken, valid: true }),
-            86400 * 7
-        );
-
-        // Update DB (Backup)
-        await this.identityUseCase.updateRefreshToken(user.id, newRefreshToken);
+        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
 
         return {
             access_token: accessToken,
-            refresh_token: newRefreshToken,
+            refresh_token: rtResult.token,
         };
+    }
+
+    async logout(refreshToken: string) {
+        if (refreshToken) {
+            await this.refreshTokenService.revokeByToken(refreshToken);
+        }
     }
 
     async loginWithMfa(userId: string, token: string) {

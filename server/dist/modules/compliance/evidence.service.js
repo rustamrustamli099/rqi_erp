@@ -21,11 +21,11 @@ let EvidenceService = class EvidenceService {
         const recentAuditLogs = await this.prisma.auditLog.findMany({
             take: 50,
             orderBy: { createdAt: 'desc' },
-            include: { user: { select: { email: true, role: { select: { name: true } } } } }
+            include: { user: { select: { email: true } } }
         });
         const roles = await this.prisma.role.findMany({
             include: {
-                _count: { select: { users: true } }
+                _count: { select: { userRoles: true } }
             }
         });
         const tenants = await this.prisma.tenant.findMany({
@@ -44,7 +44,7 @@ let EvidenceService = class EvidenceService {
                         tenant_sample: tenants.slice(0, 5),
                         roles_defined: roles.map(r => ({
                             name: r.name,
-                            users: r._count.users,
+                            users: r._count.userRoles,
                             scope: r.tenantId ? 'TENANT' : 'SYSTEM',
                             approval_status: r.status
                         }))

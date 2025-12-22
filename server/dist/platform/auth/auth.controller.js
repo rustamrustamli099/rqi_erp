@@ -31,7 +31,9 @@ let AuthController = class AuthController {
             return { mfaRequired: true, userId: req.user.id };
         }
         const rememberMe = req.body.rememberMe === true;
-        const loginResult = await this.authService.login(req.user, rememberMe);
+        const ip = req.ip;
+        const agent = req.headers['user-agent'];
+        const loginResult = await this.authService.login(req.user, rememberMe, ip, agent);
         const { access_token, refresh_token, expiresIn } = loginResult;
         const days = expiresIn === '30d' ? 30 : 7;
         const maxAge = days * 24 * 60 * 60 * 1000;
@@ -44,7 +46,11 @@ let AuthController = class AuthController {
         });
         return { access_token, user: loginResult.user };
     }
-    async logout(response) {
+    async logout(req, response) {
+        const refreshToken = req.cookies['Refresh'];
+        if (refreshToken) {
+            await this.authService.logout(refreshToken);
+        }
         response.clearCookie('Refresh', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -78,11 +84,9 @@ let AuthController = class AuthController {
         const refreshToken = req.cookies['Refresh'];
         if (!refreshToken)
             throw new common_1.UnauthorizedException('No Refresh Token found');
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.decode(refreshToken);
-        if (!decoded || !decoded.sub)
-            throw new common_1.UnauthorizedException('Invalid Refresh Token format');
-        const result = await this.authService.refreshTokens(decoded.sub, refreshToken);
+        const ip = req.ip;
+        const agent = req.headers['user-agent'];
+        const result = await this.authService.refreshTokens(refreshToken, ip, agent);
         const { access_token, refresh_token: newRefreshToken } = result;
         response.cookie('Refresh', newRefreshToken, {
             httpOnly: true,
@@ -144,9 +148,10 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('logout'),
-    __param(0, (0, common_1.Res)({ passthrough: true })),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
 __decorate([

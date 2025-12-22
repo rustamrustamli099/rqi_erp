@@ -49,17 +49,19 @@ const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
 const redis_service_1 = require("../redis/redis.service");
 const permission_cache_service_1 = require("./permission-cache.service");
-const crypto = __importStar(require("crypto"));
+const refresh_token_service_1 = require("./refresh-token.service");
 let AuthService = class AuthService {
     identityUseCase;
     jwtService;
     permissionCache;
     redisService;
-    constructor(identityUseCase, jwtService, permissionCache, redisService) {
+    refreshTokenService;
+    constructor(identityUseCase, jwtService, permissionCache, redisService, refreshTokenService) {
         this.identityUseCase = identityUseCase;
         this.jwtService = jwtService;
         this.permissionCache = permissionCache;
         this.redisService = redisService;
+        this.refreshTokenService = refreshTokenService;
     }
     async getEffectivePermissions(userId, contextTenantId) {
         const userWithRole = await this.identityUseCase.findUserWithPermissions(userId);
@@ -88,7 +90,7 @@ let AuthService = class AuthService {
         }
         return null;
     }
-    async login(user, rememberMe = false) {
+    async login(user, rememberMe = false, ip, agent) {
         const effectivePermissions = await this.getEffectivePermissions(user.id, user.tenantId || null);
         if (!effectivePermissions || effectivePermissions.length === 0) {
             console.warn(`[AuthService] Login blocked for user ${user.email} due to zero permissions.`);
@@ -106,19 +108,17 @@ let AuthService = class AuthService {
                 .map((ur) => ur.role?.name)
                 .filter(Boolean);
         }
-        const familyId = crypto.randomUUID();
+        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
+        const refreshToken = rtResult.token;
         const payload = {
             email: user.email,
             sub: user.id,
             tenantId: user.tenantId,
             roles: roleNames,
             isOwner: user.isOwner,
-            familyId
         };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
         const expiresIn = rememberMe ? '30d' : '7d';
-        const refreshToken = this.jwtService.sign(payload, { expiresIn });
-        await this.redisService.set(`rt_family:${user.id}:${familyId}`, JSON.stringify({ current: refreshToken, valid: true }), rememberMe ? 86400 * 30 : 86400 * 7);
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
         const scope = user.tenantId ? 'TENANT' : 'SYSTEM';
         await this.permissionCache.setPermissions(user.id, effectivePermissions, user.tenantId, scope);
@@ -136,52 +136,36 @@ let AuthService = class AuthService {
             }
         };
     }
-    async refreshTokens(userId, refreshToken) {
-        let payload;
+    async refreshTokens(refreshToken, ip, agent) {
+        let rtResult;
         try {
-            payload = this.jwtService.verify(refreshToken);
+            rtResult = await this.refreshTokenService.rotateToken(refreshToken, ip, agent);
         }
         catch (e) {
-            throw new common_1.ForbiddenException('Invalid Token');
+            throw new common_1.ForbiddenException('Invalid or Expired Refresh Token');
         }
-        const familyId = payload.familyId;
-        if (!familyId) {
-            throw new common_1.ForbiddenException('Legacy Token - Please Login Again');
-        }
-        const familyKey = `rt_family:${userId}:${familyId}`;
-        const familyStateStr = await this.redisService.get(familyKey);
-        if (!familyStateStr) {
-            throw new common_1.ForbiddenException('Session Expired');
-        }
-        const familyState = JSON.parse(familyStateStr);
-        if (!familyState.valid) {
-            await this.revokeSessions(userId);
-            throw new common_1.ForbiddenException('Refresh Token Reuse Detected - Account Locked');
-        }
-        if (familyState.current !== refreshToken) {
-            await this.redisService.set(familyKey, JSON.stringify({ ...familyState, valid: false }), 86400);
-            await this.revokeSessions(userId);
-            throw new common_1.ForbiddenException('Security Alert: Token Reuse Detected');
-        }
+        const userId = rtResult.userId;
         const user = await this.identityUseCase.findUserWithPermissions(userId);
         if (!user)
             throw new common_1.ForbiddenException('User Not Found');
-        const newPayload = {
+        const roleNames = user.roles?.map((ur) => ur.role?.name) || [];
+        const payload = {
             email: user.email,
             sub: user.id,
             tenantId: user.tenantId,
-            roles: user.roles?.map((ur) => ur.role?.name) || [],
+            roles: roleNames,
             isOwner: user.isOwner,
-            familyId
         };
-        const accessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
-        const newRefreshToken = this.jwtService.sign(newPayload, { expiresIn: '7d' });
-        await this.redisService.set(familyKey, JSON.stringify({ current: newRefreshToken, valid: true }), 86400 * 7);
-        await this.identityUseCase.updateRefreshToken(user.id, newRefreshToken);
+        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
         return {
             access_token: accessToken,
-            refresh_token: newRefreshToken,
+            refresh_token: rtResult.token,
         };
+    }
+    async logout(refreshToken) {
+        if (refreshToken) {
+            await this.refreshTokenService.revokeByToken(refreshToken);
+        }
     }
     async loginWithMfa(userId, token) {
         const user = await this.identityUseCase.findUserById(userId);
@@ -207,6 +191,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [identity_usecase_1.IdentityUseCase,
         jwt_1.JwtService,
         permission_cache_service_1.PermissionCacheService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        refresh_token_service_1.RefreshTokenService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

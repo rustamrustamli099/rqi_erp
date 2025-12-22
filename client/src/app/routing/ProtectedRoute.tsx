@@ -42,8 +42,13 @@ export const ProtectedRoute = ({
         ? hasAll(perms)
         : hasAny(perms);
 
+    // Diagnostic Log (Phase 31)
     if (!hasAccess) {
-        return <Navigate to="/access-denied" replace />;
+        console.warn("[ProtectedRoute] DENIED:", location.pathname, "Req:", perms, "User:", isAuthenticated);
+    }
+
+    if (!hasAccess) {
+        return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />;
     }
 
     return children ? <>{children}</> : <Outlet />;

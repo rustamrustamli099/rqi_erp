@@ -10,13 +10,13 @@ export class EvidenceService {
         const recentAuditLogs = await this.prisma.auditLog.findMany({
             take: 50,
             orderBy: { createdAt: 'desc' },
-            include: { user: { select: { email: true, role: { select: { name: true } } } } }
+            include: { user: { select: { email: true } } }
         });
 
         // 2. Roles & Approvals (CC6.2 - 4-Eyes Principle)
         const roles = await this.prisma.role.findMany({
             include: {
-                _count: { select: { users: true } }
+                _count: { select: { userRoles: true } }
             }
         });
 
@@ -39,7 +39,7 @@ export class EvidenceService {
                         tenant_sample: tenants.slice(0, 5),
                         roles_defined: roles.map(r => ({
                             name: r.name,
-                            users: r._count.users,
+                            users: r._count.userRoles,
                             scope: r.tenantId ? 'TENANT' : 'SYSTEM',
                             approval_status: r.status
                         }))
@@ -62,7 +62,7 @@ export class EvidenceService {
                     evidence: {
                         recent_logs: recentAuditLogs.map(l => ({
                             action: l.action,
-                            actor: l.user?.email || 'SYSTEM',
+                            actor: (l as any).user?.email || 'SYSTEM',
                             time: l.createdAt
                         }))
                     }

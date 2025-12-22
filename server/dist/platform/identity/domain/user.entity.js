@@ -10,10 +10,9 @@ class User extends aggregate_root_1.AggregateRoot {
     isActive;
     isOwner;
     tenantId;
-    roleId;
     createdAt;
     updatedAt;
-    constructor(id, email, passwordHash, fullName, isActive, isOwner, tenantId, roleId, createdAt, updatedAt) {
+    constructor(id, email, passwordHash, fullName, isActive, isOwner, tenantId, createdAt, updatedAt) {
         super();
         this.id = id;
         this.email = email;
@@ -22,7 +21,6 @@ class User extends aggregate_root_1.AggregateRoot {
         this.isActive = isActive;
         this.isOwner = isOwner;
         this.tenantId = tenantId;
-        this.roleId = roleId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }

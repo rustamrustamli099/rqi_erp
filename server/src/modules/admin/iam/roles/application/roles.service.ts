@@ -34,7 +34,7 @@ export class RolesService {
         return this.prisma.role.findMany({
             include: {
                 permissions: true,
-                _count: { select: { users: true } }
+                _count: { select: { userRoles: true } }
             }
         });
     }

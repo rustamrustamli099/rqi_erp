@@ -21,7 +21,7 @@ export declare class RolesService {
     }>;
     findAll(): Promise<({
         _count: {
-            users: number;
+            userRoles: number;
         };
         permissions: {
             roleId: string;

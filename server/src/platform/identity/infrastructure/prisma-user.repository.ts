@@ -16,7 +16,6 @@ export class PrismaUserRepository implements IUserRepository {
                 password: user.passwordHash || '', // Schema is non-nullable password
                 fullName: user.fullName,
                 tenantId: user.tenantId,
-                roleId: user.roleId,
                 isOwner: user.isOwner,
             },
             create: {
@@ -25,7 +24,6 @@ export class PrismaUserRepository implements IUserRepository {
                 password: user.passwordHash || '',
                 fullName: user.fullName,
                 tenantId: user.tenantId,
-                roleId: user.roleId,
                 isOwner: user.isOwner,
             }
         });
@@ -57,7 +55,6 @@ export class PrismaUserRepository implements IUserRepository {
             true, // isActive
             raw.isOwner || false, // isOwner
             raw.tenantId,
-            raw.roleId,
             raw.createdAt,
             raw.updatedAt
         );

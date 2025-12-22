@@ -10,6 +10,7 @@ import { LocalStrategy } from './local.strategy';
 import { MfaService } from './mfa.service';
 import { PermissionService } from './permission.service';
 import { PermissionCacheService } from './permission-cache.service';
+import { RefreshTokenService } from './refresh-token.service';
 
 import { PrismaService } from '../../prisma.service';
 
@@ -27,8 +28,8 @@ import { PrismaService } from '../../prisma.service';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionService, PermissionCacheService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionService, PermissionCacheService, RefreshTokenService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, PermissionService, PermissionCacheService],
+  exports: [AuthService, JwtModule, PermissionService, PermissionCacheService, RefreshTokenService],
 })
 export class AuthModule { }

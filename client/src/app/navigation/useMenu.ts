@@ -40,25 +40,28 @@ export const useMenu = () => {
 
                 // Step 2: Check Direct Permission
                 // If requiredPermissions is empty/undefined -> it is PUBLIC (within scope)
-                const hasDirectPermission = 
-                    !item.requiredPermissions || 
-                    item.requiredPermissions.length === 0 || 
+                const hasDirectPermission =
+                    !item.requiredPermissions ||
+                    item.requiredPermissions.length === 0 ||
                     hasAll(item.requiredPermissions);
 
-                // Step 3: Determine Visibility (Inclusive Rule)
-                // Visible if: (Has Direct Permission) OR (Has At Least One Visible Child)
+                // Step 3: Determine Visibility
                 const hasVisibleChildren = visibleChildren && visibleChildren.length > 0;
-                const isVisible = hasDirectPermission || hasVisibleChildren;
+                const isParent = item.children && item.children.length > 0; // Check original children to determine if it is a container
+
+                // vSAP Rule: 
+                // - Containers/Parents are visible ONLY if they have visible children (Menu Rehydration).
+                // - Leaf nodes are visible ONLY if they have direct permission.
+                const isVisible = isParent ? hasVisibleChildren : hasDirectPermission;
 
                 if (isVisible) {
                     // Step 4: Construct the item
                     const finalItem: MenuItem = {
                         ...item,
                         children: visibleChildren || [],
-                        // CRITICAL: If parent has NO direct permission but is visible due to children,
-                        // we must ensure it doesn't navigate to a 403 route.
-                        // We remove the 'path' property to turn it into a pure collapsible group.
-                        path: hasDirectPermission ? item.path : undefined 
+                        // Rule: Ensure parent acts as Group Header if strictly rehydrated (not relying on own permission)
+                        // though broadly we just want to preserve the path if it was valid and permitted.
+                        path: hasDirectPermission ? item.path : undefined
                     };
 
                     acc.push(finalItem);
@@ -77,6 +80,6 @@ export const useMenu = () => {
         menu: filteredMenu,
         loading: isLoading,
         // Helper exposed for other components if needed
-        filterMenuTree 
+        filterMenuTree
     };
 };

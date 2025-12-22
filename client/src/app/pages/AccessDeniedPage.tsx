@@ -2,11 +2,22 @@ import { ShieldAlert, RefreshCw, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDispatch } from "react-redux";
 import { logout } from "@/domains/auth/state/authSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "@/domains/auth/context/AuthContext";
 
 export default function AccessDeniedPage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { permissions } = useAuth();
+
+    // Prevent direct URL access unless explicitly redirected or zero-perm lockout
+    const isInternal = location.state?.error;
+    const isZeroPerm = permissions?.length === 0;
+
+    if (!isInternal && !isZeroPerm) {
+        return <Navigate to="/" replace />;
+    }
 
     const handleLogout = () => {
         dispatch(logout());

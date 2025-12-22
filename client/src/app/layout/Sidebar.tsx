@@ -75,7 +75,7 @@ const DesktopMenuItem = ({
     // but NOT be displayed in the sidebar. The sidebar should act as a flat list of top-level items.
     const hasChildren = false; // item.children && item.children.length > 0;
 
-    const isChildActive = item.children?.some(c => c.path === location.pathname);
+    const isChildActive = item.children?.some(c => c.path?.split('?')[0] === location.pathname);
     const isMainActive = isActiveLink || isChildActive;
 
     // Icon handling: Item has component or string?
@@ -109,6 +109,11 @@ const DesktopMenuItem = ({
                             collapsed ? "px-0 justify-center" : "px-4"
                         )}
                         style={!collapsed ? { paddingLeft: `${16 + (level * 12)}px` } : {}}
+                        onClick={(e) => {
+                            // Fix: Explicitly handle toggle to ensure reliable expansion
+                            e.stopPropagation();
+                            if (onToggle) onToggle(item.label);
+                        }}
                     >
                         {isMainActive && (
                             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-r-full" />
@@ -195,7 +200,14 @@ const DesktopMenuItem = ({
                     "px-4"
                 )}
                 style={{ paddingLeft: `${16 + (level * 12)}px` }}
-                onClick={() => item.path && navigate(item.path)}
+                onClick={() => {
+                    console.log("Sidebar: Clicked Item", item.label, "Path:", item.path);
+                    if (item.path) {
+                        navigate(item.path);
+                    } else {
+                        console.warn("Sidebar: Clicked Item HAS NO PATH", item.label);
+                    }
+                }}
             >
                 {isMainActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-r-full" />

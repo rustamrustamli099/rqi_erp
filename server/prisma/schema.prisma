@@ -32,8 +32,7 @@ model User {
   branchId  String?
   branch    Branch?  @relation(fields: [branchId], references: [id]) 
   
-  roleId    String?
-  role      Role?    @relation(fields: [roleId], references: [id])     
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -43,8 +42,28 @@ model User {
   auditLogs              AuditLog[] 
   files                  File[]     
   roles                  UserRole[] // Multi-Role Support
+  refreshTokens          RefreshToken[] // Added for Bank-Grade Rotation
 
   @@map("users")
+}
+
+model RefreshToken {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId      String    // UUID for rotation family
+  tokenHash     String    @unique
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  revokedReason String?
+  createdByIp   String?
+  userAgent     String?
+  
+  @@index([userId])
+  @@index([familyId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
 }
 
 model Tenant {
@@ -127,7 +146,7 @@ model Role {
   tenantId    String?
   tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  users       User[] // Legacy single-role relation (Deprecate)
+
   userRoles   UserRole[] // Active multi-role relation
   permissions RolePermission[]
   changeRequests RoleChangeRequest[]
