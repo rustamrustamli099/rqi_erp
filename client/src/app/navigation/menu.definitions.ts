@@ -336,7 +336,7 @@ export const PLATFORM_MENU: MenuItem[] = [{
 export const TENANT_MENU: MenuItem[] = [{
     id: 'dashboard',
     label: 'Panel', // Dashboard
-    path: '/',
+    path: '/dashboard',
     icon: Home,
     requiredPermissions: ['tenant.dashboard.view']
 },

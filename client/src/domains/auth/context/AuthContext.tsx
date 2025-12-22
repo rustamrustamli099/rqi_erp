@@ -61,6 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Strategy 0: Robust Permission Check (Fixes Owner sidebar issue)
         // If user has platform permissions, they are in SYSTEM context.
         if (permissions.some(p => p.startsWith('platform.'))) return 'SYSTEM';
+        // FIX Phase 38: Explicitly detect TENANT context if user has tenant permissions
+        if (permissions.some(p => p.startsWith('tenant.'))) return 'TENANT';
 
         // Strategy:
         // 1. If impersonating, strictly use the IMPERSONATED user's tenantId.
@@ -114,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // We do NOT expand permissions. We do NOT infer parents.
                 // We only deduplicate to be safe.
                 const uniquePerms = Array.from(new Set(mappedPerms));
-                
+
                 console.log("[AuthContext] FINAL PERMISSIONS (No Expansion):", uniquePerms);
                 setPermissionsState(uniquePerms);
 
