@@ -32,15 +32,13 @@ export const getFirstAllowedRoute = (
 
             if (!hasPermission) continue;
 
-            // 2. If it's a Leaf Node with a Path, return it
-            if (item.path && (!item.children || item.children.length === 0)) {
-                console.log("[RouteUtils] Select Leaf:", item.label, item.path);
+            // 2. If item uses has valid Path, return it (Priority: Parent first)
+            if (item.path) {
                 return item.path;
             }
 
-            // 3. If it's a Container, dive deeper
+            // 3. If Container (No Path), recurse children
             if (item.children && item.children.length > 0) {
-                // console.log("[RouteUtils] Skipping Container:", item.label);
                 const childPath = findFirst(item.children);
                 if (childPath) return childPath;
             }

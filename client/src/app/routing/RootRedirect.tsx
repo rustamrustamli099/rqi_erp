@@ -21,7 +21,7 @@ export function RootRedirect() {
     }
 
     // Debug Root Logic
-    console.log("[RootRedirect] ActiveType:", activeTenantType, "Perms:", permissions);
+    console.log("[RootRedirect] Checking...", { activeTenantType, permsCount: permissions?.length });
 
     // Dynamic Route Resolution (SAP-Grade)
     // Instead of hardcoding /admin/dashboard, we find the first valid leaf node.
@@ -30,6 +30,7 @@ export function RootRedirect() {
 
     // If no route found (even if perms exist), go to Access Denied
     if (targetRoute === '/access-denied') {
+        console.warn("[RootRedirect] No accessible route found. Redirecting to Access Denied.");
         return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />
     }
 
