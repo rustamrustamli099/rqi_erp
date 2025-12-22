@@ -70,7 +70,7 @@ export const PLATFORM_MENU: MenuItem[] = [{
 {
     id: 'billing',
     label: 'Bilinq və Maliyyə', // Billing
-    // path: '/admin/billing', // Removed for Container Mode
+    path: '/admin/billing?tab=marketplace',
     icon: CreditCard,
     // requiredPermissions: ['platform.billing.view'], // Removed for Bottom-Up Logic
     children: [{
@@ -129,7 +129,7 @@ export const PLATFORM_MENU: MenuItem[] = [{
 {
     id: 'settings',
     label: 'Tənzimləmələr', // Settings group
-    // path: '/admin/settings', // Removed for Container Mode
+    path: '/admin/settings?tab=general',
     icon: Settings,
     // requiredPermissions: ['platform.settings.view'], // Removed for Bottom-Up Logic
     children: [{
@@ -302,31 +302,31 @@ export const PLATFORM_MENU: MenuItem[] = [{
 {
     id: 'developer',
     label: 'Developer Hub', // Developer Hub group
-    path: '/admin/developer',
+    path: '/admin/developer?tab=api',
     icon: Code,
     // requiredPermissions: ['platform.developer_hub.view'],
     children: [{
         id: 'dev.api',
         label: 'API İstinadları',
-        path: '/admin/dev/api',
+        path: '/admin/developer?tab=api',
         requiredPermissions: ['platform.developer_hub.api_reference.read']
     },
     {
         id: 'dev.sdk',
         label: 'SDK & Kitabxanalar',
-        path: '/admin/dev/sdk',
+        path: '/admin/developer?tab=sdk',
         requiredPermissions: ['platform.developer_hub.sdk.read']
     },
     {
         id: 'dev.webhooks',
         label: 'Webhooks',
-        path: '/admin/dev/webhooks',
+        path: '/admin/developer?tab=webhooks',
         requiredPermissions: ['platform.developer_hub.webhooks.read']
     },
     {
         id: 'dev.perm_map',
         label: 'Permission Map',
-        path: '/admin/dev/permissions',
+        path: '/admin/developer?tab=permissions',
         requiredPermissions: ['platform.developer_hub.permission_map.read']
     }
     ]

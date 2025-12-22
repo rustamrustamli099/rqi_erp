@@ -201,11 +201,19 @@ const DesktopMenuItem = ({
                 )}
                 style={{ paddingLeft: `${16 + (level * 12)}px` }}
                 onClick={() => {
-                    console.log("Sidebar: Clicked Item", item.label, "Path:", item.path);
-                    if (item.path) {
-                        navigate(item.path);
+                    let targetPath = item.path;
+                    // SMART LOGIC: If no path but has children, use first child's path
+                    if (!targetPath && item.children && item.children.length > 0) {
+                        targetPath = item.children[0].path;
+                        console.log("Sidebar: Auto-Resolved Child Path", targetPath);
+                    }
+
+                    console.log("Sidebar: Clicked Item", item.label, "Target:", targetPath);
+
+                    if (targetPath) {
+                        navigate(targetPath);
                     } else {
-                        console.warn("Sidebar: Clicked Item HAS NO PATH", item.label);
+                        console.warn("Sidebar: Clicked Item HAS NO PATH & NO CHILDREN", item.label);
                     }
                 }}
             >

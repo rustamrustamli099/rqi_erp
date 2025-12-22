@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
+import { useSearchParams } from "react-router-dom";
 
 import {
     flexRender,
@@ -142,7 +143,13 @@ function PermissionsDataTable() {
 }
 
 export default function DeveloperHubPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get("tab") || "api";
     const [webhookUrl, setWebhookUrl] = useState("https://your-api.com/webhook");
+
+    const handleTabChange = (value: string) => {
+        setSearchParams({ tab: value }, { replace: true });
+    };
 
     const handleTestWebhook = () => {
         toast.info("Test payload göndərilir...");
@@ -159,7 +166,7 @@ export default function DeveloperHubPage() {
             </div>
 
             <div className="flex-1 px-8 min-w-0 pb-8">
-                <Tabs defaultValue="api" className="flex flex-col">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col">
                     <ScrollableTabs>
                         <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b-0 gap-6">
                             <TabsTrigger value="api" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium">API Reference</TabsTrigger>
