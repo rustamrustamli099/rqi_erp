@@ -9,13 +9,10 @@ import { useNavigate } from "react-router-dom";
 
 export default function AccessDeniedPage() {
     const navigate = useNavigate();
-    // const { logout } = useAuth(); // Commented until verified
+    const { logout } = useAuth();
 
     const handleLogout = () => {
-        // logout();
-        // Fallback clear
-        localStorage.removeItem('token');
-        navigate('/auth/login');
+        logout();
     }
 
     return (
@@ -32,7 +29,8 @@ export default function AccessDeniedPage() {
                     </h1>
 
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                        Your account has been authenticated, but you do not have permission to access the requested resource or workspace.<br /><br />
+                        Hesab aktivdir, lakin sizə hələ heç bir icazə təyin edilməyib.<br />
+                        Zəhmət olmasa administratorla əlaqə saxlayın.<br /><br />
                         <span className="font-medium text-gray-700 dark:text-gray-300">
                             Strict Security Policy Enforced (Zero-Trust)
                         </span>

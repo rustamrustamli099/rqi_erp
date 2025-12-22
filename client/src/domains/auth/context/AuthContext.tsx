@@ -90,25 +90,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (res.ok) {
                 const data = await res.json();
-                const freshUser = data.data || data;
+                const responseData = data.data || data;
+                // FIX: Support nested user object (Backend sends { data: { user: { permissions: [] } } })
+                const userObj = responseData.user || responseData;
 
                 // MAPPING STRATEGY:
                 // Backend returns permissions as string[] (mixed legacy/canonical).
                 // We MUST normalize them to canonical here so frontend logic works.
-                const rawPerms: string[] = freshUser.permissions || [];
+                const rawPerms: string[] = userObj.permissions || [];
+
+                console.log("[AuthContext] Raw Perms Extracted:", rawPerms.length); // Debug log
 
                 const mappedPerms = rawPerms.map(p => {
                     if (isCanonical(p)) return p;
                     // Try exact match
                     if (LEGACY_TO_CANONICAL_MAP[p]) return LEGACY_TO_CANONICAL_MAP[p];
-                    // If not found, keep it (fallback), but it won't match canonical checks.
                     return p;
                 });
 
-                // Dedup
-                let uniquePerms = Array.from(new Set(mappedPerms));
+                // Dedup and Expand: Implicitly grant VIEW if ANY action is present
+                // This ensures backward compatibility for users with old roles (e.g. MANAGE but no VIEW)
+                const expandedPerms = new Set(mappedPerms);
+                const ACTIONS_IMPLYING_VIEW = ['.read', '.create', '.update', '.delete', '.manage', '.approve', '.export', '.import'];
 
-                // OWNER OVERRIDE REMOVED: Strict RBAC enforcement. Owner permissions must be in DB.
+                // Step 1: Action Hydration (e.g. .read -> .view)
+                mappedPerms.forEach(perm => {
+                    if (typeof perm === 'string') {
+                        // Check if permission ends with any of the known actions
+                        for (const action of ACTIONS_IMPLYING_VIEW) {
+                            if (perm.endsWith(action)) {
+                                const viewPerm = perm.replace(action, '.view');
+                                expandedPerms.add(viewPerm);
+                                // We don't break here just in case, but typically one suffix matches.
+                            }
+                        }
+                    }
+                });
+
+                // Step 2: Bubble Up Logic (Implicit Parent Access) -- APPLIED VIA REWRITE
+                // Logic: if I have x.y.z.view, I imply x.y.view and x.view
+                const viewPerms = Array.from(expandedPerms).filter(p => typeof p === 'string' && p.endsWith('.view'));
+                viewPerms.forEach(perm => {
+                    const parts = perm.split('.');
+                    // platform.settings.general.view => parts length 4.
+                    // Loop: i=2 (general) -> platform.settings.general.view (already exists)
+                    // Loop: i=1 (settings) -> platform.settings.view (ADDED)
+                    // Loop: i=0 (platform) -> platform.view (ADDED) - though usually menu starts at level 1
+
+                    // Iterate backwards from length-2 down to 1
+                    for (let i = parts.length - 2; i >= 1; i--) {
+                        const subPath = parts.slice(0, i + 1).join('.') + '.view';
+                        expandedPerms.add(subPath);
+                    }
+                });
+
+                let uniquePerms = Array.from(expandedPerms);
+
+                console.log("[AuthContext] Effective Perms:", uniquePerms); // Debug Log
 
                 setPermissionsState(uniquePerms);
 

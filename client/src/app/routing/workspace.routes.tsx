@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { ProtectedRoute } from "@/app/routing/ProtectedRoute"
+import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { PermissionSlugs } from "@/app/security/permission-slugs"
 import TenantDashboard from "@/domains/dashboard/views/TenantDashboard"
 
@@ -10,6 +11,14 @@ import TenantDashboard from "@/domains/dashboard/views/TenantDashboard"
  * Mounted at: /dashboard/* or /workspace/*
  */
 export default function WorkspaceRoutes() {
+    // STRICT SEPARATION: If user has Platform access, force them to Admin Panel
+    // This prevents Admins from accessing the Tenant Dashboard manually via URL
+    const { can } = usePermissions()
+
+    if (can(PermissionSlugs.PLATFORM.DASHBOARD.VIEW)) {
+        return <Navigate to="/admin/dashboard" replace />
+    }
+
     return (
         <Routes>
             <Route index element={

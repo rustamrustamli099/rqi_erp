@@ -32,7 +32,7 @@ export default function AdminRoutes() {
 
             {/* Core Domains */}
             <Route path="users" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.USERS.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.USERS.VIEW}>
                     <UsersPage />
                 </ProtectedRoute>
             } />
@@ -41,20 +41,20 @@ export default function AdminRoutes() {
 
             {/* Modular Domains */}
             <Route path="branches/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BRANCHES.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BRANCHES.VIEW}>
                     <BranchesRoutes />
                 </ProtectedRoute>
             } />
 
             <Route path="files" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.FILES.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.FILES.VIEW}>
                     <FilesManagerPage />
                 </ProtectedRoute>
             } />
 
             {/* Added Missing Modules */}
             <Route path="tenants" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.TENANTS.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.TENANTS.VIEW}>
                     <TenantList />
                 </ProtectedRoute>
             } />
@@ -67,14 +67,14 @@ export default function AdminRoutes() {
 
             {/* Knowledge Base */}
             <Route path="guide" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.GUIDE.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.GUIDE.VIEW}>
                     <PlatformOverviewPage />
                 </ProtectedRoute>
             } />
 
             {/* System Console */}
             <Route path="console" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.CONSOLE.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.CONSOLE.VIEW}>
                     <ConsolePage />
                 </ProtectedRoute>
             } />
@@ -88,21 +88,21 @@ export default function AdminRoutes() {
 
             {/* Developer Hub */}
             <Route path="developer" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.DEVELOPER.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.DEVELOPER.VIEW}>
                     <DeveloperHubPage />
                 </ProtectedRoute>
             } />
 
             {/* Billing */}
             <Route path="billing/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.VIEW}>
                     <BillingRoutes />
                 </ProtectedRoute>
             } />
 
             {/* Finance */}
             <Route path="finance" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.VIEW}>
                     <FinancePage />
                 </ProtectedRoute>
             } />
@@ -110,34 +110,13 @@ export default function AdminRoutes() {
             {/* Settings */}
             <Route path="settings" element={
                 <ProtectedRoute
-                    requiredPermissions={[
-                        PermissionSlugs.PLATFORM.SETTINGS.READ,
-                        PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ,
-                        PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ,
-                        PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ,
-                        PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ,
-                        PermissionSlugs.PLATFORM.USERS.READ
-                    ]}
-                    mode="any"
+                    requiredPermission={PermissionSlugs.PLATFORM.SETTINGS.VIEW}
                 >
                     <SettingsPage />
                 </ProtectedRoute>
             } />
 
-            <Route path="access-denied" element={
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
-                    <div className="p-4 rounded-full bg-red-100/10 text-destructive">
-                        <ShieldAlert className="w-12 h-12" />
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight">Giriş Qadağandır</h1>
-                    <p className="text-muted-foreground max-w-md">
-                        Bu hissəyə daxil olmaq üçün icazəniz yoxdur. Zəhmət olmasa, sistem administratoru ilə əlaqə saxlayın.
-                    </p>
-                    <div className="pt-4">
-                        <a href="/login" className="text-sm font-medium text-primary hover:underline" onClick={() => localStorage.clear()}>Giriş səhifəsinə qayıt</a>
-                    </div>
-                </div>
-            } />
+
 
             <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Routes>

@@ -43,9 +43,7 @@ export const ProtectedRoute = ({
         : hasAny(perms);
 
     if (!hasAccess) {
-        if (!hasAccess) {
-            return <Navigate to="/admin/access-denied" replace />;
-        }
+        return <Navigate to="/access-denied" replace />;
     }
 
     return children ? <>{children}</> : <Outlet />;

@@ -17,6 +17,7 @@ export declare const admin_panel_permissions: {
         };
     };
     billing: {
+        perms: string[];
         market_place: {
             perms: string[];
         };
@@ -43,7 +44,9 @@ export declare const admin_panel_permissions: {
         perms: string[];
     };
     settings: {
+        perms: string[];
         general: {
+            perms: string[];
             company_profile: {
                 perms: string[];
             };
@@ -52,6 +55,7 @@ export declare const admin_panel_permissions: {
             };
         };
         communication: {
+            perms: string[];
             smtp_email: {
                 perms: string[];
             };
@@ -60,6 +64,7 @@ export declare const admin_panel_permissions: {
             };
         };
         security: {
+            perms: string[];
             security_policy: {
                 password_policy: {
                     perms: string[];
@@ -93,7 +98,9 @@ export declare const admin_panel_permissions: {
             };
         };
         system_configurations: {
+            perms: string[];
             billing_configurations: {
+                perms: string[];
                 price_rules: {
                     perms: string[];
                 };
@@ -161,6 +168,7 @@ export declare const admin_panel_permissions: {
         };
     };
     system_console: {
+        perms: string[];
         dashboard: {
             perms: string[];
         };
@@ -201,6 +209,7 @@ export declare const admin_panel_permissions: {
         };
     };
     developer_hub: {
+        perms: string[];
         api_reference: {
             perms: string[];
         };
@@ -215,3 +224,4 @@ export declare const admin_panel_permissions: {
         };
     };
 };
+export declare const PERMISSIONS: any;

@@ -68,36 +68,37 @@ const timezones = [
 ]
 
 // --- Sidebar Navigation Items ---
+// Using VIEW permissions to match Global Menu & AuthContext hydration logic
 const ALL_SIDEBAR_ITEMS = [
     {
         title: "Ümumi Tənzimləmələr",
         items: [
-            { id: "general", label: "Şirkət Profili", icon: Settings, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ },
-            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ },
+            { id: "general", label: "Şirkət Profili", icon: Settings, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.VIEW },
+            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: PermissionSlugs.PLATFORM.SETTINGS.GENERAL.VIEW },
         ]
     },
     {
         title: "Kommunikasiya",
         items: [
-            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ },
-            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ },
+            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW },
+            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW },
         ]
     },
     {
         title: "Təhlükəsizlik & Giriş",
         items: [
-            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ },
-            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ },
-            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ },
+            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW },
+            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW },
+            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW },
         ]
     },
     {
         title: "Sistem Konfiqurasiyası",
         items: [
-            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
-            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
-            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
-            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ },
+            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
+            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
+            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
+            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW },
         ]
     }
 ]
@@ -106,13 +107,31 @@ const ALL_SIDEBAR_ITEMS = [
 
 export default function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
-    const { can } = usePermissions()
     const [timezone, setTimezone] = useState("Asia/Baku")
+    const { can, isLoading } = usePermissions()
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[50vh] w-full items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                    <p className="text-sm text-muted-foreground">İcazələr yoxlanılır...</p>
+                </div>
+            </div>
+        )
+    }
 
     // Filter Menu based on Permissions
     const visibleSidebarGroups = ALL_SIDEBAR_ITEMS.map(group => ({
         ...group,
-        items: group.items.filter(item => can(item.permission))
+        items: group.items.filter(item => {
+            // Robust Fallback: Check for READ permission if VIEW is missing
+            // This safeguards against AuthContext hydration delays or mapping issues
+            if (!item.permission) return false;
+
+            const readPerm = item.permission.replace('.view', '.read');
+            return can(item.permission) || can(readPerm);
+        })
     })).filter(group => group.items.length > 0);
 
     const allVisibleItems = visibleSidebarGroups.flatMap(g => g.items);
@@ -244,33 +263,33 @@ export default function SettingsPage() {
 
                         {/* 2. SMTP SETTINGS (SAP Style Logic) */}
                         {activeTab === 'smtp' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW) ? (
                                 <EmailSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 3. NOTIFICATIONS */}
                         {activeTab === 'notifications' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.GENERAL.VIEW) ? (
                                 <NotificationsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 5. SMS GATEWAY */}
                         {activeTab === 'sms' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW) ? (
                                 <SmsSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 6. SECURITY */}
                         {activeTab === 'security' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW) ? (
                                 <SecuritySettingsTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'sso' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW) ? (
                                 <SSOSettingsTab />
                             ) : <Inline403 />
                         )}
@@ -317,27 +336,27 @@ export default function SettingsPage() {
 
                         {/* --- EXISTING TABS MIGRATED --- */}
                         {activeTab === 'billing-config' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
                                 <BillingConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'dictionaries' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
                                 <DictionariesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'templates' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
                                 <DocumentTemplatesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'workflow' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
                                 <WorkflowConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'roles' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ) ? (
+                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW) ? (
                                 <RolesPage />
                             ) : <Inline403 />
                         )}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useHelp } from "@/app/context/HelpContext"
-import { DateRange } from "react-day-picker"
+import { type DateRange } from "react-day-picker"
 import { addDays, format } from "date-fns"
 import { Calendar as CalendarIcon, Filter, Download, ArrowUpRight, ArrowDownRight, DollarSign, ShoppingCart, Users, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -136,8 +136,8 @@ export default function TenantDashboard() {
                         <CardDescription>My organization sales figures.</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-[300px] w-full min-h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                                 <AreaChart data={GRAPH_DATA}>
                                     <defs>
                                         <linearGradient id="colorRevTarget" x1="0" y1="0" x2="0" y2="1">

@@ -8,7 +8,13 @@ export declare class PermissionsService {
     previewPermissions(dto: PreviewPermissionsDto): Promise<{
         visibleMenus: import("../../../../../platform/menu/menu.definition").MenuItem[];
         visibleRoutes: string[];
-        blockedRoutes: never[];
+        blockedRoutes: string[];
         effectivePermissions: string[];
+        summary: {
+            totalPermissions: number;
+            byModule: {};
+        };
+        accessState: string;
     }>;
+    private getAllRoutes;
 }

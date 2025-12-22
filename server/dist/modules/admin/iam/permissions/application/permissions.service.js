@@ -38,6 +38,16 @@ let PermissionsService = class PermissionsService {
             effectivePermissions.push(...dto.permissions);
         }
         const uniquePerms = Array.from(new Set(effectivePermissions));
+        if (uniquePerms.length === 0) {
+            return {
+                visibleMenus: [],
+                visibleRoutes: [],
+                blockedRoutes: this.getAllRoutes(),
+                effectivePermissions: [],
+                summary: { totalPermissions: 0, byModule: {} },
+                accessState: 'ZERO_PERMISSION_LOCKOUT'
+            };
+        }
         const visibleMenus = this.menuService.filterMenu(menu_definition_1.ADMIN_MENU_TREE, uniquePerms);
         const getRoutes = (items) => {
             let routes = [];
@@ -50,12 +60,40 @@ let PermissionsService = class PermissionsService {
             return routes;
         };
         const visibleRoutes = getRoutes(visibleMenus);
+        const allRoutes = this.getAllRoutes();
+        const blockedRoutes = allRoutes.filter(r => !visibleRoutes.includes(r));
+        const summary = {
+            totalPermissions: uniquePerms.length,
+            byModule: {}
+        };
+        uniquePerms.forEach(slug => {
+            const parts = slug.split('.');
+            if (parts.length > 1) {
+                const module = parts[1];
+                summary.byModule[module] = (summary.byModule[module] || 0) + 1;
+            }
+        });
         return {
             visibleMenus,
             visibleRoutes,
-            blockedRoutes: [],
-            effectivePermissions: uniquePerms
+            blockedRoutes,
+            effectivePermissions: uniquePerms,
+            summary,
+            accessState: 'GRANTED'
         };
+    }
+    getAllRoutes() {
+        const getRoutes = (items) => {
+            let routes = [];
+            for (const item of items) {
+                if (item.path)
+                    routes.push(item.path);
+                if (item.children)
+                    routes.push(...getRoutes(item.children));
+            }
+            return routes;
+        };
+        return getRoutes(menu_definition_1.ADMIN_MENU_TREE);
     }
 };
 exports.PermissionsService = PermissionsService;

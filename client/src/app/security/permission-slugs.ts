@@ -1,262 +1,289 @@
+
 export const PermissionSlugs = {
-    // PLATFORM SCOPE
+    // --- PLATFORM (System) ---
     PLATFORM: {
         DASHBOARD: {
             VIEW: 'platform.dashboard.view',
+            READ: 'platform.dashboard.read',
         },
         TENANTS: {
+            VIEW: 'platform.tenants.view',
             READ: 'platform.tenants.read',
             CREATE: 'platform.tenants.create',
             UPDATE: 'platform.tenants.update',
             DELETE: 'platform.tenants.delete',
+            IMPERSONATE: 'platform.tenants.impersonate',
+            MANAGE: 'platform.tenants.manage_subscription',
         },
         BRANCHES: {
+            VIEW: 'platform.branches.view',
             READ: 'platform.branches.read',
             CREATE: 'platform.branches.create',
             UPDATE: 'platform.branches.update',
             DELETE: 'platform.branches.delete',
         },
         USERS: {
+            VIEW: 'platform.users.users.view',
             READ: 'platform.users.users.read',
             CREATE: 'platform.users.users.create',
             UPDATE: 'platform.users.users.update',
             DELETE: 'platform.users.users.delete',
+            INVITE: 'platform.users.users.invite',
         },
         CURATORS: {
+            VIEW: 'platform.users.curators.view',
             READ: 'platform.users.curators.read',
             CREATE: 'platform.users.curators.create',
             UPDATE: 'platform.users.curators.update',
             DELETE: 'platform.users.curators.delete',
         },
-        BILLING: {
-            READ: 'platform.billing.read', // General access to billing module
-            MARKETPLACE: {
-                READ: 'platform.billing.marketplace.read',
-                MANAGE: 'platform.billing.marketplace.manage',
-            },
-            PACKAGES: {
-                READ: 'platform.billing.packages.read',
-                MANAGE: 'platform.billing.packages.manage',
-            },
-            PLANS: {
-                READ: 'platform.billing.plans.read',
-                MANAGE: 'platform.billing.plans.manage',
-            },
-            INVOICES: {
-                READ: 'platform.billing.invoices.read',
-                APPROVE: 'platform.billing.invoices.approve',
-            },
-            LICENSES: {
-                READ: 'platform.billing.licenses.read',
-                MANAGE: 'platform.billing.licenses.manage',
-            },
+        ROLES: {
+            VIEW: 'platform.settings.security.user_rights.role.view',
+            READ: 'platform.settings.security.user_rights.role.read',
+            CREATE: 'platform.settings.security.user_rights.role.create',
+            UPDATE: 'platform.settings.security.user_rights.role.update',
+            DELETE: 'platform.settings.security.user_rights.role.delete',
         },
-        APPROVALS: {
-            VIEW: 'platform.approvals.view',
-            APPROVE: 'platform.approvals.approve',
-        },
-        FILES: {
-            READ: 'platform.files.read',
-            UPLOAD: 'platform.files.upload',
-            DELETE: 'platform.files.delete',
-        },
-        GUIDE: {
-            READ: 'platform.guide.read',
-            MANAGE: 'platform.guide.manage',
+        AUDIT: {
+            VIEW: 'platform.audit_logs.view',
+            READ: 'platform.audit_logs.read',
+            EXPORT: 'platform.audit_logs.export',
         },
         SETTINGS: {
+            VIEW: 'platform.settings.view',
             READ: 'platform.settings.read',
+            UPDATE: 'platform.settings.update',
             GENERAL: {
+                VIEW: 'platform.settings.general.view',
                 READ: 'platform.settings.general.read',
                 UPDATE: 'platform.settings.general.update',
             },
+            NOTIFICATIONS: {
+                VIEW: 'platform.settings.general.notification_engine.view',
+                READ: 'platform.settings.general.notification_engine.read',
+            },
             COMMUNICATION: {
+                VIEW: 'platform.settings.communication.view',
                 READ: 'platform.settings.communication.read',
-                MANAGE: 'platform.settings.communication.manage',
+                MANAGE: 'platform.settings.communication.update',
             },
             SECURITY: {
+                VIEW: 'platform.settings.security.view',
                 READ: 'platform.settings.security.read',
-                MANAGE: 'platform.settings.security.manage',
-                USER_RIGHTS: {
-                     COMPLIANCE: {
-                        READ: 'platform.settings.security.user_rights.compliance.read',
-                        DOWNLOAD_SOC2: 'platform.settings.security.user_rights.compliance.download_soc2',
-                        DOWNLOAD_ISO: 'platform.settings.security.user_rights.compliance.download_iso',
-                     }
-                }
+                MANAGE: 'platform.settings.security.update',
             },
             CONFIG: {
-                READ: 'platform.settings.config.read',
-                MANAGE: 'platform.settings.config.manage',
+                VIEW: 'platform.settings.system_configurations.view',
+                READ: 'platform.settings.system_configurations.read',
+                MANAGE: 'platform.settings.system_configurations.update',
+                BILLING: {
+                    VIEW: 'platform.settings.system_configurations.billing_configurations.price_rules.view',
+                },
+                DICTIONARIES: {
+                    VIEW: 'platform.settings.system_configurations.dictionary.view',
+                    READ: 'platform.settings.system_configurations.dictionary.read',
+                    SECTORS: {
+                        VIEW: 'platform.settings.system_configurations.dictionary.sectors.view',
+                        READ: 'platform.settings.system_configurations.dictionary.sectors.read'
+                    },
+                    UNITS: {
+                        VIEW: 'platform.settings.system_configurations.dictionary.units.view',
+                        READ: 'platform.settings.system_configurations.dictionary.units.read'
+                    },
+                    CURRENCIES: {
+                        VIEW: 'platform.settings.system_configurations.dictionary.currencies.view',
+                        READ: 'platform.settings.system_configurations.dictionary.currencies.read'
+                    },
+                    TIME_ZONES: {
+                        VIEW: 'platform.settings.system_configurations.dictionary.time_zones.view',
+                        READ: 'platform.settings.system_configurations.dictionary.time_zones.read'
+                    },
+                    ADDRESSES: {
+                        VIEW: 'platform.settings.system_configurations.dictionary.addresses.view', // Consolidated view for parent
+                        READ: 'platform.settings.system_configurations.dictionary.addresses.read',
+                        COUNTRY: {
+                            VIEW: 'platform.settings.system_configurations.dictionary.addresses.country.view',
+                            READ: 'platform.settings.system_configurations.dictionary.addresses.country.read'
+                        },
+                        CITY: {
+                            VIEW: 'platform.settings.system_configurations.dictionary.addresses.city.view',
+                            READ: 'platform.settings.system_configurations.dictionary.addresses.city.read'
+                        },
+                        DISTRICT: {
+                            VIEW: 'platform.settings.system_configurations.dictionary.addresses.district.view',
+                            READ: 'platform.settings.system_configurations.dictionary.addresses.district.read'
+                        }
+                    }
+                },
+                TEMPLATES: {
+                    VIEW: 'platform.settings.system_configurations.document_templates.view',
+                    READ: 'platform.settings.system_configurations.document_templates.read'
+                },
+                WORKFLOW: {
+                    VIEW: 'platform.settings.system_configurations.workflow.configuration.view',
+                    READ: 'platform.settings.system_configurations.workflow.configuration.read'
+                }
+            }, // End CONFIG
+        }, // End SETTINGS
+        BILLING: {
+            VIEW: 'platform.billing.view',
+            READ: 'platform.billing.read',
+            MARKETPLACE: {
+                VIEW: 'platform.billing.market_place.view',
+                READ: 'platform.billing.market_place.read',
+                MANAGE: 'platform.billing.market_place.create'
             },
-        },
-        CONSOLE: {
-            READ: 'platform.console.read',
-            DASHBOARD: {
-                READ: 'platform.console.dashboard.read',
+            PACKAGES: {
+                VIEW: 'platform.billing.compact_packages.view',
+                READ: 'platform.billing.compact_packages.read',
+                MANAGE: 'platform.billing.compact_packages.create'
             },
-            AUDIT: {
-                READ: 'platform.console.audit.read',
-                MANAGE: 'platform.console.audit.manage',
+            PLANS: {
+                VIEW: 'platform.billing.plans.view',
+                READ: 'platform.billing.plans.read',
+                MANAGE: 'platform.billing.plans.create'
             },
-            SCHEDULER: {
-                READ: 'platform.console.scheduler.read',
-                EXECUTE: 'platform.console.scheduler.execute',
+            INVOICES: {
+                VIEW: 'platform.billing.invoices.view',
+                READ: 'platform.billing.invoices.read',
+                APPROVE: 'platform.billing.invoices.approve'
             },
-            RETENTION: {
-                READ: 'platform.console.retention.read',
-                MANAGE: 'platform.console.retention.manage',
-            },
-            FEATURES: {
-                READ: 'platform.console.features.read',
-                MANAGE: 'platform.console.features.manage',
-            },
-            TOOLS: {
-                READ: 'platform.console.tools.read',
-                EXECUTE: 'platform.console.tools.execute',
-            },
-        },
-        DEVELOPER: {
-            READ: 'platform.dev.read',
-            API: {
-                READ: 'platform.dev.api.read',
-            },
-            SDK: {
-                READ: 'platform.dev.sdk.read',
-            },
-            WEBHOOKS: {
-                READ: 'platform.dev.webhooks.read',
-                MANAGE: 'platform.dev.webhooks.manage',
+            LICENSES: {
+                VIEW: 'platform.billing.licenses.view',
+                READ: 'platform.billing.licenses.read',
+                MANAGE: 'platform.billing.licenses.change_plan'
             }
         },
+        CONSOLE: {
+            VIEW: 'platform.system_console.view',
+            READ: 'platform.system_console.read',
+            DASHBOARD: {
+                READ: 'platform.system_console.dashboard.read',
+            },
+            MONITORING: {
+                READ: 'platform.system_console.monitoring.dashboard.read',
+            },
+            AUDIT: {
+                READ: 'platform.system_console.audit_compliance.read',
+                MANAGE: 'platform.system_console.audit_compliance.export_to_excel',
+            },
+            SCHEDULER: {
+                READ: 'platform.system_console.job_scheduler.read',
+                EXECUTE: 'platform.system_console.job_scheduler.execute',
+            },
+            RETENTION: {
+                READ: 'platform.system_console.data_retention.read',
+                MANAGE: 'platform.system_console.data_retention.manage',
+            },
+            FEATURES: {
+                READ: 'platform.system_console.feature_flags.read',
+                MANAGE: 'platform.system_console.feature_flags.manage',
+            },
+            POLICY: {
+                READ: 'platform.system_console.policy_security.read',
+            },
+            FEEDBACK: {
+                READ: 'platform.system_console.feedback.read',
+            },
+            TOOLS: {
+                READ: 'platform.system_console.tools.read',
+                EXECUTE: 'platform.system_console.tools.execute',
+            }
+        },
+        DEVELOPER: {
+            VIEW: 'platform.developer_hub.view',
+            READ: 'platform.developer_hub.read',
+            API: {
+                READ: 'platform.developer_hub.api_reference.read',
+            },
+            SDK: {
+                READ: 'platform.developer_hub.sdk.read',
+            },
+            WEBHOOKS: {
+                READ: 'platform.developer_hub.webhooks.read',
+                MANAGE: 'platform.developer_hub.webhooks.send_test_payload',
+            },
+            PERM_MAP: {
+                READ: 'platform.developer_hub.permission_map.read',
+            }
+        },
+        FILES: {
+            VIEW: 'platform.file_manager.view',
+            READ: 'platform.file_manager.read',
+            UPLOAD: 'platform.file_manager.upload',
+            DELETE: 'platform.file_manager.delete_file',
+        },
+        GUIDE: {
+            VIEW: 'platform.system_guide.view',
+            READ: 'platform.system_guide.read',
+            EDIT: 'platform.system_guide.edit',
+            MANAGE: 'platform.system_guide.create',
+        },
+        APPROVALS: {
+            VIEW: 'platform.approvals.view',
+            READ: 'platform.approvals.read',
+            APPROVE: 'platform.approvals.approve',
+        },
+        COMPLIANCE: {
+            VIEW: 'platform.settings.security.user_rights.compliance.view',
+            READ: 'platform.settings.security.user_rights.compliance.read',
+            DOWNLOAD_REPORT: 'platform.settings.security.user_rights.compliance.download_report',
+        }
+    }, // End PLATFORM
 
-    // TENANT SCOPE
+    // --- TENANT (Client) ---
     TENANT: {
         DASHBOARD: {
             VIEW: 'tenant.dashboard.view',
+            READ: 'tenant.dashboard.read',
         },
         USERS: {
+            VIEW: 'tenant.users.view',
             READ: 'tenant.users.read',
-            MANAGE: 'tenant.users.manage',
+            CREATE: 'tenant.users.create',
+            MANAGE: 'tenant.users.update'
+        },
+        ROLES: {
+            VIEW: 'tenant.roles.view',
+            READ: 'tenant.roles.read',
+            CREATE: 'tenant.roles.create',
         },
         SETTINGS: {
+            VIEW: 'tenant.settings.view',
             READ: 'tenant.settings.read',
-            MANAGE: 'tenant.settings.manage',
+            UPDATE: 'tenant.settings.update',
+            MANAGE: 'tenant.settings.update'
+        },
+        BILLING: {
+            VIEW: 'tenant.billing.view',
+            READ: 'tenant.billing.read',
+            PAY: 'tenant.billing.pay_invoice',
+        },
+        REPORTS: {
+            VIEW: 'tenant.reports.view',
+            READ: 'tenant.reports.read',
+            EXPORT: 'tenant.reports.export',
+        }
+    },
+
+    // --- ROLES & PERMISSIONS ---
+    IAM: {
+        ROLE: {
+            SUBMIT: 'platform.user_rights.role.submit',
+            APPROVE: 'platform.user_rights.role.approve',
+            REJECT: 'platform.user_rights.role.reject'
         }
     }
-} as const ;
+} as const;
 
 // Helper to check if a permission string matches a canonical slug pattern
 export const isCanonical = (slug: string) => /^(platform|tenant)\./.test(slug);
 
 // MAPPING: Legacy Backend Slug -> Canonical Frontend Slug
-// This is critical until backend is fully migrated to use 'platform.' and 'tenant.' prefixes.
 export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
-    // Dashboard
-    'dashboard.view': PermissionSlugs.PLATFORM.DASHBOARD.VIEW,
-
     // Tenants
-    'tenants.view': PermissionSlugs.PLATFORM.TENANTS.READ,
+    'tenants.view': PermissionSlugs.PLATFORM.TENANTS.VIEW,
     'tenants.create': PermissionSlugs.PLATFORM.TENANTS.CREATE,
-    'tenants.update': PermissionSlugs.PLATFORM.TENANTS.UPDATE,
-    'tenants.delete': PermissionSlugs.PLATFORM.TENANTS.DELETE,
 
-    // Branches
-    'branches.view': PermissionSlugs.PLATFORM.BRANCHES.READ,
-    'branches.create': PermissionSlugs.PLATFORM.BRANCHES.CREATE,
-    'branches.update': PermissionSlugs.PLATFORM.BRANCHES.UPDATE,
-    'branches.delete': PermissionSlugs.PLATFORM.BRANCHES.DELETE,
-
-    // Users
-    'users.users.view': PermissionSlugs.PLATFORM.USERS.READ,
-    'users.users.create': PermissionSlugs.PLATFORM.USERS.CREATE,
-    'users.users.update': PermissionSlugs.PLATFORM.USERS.UPDATE,
-    'users.users.delete': PermissionSlugs.PLATFORM.USERS.DELETE,
-
-    'users.curators.view': PermissionSlugs.PLATFORM.CURATORS.READ,
-    'users.curators.create': PermissionSlugs.PLATFORM.CURATORS.CREATE,
-    'users.curators.update': PermissionSlugs.PLATFORM.CURATORS.UPDATE,
-    'users.curators.delete': PermissionSlugs.PLATFORM.CURATORS.DELETE,
-
-    // Billing
-    'billing.market_place.view': PermissionSlugs.PLATFORM.BILLING.MARKETPLACE.READ,
-    'billing.market_place.manage': PermissionSlugs.PLATFORM.BILLING.MARKETPLACE.MANAGE,
-
-    'billing.compact_packages.view': PermissionSlugs.PLATFORM.BILLING.PACKAGES.READ,
-    'billing.compact_packages.manage': PermissionSlugs.PLATFORM.BILLING.PACKAGES.MANAGE,
-
-    'billing.subscriptions.view': PermissionSlugs.PLATFORM.BILLING.PLANS.READ,
-    'billing.subscriptions.create': PermissionSlugs.PLATFORM.BILLING.PLANS.MANAGE,
-    'billing.subscriptions.update': PermissionSlugs.PLATFORM.BILLING.PLANS.MANAGE,
-    'billing.subscriptions.delete': PermissionSlugs.PLATFORM.BILLING.PLANS.MANAGE,
-    'billing.plans.view': PermissionSlugs.PLATFORM.BILLING.PLANS.READ,
-    'billing.plans.manage': PermissionSlugs.PLATFORM.BILLING.PLANS.MANAGE,
-
-    'billing.invoices.view': PermissionSlugs.PLATFORM.BILLING.INVOICES.READ,
-    'billing.invoices.approve': PermissionSlugs.PLATFORM.BILLING.INVOICES.APPROVE,
-
-    'billing.licenses.view': PermissionSlugs.PLATFORM.BILLING.LICENSES.READ,
-    'billing.licenses.manage': PermissionSlugs.PLATFORM.BILLING.LICENSES.MANAGE,
-
-    // Approvals
-    'approvals.view': PermissionSlugs.PLATFORM.APPROVALS.VIEW,
-    'approvals.approve': PermissionSlugs.PLATFORM.APPROVALS.APPROVE,
-
-    // Files
-    'file_manager.view': PermissionSlugs.PLATFORM.FILES.READ,
-    'file_manager.upload': PermissionSlugs.PLATFORM.FILES.UPLOAD,
-    'file_manager.delete': PermissionSlugs.PLATFORM.FILES.DELETE,
-
-    // Guide
-    'system_guide.view': PermissionSlugs.PLATFORM.GUIDE.READ,
-    'system_guide.manage': PermissionSlugs.PLATFORM.GUIDE.MANAGE,
-
-    // Settings
-    'settings.general.company_profile.view': PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ,
-    'settings.general.company_profile.update': PermissionSlugs.PLATFORM.SETTINGS.GENERAL.UPDATE,
-    'settings.general.notification_engine.view': PermissionSlugs.PLATFORM.SETTINGS.GENERAL.READ,
-    'settings.general.notification_engine.manage': PermissionSlugs.PLATFORM.SETTINGS.GENERAL.UPDATE,
-
-    'settings.communication.smtp_email.view': PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ,
-    'settings.communication.smtp_email.manage': PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.MANAGE,
-    'settings.communication.smtp_sms.view': PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.READ,
-    'settings.communication.smtp_sms.manage': PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.MANAGE,
-
-    'settings.security.security_policy.view': PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ,
-    'settings.security.security_policy.manage': PermissionSlugs.PLATFORM.SETTINGS.SECURITY.MANAGE,
-    'settings.security.sso_oauth.view': PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ,
-    'settings.security.sso_oauth.manage': PermissionSlugs.PLATFORM.SETTINGS.SECURITY.MANAGE,
-    'settings.security.user_rights.view': PermissionSlugs.PLATFORM.SETTINGS.SECURITY.READ,
-    'settings.security.user_rights.manage': PermissionSlugs.PLATFORM.SETTINGS.SECURITY.MANAGE,
-
-    'settings.system_configurations.billing_configurations.view': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ,
-    'settings.system_configurations.billing_configurations.manage': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.MANAGE,
-    'settings.system_configurations.dictionary.view': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ,
-    'settings.system_configurations.dictionary.manage': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.MANAGE,
-    'settings.system_configurations.document_templates.view': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ,
-    'settings.system_configurations.document_templates.manage': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.MANAGE,
-    'settings.system_configurations.workflow.view': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.READ,
-    'settings.system_configurations.workflow.manage': PermissionSlugs.PLATFORM.SETTINGS.CONFIG.MANAGE,
-
-    // Console
-    'system_console.dashboard.view': PermissionSlugs.PLATFORM.CONSOLE.DASHBOARD.READ,
-    'system_console.monitoring.view': PermissionSlugs.PLATFORM.CONSOLE.DASHBOARD.READ,
-    'system_console.audit_compliance.view': PermissionSlugs.PLATFORM.CONSOLE.AUDIT.READ,
-    'system_console.job_scheduler.view': PermissionSlugs.PLATFORM.CONSOLE.SCHEDULER.READ,
-    'system_console.job_scheduler.execute': PermissionSlugs.PLATFORM.CONSOLE.SCHEDULER.EXECUTE,
-    'system_console.data_retention.view': PermissionSlugs.PLATFORM.CONSOLE.RETENTION.READ,
-    'system_console.data_retention.manage': PermissionSlugs.PLATFORM.CONSOLE.RETENTION.MANAGE,
-    'system_console.feature_flags.view': PermissionSlugs.PLATFORM.CONSOLE.FEATURES.READ,
-    'system_console.feature_flags.manage': PermissionSlugs.PLATFORM.CONSOLE.FEATURES.MANAGE,
-    'system_console.policy_security.view': PermissionSlugs.PLATFORM.CONSOLE.AUDIT.READ,
-    'system_console.policy_security.manage': PermissionSlugs.PLATFORM.CONSOLE.AUDIT.MANAGE,
-    'system_console.tools.view': PermissionSlugs.PLATFORM.CONSOLE.TOOLS.READ,
-    'system_console.tools.execute': PermissionSlugs.PLATFORM.CONSOLE.TOOLS.EXECUTE,
-
-    // Developer
-    'developer_hub.api_reference.view': PermissionSlugs.PLATFORM.DEVELOPER.API.READ,
-    'developer_hub.sdk.view': PermissionSlugs.PLATFORM.DEVELOPER.SDK.READ,
-    'developer_hub.webhooks.view': PermissionSlugs.PLATFORM.DEVELOPER.WEBHOOKS.READ,
-    'developer_hub.webhooks.manage': PermissionSlugs.PLATFORM.DEVELOPER.WEBHOOKS.MANAGE,
-    'developer_hub.permission_map.view': PermissionSlugs.PLATFORM.DEVELOPER.READ,
+    // Add other mappings as needed but favor direct use of new slugs
 };
