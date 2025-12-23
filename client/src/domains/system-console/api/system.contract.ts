@@ -13,8 +13,14 @@ export interface Role {
     id: string;
     name: string;
     description: string;
+    // SAP-Grade Fields
+    scope: "SYSTEM" | "TENANT";
+    level: number;
+    // Legacy mapping
     type: "system" | "custom";
-    scope: "SYSTEM" | "TENANT" | "CURATOR" | "BRANCH";
+    isLocked: boolean;
+    isEnabled: boolean;
+
     usersCount: number;
     status?: "DRAFT" | "PENDING_APPROVAL" | "ACTIVE" | "REJECTED";
     approverId?: string;
@@ -28,8 +34,8 @@ export interface Role {
 export interface CreateRoleRequest {
     name: string;
     description: string;
-    scope: string;
-    permissionIds: string[];
+    scope: "SYSTEM" | "TENANT";
+    permissionIds?: string[];
 }
 
 export interface UpdateRoleRequest {
@@ -42,23 +48,23 @@ export interface UpdateRoleRequest {
 // --- Contract ---
 
 export const systemApi = {
-    getRoles: async (): Promise<Role[]> => {
-        const response = await api.get<Role[]>("/admin/roles");
-        return response.data;
+    getRoles: async (scope?: "SYSTEM" | "TENANT"): Promise<Role[]> => {
+        const query = scope ? `?scope=${scope}` : "";
+        const response = await api.get<any>(`/admin/roles${query}`);
+        // Backend returns wrapped object { statusCode: 200, data: [...] }
+        return Array.isArray(response.data) ? response.data : (response.data.data || []);
     },
 
     getPermissions: async (): Promise<any[]> => {
-        const response = await api.get<any[]>("/admin/roles/permissions"); // Assuming permissions endpoint also moved or keeping legacy if PermissionsModule handles it. 
-        // Logic: PermissionsModule is separate module. Controller is PermissionsController. URL is /admin/permissions usually?
-        // Wait, previously client used GET /roles/permissions.
-        // My PermissionsModule exposes /admin/permissions/preview.
-        // It DOES NOT expose GET /permissions.
-        // I need to check where permissions list comes from.
-        // But for Roles Workflow, I will assume /admin/roles is correct base.
-        // I will keep permissions legacy /roles/permissions for now if I didn't change PermissionsController list.
-        // Actually, PermissionsController I created ONLY has preview.
-        // So I should keep legacy for permission list:
-        return api.get<any[]>("/admin/permissions").then(r => r.data);
+        // Correct Endpoint: /admin/permissions
+        const response = await api.get<any>("/admin/permissions");
+        // Check for wrapped response
+        return Array.isArray(response.data) ? response.data : (response.data.data || []);
+    },
+
+    getRole: async (id: string): Promise<Role> => {
+        const response = await api.get<Role>(`/admin/roles/${id}`);
+        return response.data;
     },
 
     createRole: async (data: CreateRoleRequest): Promise<Role> => {

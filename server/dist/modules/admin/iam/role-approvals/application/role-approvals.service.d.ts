@@ -45,6 +45,10 @@ export declare class RoleApprovalsService {
             id: string;
             name: string;
             description: string | null;
+            scope: import("@prisma/client").$Enums.RoleScope;
+            level: number;
+            isLocked: boolean;
+            isEnabled: boolean;
             isSystem: boolean;
             status: import("@prisma/client").$Enums.RoleStatus;
             approverId: string | null;

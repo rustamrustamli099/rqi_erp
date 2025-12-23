@@ -22,27 +22,52 @@ let RolesService = class RolesService {
         this.auditService = auditService;
     }
     async create(dto, userId) {
+        const existing = await this.prisma.role.findFirst({
+            where: {
+                name: { equals: dto.name, mode: 'insensitive' },
+                scope: dto.scope
+            }
+        });
+        if (existing) {
+            throw new common_1.BadRequestException(`Role with name '${dto.name}' already exists in ${dto.scope} scope.`);
+        }
         return this.prisma.role.create({
             data: {
                 name: dto.name,
                 description: dto.description,
-                isSystem: false,
+                scope: dto.scope,
+                level: 10,
+                isLocked: false,
+                isEnabled: true,
+                isSystem: dto.scope === 'SYSTEM',
                 status: client_1.RoleStatus.DRAFT,
+                submittedById: userId
             }
         });
     }
-    async findAll() {
+    async findAll(scope) {
+        const where = {};
+        if (scope) {
+            where.scope = scope;
+        }
         return this.prisma.role.findMany({
+            where,
             include: {
-                permissions: true,
-                _count: { select: { userRoles: true } }
+                _count: { select: { userRoles: true, permissions: true } }
+            },
+            orderBy: {
+                level: 'desc'
             }
         });
     }
     async findOne(id) {
         const role = await this.prisma.role.findUnique({
             where: { id },
-            include: { permissions: true }
+            include: {
+                permissions: {
+                    include: { permission: true }
+                }
+            }
         });
         if (!role)
             throw new common_1.NotFoundException('Role not found');
@@ -115,15 +140,62 @@ let RolesService = class RolesService {
         });
         return result;
     }
-    async update(id, dto) {
+    async update(id, dto, userId = 'SYSTEM') {
         const role = await this.findOne(id);
-        const newStatus = role.status === client_1.RoleStatus.ACTIVE ? client_1.RoleStatus.DRAFT : role.status;
+        if (role.isLocked) {
+            throw new common_1.ForbiddenException('Cannot edit a locked System Role (e.g. SuperAdmin).');
+        }
+        const data = { ...dto };
+        delete data.permissionIds;
+        if (dto.scope && dto.scope !== role.scope) {
+            throw new common_1.BadRequestException('Role Scope cannot be changed once created (SAP Immutable Rule).');
+        }
+        if (dto.permissionIds) {
+            const permissions = await this.prisma.permission.findMany({
+                where: {
+                    slug: { in: dto.permissionIds }
+                }
+            });
+            const invalidPermissions = permissions.filter(p => {
+                if (role.scope === 'SYSTEM' && p.scope === 'TENANT')
+                    return true;
+                if (role.scope === 'TENANT' && p.scope === 'SYSTEM')
+                    return true;
+                return false;
+            });
+            if (invalidPermissions.length > 0) {
+                throw new common_1.BadRequestException(`Security Violation: Attempted to assign invalid scope permissions to ${role.scope} role: ${invalidPermissions.map(p => p.slug).join(', ')}`);
+            }
+            await this.prisma.$transaction(async (tx) => {
+                await tx.rolePermission.deleteMany({ where: { roleId: id } });
+                if (permissions.length > 0) {
+                    await tx.rolePermission.createMany({
+                        data: permissions.map(p => ({
+                            roleId: id,
+                            permissionId: p.id
+                        }))
+                    });
+                }
+            });
+            await this.auditService.logAction({
+                action: 'ROLE_PERMISSIONS_UPDATED',
+                resource: 'Role',
+                details: { roleId: id, count: permissions.length, slugs: dto.permissionIds },
+                module: 'ACCESS_CONTROL',
+                userId: userId,
+            });
+        }
+        let newStatus = role.status;
+        if (role.status === client_1.RoleStatus.ACTIVE && dto.permissionIds) {
+            newStatus = client_1.RoleStatus.DRAFT;
+        }
         return this.prisma.role.update({
             where: { id },
             data: {
-                ...dto,
+                ...data,
                 status: newStatus
-            }
+            },
+            include: { permissions: true }
         });
     }
 };

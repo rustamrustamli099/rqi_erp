@@ -10,6 +10,10 @@ export declare class RolesService {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;
@@ -19,18 +23,19 @@ export declare class RolesService {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    findAll(): Promise<({
+    findAll(scope?: 'SYSTEM' | 'TENANT'): Promise<({
         _count: {
             userRoles: number;
+            permissions: number;
         };
-        permissions: {
-            roleId: string;
-            permissionId: string;
-        }[];
     } & {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;
@@ -41,14 +46,27 @@ export declare class RolesService {
         updatedAt: Date;
     })[]>;
     findOne(id: string): Promise<{
-        permissions: {
+        permissions: ({
+            permission: {
+                id: string;
+                name: string | null;
+                slug: string;
+                description: string | null;
+                module: string;
+                scope: string;
+            };
+        } & {
             roleId: string;
             permissionId: string;
-        }[];
+        })[];
     } & {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;
@@ -62,6 +80,10 @@ export declare class RolesService {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;
@@ -75,6 +97,10 @@ export declare class RolesService {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;
@@ -88,6 +114,10 @@ export declare class RolesService {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;
@@ -97,10 +127,19 @@ export declare class RolesService {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateRoleDto): Promise<{
+    update(id: string, dto: UpdateRoleDto, userId?: string): Promise<{
+        permissions: {
+            roleId: string;
+            permissionId: string;
+        }[];
+    } & {
         id: string;
         name: string;
         description: string | null;
+        scope: import("@prisma/client").$Enums.RoleScope;
+        level: number;
+        isLocked: boolean;
+        isEnabled: boolean;
         isSystem: boolean;
         status: import("@prisma/client").$Enums.RoleStatus;
         approverId: string | null;

@@ -13,28 +13,51 @@ export class RolesService {
     ) { }
 
     async create(dto: CreateRoleDto, userId: string) {
+        // SAP Rule: Unique name per scope
+        const existing = await this.prisma.role.findFirst({
+            where: {
+                name: { equals: dto.name, mode: 'insensitive' },
+                scope: dto.scope as any // Cast to RoleScope enum
+            }
+        });
+
+        if (existing) {
+            throw new BadRequestException(`Role with name '${dto.name}' already exists in ${dto.scope} scope.`);
+        }
+
         // Create role in DRAFT status
         return this.prisma.role.create({
             data: {
                 name: dto.name,
                 description: dto.description,
-                isSystem: false,
+                scope: dto.scope as any,
+                level: 10, // Default level, can be updated by admin later
+                isLocked: false,
+                isEnabled: true,
+                isSystem: dto.scope === 'SYSTEM', // Legacy sync
                 status: RoleStatus.DRAFT,
-                // Assuming scope is handled via tenantId or explicit field. 
-                // Schema has tenantId but client sends "scope". 
-                // We will map System/Common to tenantId=null, Tenant to tenantId=userId.tenant
-                // For simplicity, mimicking legacy behavior or storing scope in description/field if schema lacks it.
-                // Schema update didn't verify 'scope' string field, but user contract has it.
-                // Assuming schema matches.
+                // Audit info
+                submittedById: userId
             }
         });
     }
 
-    async findAll() {
+    async findAll(scope?: 'SYSTEM' | 'TENANT') {
+        const where: any = {};
+        if (scope) {
+            where.scope = scope;
+        }
+
         return this.prisma.role.findMany({
+            where,
             include: {
-                permissions: true,
-                _count: { select: { userRoles: true } }
+                // Permissions array is HUGE (hundreds of items). We remove it from list view for performance.
+                // It will be fetched via findOne lazily.
+                // permissions: true, 
+                _count: { select: { userRoles: true, permissions: true } }
+            },
+            orderBy: {
+                level: 'desc' // Hierarchy order
             }
         });
     }
@@ -42,7 +65,11 @@ export class RolesService {
     async findOne(id: string) {
         const role = await this.prisma.role.findUnique({
             where: { id },
-            include: { permissions: true }
+            include: {
+                permissions: {
+                    include: { permission: true }
+                }
+            }
         });
         if (!role) throw new NotFoundException('Role not found');
         return role;
@@ -127,19 +154,89 @@ export class RolesService {
         return result;
     }
 
-    async update(id: string, dto: UpdateRoleDto) {
+    async update(id: string, dto: UpdateRoleDto, userId: string = 'SYSTEM') {
         const role = await this.findOne(id);
-        // If Active, change logic (Back to Draft? Or allow edit?).
-        // Bank Grade: Edit = New Draft Version or Back to Draft.
-        // Simple: Back to Draft.
-        const newStatus = role.status === RoleStatus.ACTIVE ? RoleStatus.DRAFT : role.status;
+
+        // Locked Role Check (SAP Standard)
+        if (role.isLocked) {
+            throw new ForbiddenException('Cannot edit a locked System Role (e.g. SuperAdmin).');
+        }
+
+        const data: any = { ...dto };
+        delete data.permissionIds; // Handle permissions separately
+
+        // 1. Validate Scope Change Attempt (Immutable Scope)
+        if (dto.scope && dto.scope !== role.scope) {
+            throw new BadRequestException('Role Scope cannot be changed once created (SAP Immutable Rule).');
+        }
+
+        // 2. Handle Permissions
+        if (dto.permissionIds) {
+            // Fetch permissions by SLUGS
+            const permissions = await this.prisma.permission.findMany({
+                where: {
+                    slug: { in: dto.permissionIds }
+                }
+            });
+
+            // 3. STRICT SCOPE ENFORCEMENT
+            const invalidPermissions = permissions.filter(p => {
+                // Common permissions are safe for everyone (if we had them, defaulting to logic below)
+                // Logic: 
+                // SYSTEM Role -> Allows SYSTEM
+                // TENANT Role -> Allows TENANT
+                // Mismatch -> Error via Scope Leakage
+
+                // If permission scope is explicitly opposite of role scope
+                if (role.scope === 'SYSTEM' && p.scope === 'TENANT') return true;
+                if (role.scope === 'TENANT' && p.scope === 'SYSTEM') return true;
+                return false;
+            });
+
+            if (invalidPermissions.length > 0) {
+                throw new BadRequestException(`Security Violation: Attempted to assign invalid scope permissions to ${role.scope} role: ${invalidPermissions.map(p => p.slug).join(', ')}`);
+            }
+
+            // Transactional Permission Update
+            await this.prisma.$transaction(async (tx) => {
+                // Wipe existing
+                await tx.rolePermission.deleteMany({ where: { roleId: id } });
+
+                // Insert new
+                if (permissions.length > 0) {
+                    await tx.rolePermission.createMany({
+                        data: permissions.map(p => ({
+                            roleId: id,
+                            permissionId: p.id
+                        }))
+                    });
+                }
+            });
+
+            await this.auditService.logAction({
+                action: 'ROLE_PERMISSIONS_UPDATED',
+                resource: 'Role',
+                details: { roleId: id, count: permissions.length, slugs: dto.permissionIds },
+                module: 'ACCESS_CONTROL',
+                userId: userId, // Use actual user ID
+            });
+        }
+
+        // If Active, change logic to Draft if critical fields changed?
+        // Permission change -> Should trigger re-approval? 
+        // For now, let's keep status logic simple or just set to DRAFT if permissions changed.
+        let newStatus = role.status;
+        if (role.status === RoleStatus.ACTIVE && dto.permissionIds) {
+            newStatus = RoleStatus.DRAFT; // Force re-approval on permission change
+        }
 
         return this.prisma.role.update({
             where: { id },
             data: {
-                ...dto,
+                ...data,
                 status: newStatus
-            }
+            },
+            include: { permissions: true }
         });
     }
 }

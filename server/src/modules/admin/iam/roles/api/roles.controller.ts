@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, BadRequestException, Query } from '@nestjs/common';
 import { RolesService } from '../application/roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -18,8 +18,8 @@ export class RolesController {
     }
 
     @Get()
-    findAll() {
-        return this.rolesService.findAll();
+    findAll(@Query('scope') scope?: 'SYSTEM' | 'TENANT') {
+        return this.rolesService.findAll(scope);
     }
 
     @Get(':id')
@@ -28,8 +28,9 @@ export class RolesController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
-        return this.rolesService.update(id, updateRoleDto);
+    update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto, @Request() req) {
+        const userId = req.user.sub || req.user.userId;
+        return this.rolesService.update(id, updateRoleDto, userId);
     }
 
     // WORKFLOW ENDPOINTS

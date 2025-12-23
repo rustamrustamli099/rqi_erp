@@ -28,14 +28,15 @@ let RolesController = class RolesController {
         const userId = req.user.sub || req.user.userId;
         return this.rolesService.create(createRoleDto, userId);
     }
-    findAll() {
-        return this.rolesService.findAll();
+    findAll(scope) {
+        return this.rolesService.findAll(scope);
     }
     findOne(id) {
         return this.rolesService.findOne(id);
     }
-    update(id, updateRoleDto) {
-        return this.rolesService.update(id, updateRoleDto);
+    update(id, updateRoleDto, req) {
+        const userId = req.user.sub || req.user.userId;
+        return this.rolesService.update(id, updateRoleDto, userId);
     }
     submitForApproval(id, req) {
         const userId = req.user.sub || req.user.userId;
@@ -62,8 +63,9 @@ __decorate([
 ], RolesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('scope')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "findAll", null);
 __decorate([
@@ -77,8 +79,9 @@ __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_role_dto_1.UpdateRoleDto]),
+    __metadata("design:paramtypes", [String, update_role_dto_1.UpdateRoleDto, Object]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "update", null);
 __decorate([
