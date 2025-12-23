@@ -63,18 +63,19 @@ export const systemApi = {
     },
 
     getRole: async (id: string): Promise<Role> => {
-        const response = await api.get<Role>(`/admin/roles/${id}`);
-        return response.data;
+        const response = await api.get<any>(`/admin/roles/${id}`);
+        // Backend returns { statusCode: 200, data: Role }
+        return response.data.data || response.data;
     },
 
     createRole: async (data: CreateRoleRequest): Promise<Role> => {
-        const response = await api.post<Role>("/admin/roles", data);
-        return response.data;
+        const response = await api.post<any>("/admin/roles", data);
+        return response.data.data || response.data;
     },
 
     updateRole: async (id: string, data: UpdateRoleRequest): Promise<Role> => {
-        const response = await api.patch<Role>(`/admin/roles/${id}`, data);
-        return response.data;
+        const response = await api.patch<any>(`/admin/roles/${id}`, data);
+        return response.data.data || response.data;
     },
 
     deleteRole: async (id: string): Promise<void> => {
@@ -83,17 +84,17 @@ export const systemApi = {
 
     // Workflow
     submitRole: async (id: string): Promise<Role> => {
-        const response = await api.post<Role>(`/admin/roles/${id}/submit`);
-        return response.data;
+        const response = await api.post<any>(`/admin/roles/${id}/submit`);
+        return response.data.data || response.data;
     },
 
     approveRole: async (id: string): Promise<Role> => {
-        const response = await api.post<Role>(`/admin/roles/${id}/approve`);
-        return response.data;
+        const response = await api.post<any>(`/admin/roles/${id}/approve`);
+        return response.data.data || response.data;
     },
 
     rejectRole: async (id: string, reason: string): Promise<Role> => {
-        const response = await api.post<Role>(`/admin/roles/${id}/reject`, { reason });
-        return response.data;
+        const response = await api.post<any>(`/admin/roles/${id}/reject`, { reason });
+        return response.data.data || response.data;
     }
 };
