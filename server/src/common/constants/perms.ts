@@ -20,7 +20,6 @@ export const admin_panel_permissions = {
         },
     },
     billing: {
-        perms: ['view', 'read'],
         market_place: {
             perms: ['view', 'read', 'create', 'update', 'delete', 'export_to_excel', 'change_status']
         },
@@ -47,9 +46,7 @@ export const admin_panel_permissions = {
         perms: ['view', 'read', 'create', 'update', 'delete', 'share', 'edit', 'publish']
     },
     settings: {
-        perms: ['view', 'read', 'update'],
         general: {
-            perms: ['view', 'read', 'update'],
             company_profile: {
                 perms: ['view', 'read', 'create', 'update']
             },
@@ -58,7 +55,6 @@ export const admin_panel_permissions = {
             },
         },
         communication: {
-            perms: ['view', 'read', 'update'],
             smtp_email: {
                 perms: ['view', 'read', 'create', 'update', 'delete', 'test_connection']
             },
@@ -67,7 +63,6 @@ export const admin_panel_permissions = {
             },
         },
         security: {
-            perms: ['view', 'read', 'update'],
             security_policy: {
                 password_policy: {
                     perms: ['view', 'read', 'create', 'update']
@@ -101,9 +96,7 @@ export const admin_panel_permissions = {
             },
         },
         system_configurations: {
-            perms: ['view', 'read', 'update'],
             billing_configurations: {
-                perms: ['view', 'read'], // Container
                 price_rules: {
                     perms: ['view', 'read', 'create', 'update']
                 },
@@ -133,7 +126,6 @@ export const admin_panel_permissions = {
                 },
             },
             dictionary: {
-                perms: ['view'],
                 sectors: {
                     perms: ['view', 'read', 'create', 'update', 'delete']
                 },
@@ -165,7 +157,6 @@ export const admin_panel_permissions = {
         },
     },
     system_console: {
-        perms: ['view', 'read', 'manage'],
         dashboard: {
             perms: ['view', 'read', 'change_technical_inspection_mode', 'end_all_sessions', 'clear_cache']
         },
@@ -204,7 +195,6 @@ export const admin_panel_permissions = {
         },
     },
     developer_hub: {
-        perms: ['view', 'read'],
         api_reference: {
             perms: ['view', 'read', 'open_rest_api_docs', 'open_graphQL_api_docs']
         },

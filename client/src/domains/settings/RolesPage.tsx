@@ -378,7 +378,6 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 description: r.description,
                 type: (r.isSystem || r.scope === 'SYSTEM') ? 'system' : 'custom',
                 scope: r.scope || 'TENANT',
-                scope: r.scope || 'TENANT',
                 usersCount: r._count?.users || r.usersCount || 0,
                 // MAP PERMISSIONS COUNT EXPLICITLY
                 permissionsCount: r._count?.permissions || (r.permissions || []).length || 0,
