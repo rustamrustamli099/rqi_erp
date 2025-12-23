@@ -12,22 +12,34 @@ import { PageLoader } from "@/shared/components/PageLoader"
 export function RootRedirect() {
     const { isAuthenticated, permissions, isLoading, activeTenantType } = useAuth();
 
+    // SAP-Grade Auth FSM Implementation
+    // -------------------------------------------------------------
+    // State 1: BOOTSTRAP / TOKEN_CHECK
+    // Strict Rule: No redirects while loading.
     if (isLoading) {
-        return <PageLoader />
+        return <PageLoader />;
     }
 
+    // State 2: UNAUTHENTICATED
+    // If no token/session, go to login immediately.
     if (!isAuthenticated) {
-        return <Navigate to="/login" replace />
+        return <Navigate to="/login" replace />;
     }
 
-    // Dynamic Route Resolution (SAP-Grade)
-    // Instead of hardcoding /admin/dashboard, we find the first valid leaf node.
+    // State 3: AUTH_READY (Stable Session)
+    // We have a user and loaded permissions.
+    // Calculate the best entry point (Leaf node only).
+
+    // Dynamic Route Resolution (Strict Leaf-Only)
     const targetRoute = getFirstAllowedRoute(permissions, activeTenantType);
 
-    // If no route found (even if perms exist), go to Access Denied
+    // State 4: DENIED_TERMINAL (Zero Permissions)
+    // If no accessible route is found, user is locked out.
     if (targetRoute === '/access-denied') {
-        return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />
+        console.warn("[RootRedirect] Access Denied: User has no valid routes.");
+        return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />;
     }
 
-    return <Navigate to={targetRoute} replace />
+    // Success: Redirect to calculated leaf node
+    return <Navigate to={targetRoute} replace />;
 }

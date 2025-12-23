@@ -124,18 +124,14 @@ const DesktopMenuItem = ({
                         onClick={(e) => {
                             e.stopPropagation();
 
-                            // Smart Logic: Recursive path resolution for deep nested menus
-                            const targetPath = findDeepPath(item);
+                            // Strict SAP-Grade Logic:
+                            // 1. Containers (have children) -> ONLY Expand/Collapse
+                            // 2. Leaf Nodes (no children) -> ONLY Navigate
 
-                            if (targetPath) {
-                                navigate(targetPath);
-                                // Optional: Auto-expand if not already open
-                                if (!isOpen && onToggle) {
-                                    onToggle(item.label);
-                                }
-                            } else {
-                                // Default implementation: Layout toggle
+                            if (hasChildren) {
                                 if (onToggle) onToggle(item.label);
+                            } else if (item.path) {
+                                navigate(item.path);
                             }
                         }}
                     >
