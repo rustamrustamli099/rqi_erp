@@ -13,10 +13,10 @@ export declare class EvidenceService {
                 evidence: {
                     active_tenants: number;
                     tenant_sample: {
+                        type: import(".prisma/client").$Enums.TenantType;
                         id: string;
                         name: string;
                         status: string;
-                        type: import(".prisma/client").$Enums.TenantType;
                     }[];
                     roles_defined: {
                         name: string;

@@ -32,7 +32,13 @@ export default function AdminRoutes() {
 
             {/* Core Domains */}
             <Route path="users" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.USERS.VIEW}>
+                <ProtectedRoute
+                    requiredPermissions={[
+                        PermissionSlugs.PLATFORM.USERS.VIEW,
+                        PermissionSlugs.PLATFORM.USERS.CONNECT_TO_EMPLOYEE
+                    ]}
+                    mode="any"
+                >
                     <UsersPage />
                 </ProtectedRoute>
             } />

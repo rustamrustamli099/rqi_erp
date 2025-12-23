@@ -17,6 +17,7 @@ export const getFirstAllowedRoute = (
     tenantType: 'SYSTEM' | 'TENANT'
 ): string => {
     const menu = tenantType === 'SYSTEM' ? PLATFORM_MENU : TENANT_MENU;
+    console.log(`[RouteUtils] Calculating First Route. Type: ${tenantType}. MenuItems: ${menu.length}. UserPerms:`, permissions);
 
     // Normalize user permissions for easy lookup
     // Assuming permissions are already canonical slugs. 

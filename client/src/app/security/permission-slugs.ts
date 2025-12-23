@@ -29,6 +29,7 @@ export const PermissionSlugs = {
             UPDATE: 'platform.users.users.update',
             DELETE: 'platform.users.users.delete',
             INVITE: 'platform.users.users.invite',
+            CONNECT_TO_EMPLOYEE: 'platform.users.users.connect_to_employee',
         },
         CURATORS: {
             VIEW: 'platform.users.curators.view',

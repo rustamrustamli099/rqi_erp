@@ -64,6 +64,13 @@ export const PLATFORM_MENU: MenuItem[] = [{
         label: 'Kuratorlar',
         path: '/admin/users?tab=curators',
         requiredPermissions: ['platform.users.curators.view']
+    },
+    {
+        // Phantom Item: Allows users with ONLY connect permission to access the main list
+        id: 'users.connect',
+        label: 'Əməliyyat Girişi',
+        path: '/admin/users?tab=users',
+        requiredPermissions: ['platform.users.users.connect_to_employee']
     }
     ]
 },
