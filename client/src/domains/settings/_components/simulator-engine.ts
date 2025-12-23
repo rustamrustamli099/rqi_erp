@@ -30,27 +30,16 @@ const filterMenu = (items: MenuItem[], permissions: string[]): MenuItem[] => {
             // Check children
             const visibleChildren = item.children ? filterMenu(item.children, permissions) : []
 
-            // Visibility Logic:
-            // 1. If it has children, it's visible if AT LEAST ONE child is visible (Group Header logic)
-            // 2. OR if it has direct permission
+            const isContainer = item.children && item.children.length > 0;
+            const hasVisibleChildren = visibleChildren.length > 0;
 
-            // However, often Parent requires permission AND Child requires permission.
-            // If Parent lacks permission, Children are usually inaccessible.
-            // BUT for "Grouping", sometimes Parent is just a label.
-            // Looking at menu.definitions.ts, e.g. "settings" has PERMISSION.SETTINGS.READ.
-            // If user has "settings.general.read" but NOT "settings.read", usually they shouldn't see Settings.
-            // So Strict Parent Logic: Parent must be visible for Child to be visible.
+            // VISIBILITY RULE (Matched with useMenu.ts):
+            // - Container: Visible IF it has visible children. (Direct perm ignored for container parent)
+            // - Leaf: Visible IF it has direct permission.
 
-            if (!hasDirectPermission) return null
+            const isItemVisible = isContainer ? hasVisibleChildren : hasDirectPermission;
 
-            // If we have children defined, but none valid, and we depend on children?
-            // Usually dashboard items without children are fine.
-            // Items WITH children usually act as folders.
-            if (item.children && item.children.length > 0 && visibleChildren.length === 0) {
-                // Folder with no visible children. Should we show it?
-                // Usually NO, to avoid empty folders.
-                return null
-            }
+            if (!isItemVisible) return null
 
             return {
                 ...item,

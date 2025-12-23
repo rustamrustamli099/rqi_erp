@@ -132,10 +132,23 @@ enum RoleStatus {
   ARCHIVED
 }
 
+enum RoleScope {
+  SYSTEM
+  TENANT
+}
+
 model Role {
   id          String   @id @default(uuid())
   name        String
   description String?
+  
+  // SAP-Grade Fields
+  scope       RoleScope  @default(TENANT)
+  level       Int        @default(10)      // Hierarchy Level (1-100)
+  isLocked    Boolean    @default(false)   // Immutable system roles (e.g. SuperAdmin)
+  isEnabled   Boolean    @default(true)    // Soft disable
+
+  // Legacy field support (deprecated, mapped to scope=SYSTEM)
   isSystem    Boolean  @default(false)
   
   status      RoleStatus @default(DRAFT)

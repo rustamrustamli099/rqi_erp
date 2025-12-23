@@ -131,6 +131,7 @@ exports.admin_panel_permissions = {
                 },
             },
             dictionary: {
+                perms: ['view'],
                 sectors: {
                     perms: ['view', 'read', 'create', 'update', 'delete']
                 },
@@ -141,6 +142,7 @@ exports.admin_panel_permissions = {
                     perms: ['view', 'read', 'create', 'update', 'delete']
                 },
                 addresses: {
+                    perms: ['view'],
                     country: { perms: ['view', 'read', 'create', 'update', 'delete'] },
                     city: { perms: ['view', 'read', 'create', 'update', 'delete'] },
                     district: { perms: ['view', 'read', 'create', 'update', 'delete'] },
@@ -235,5 +237,5 @@ function generatePermissionMap(obj, prefix = 'platform') {
     }
     return map;
 }
-exports.PERMISSIONS = generatePermissionMap(exports.admin_panel_permissions, 'platform');
+exports.PERMISSIONS = generatePermissionMap(exports.admin_panel_permissions, 'system');
 //# sourceMappingURL=perms.js.map

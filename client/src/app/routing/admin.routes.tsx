@@ -43,72 +43,106 @@ export default function AdminRoutes() {
                 </ProtectedRoute>
             } />
 
-            <Route path="profile" element={<ProfilePage />} />
+            <Route path="profile" element={
+                <ProtectedRoute>
+                    <ProfilePage />
+                </ProtectedRoute>
+            } />
 
             {/* Modular Domains */}
             <Route path="branches/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BRANCHES.VIEW}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.BRANCHES.VIEW}>
                     <BranchesRoutes />
                 </ProtectedRoute>
             } />
 
             <Route path="files" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.FILES.VIEW}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.FILES.VIEW}>
                     <FilesManagerPage />
                 </ProtectedRoute>
             } />
 
             {/* Added Missing Modules */}
             <Route path="tenants" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.TENANTS.VIEW}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.TENANTS.VIEW}>
                     <TenantList />
                 </ProtectedRoute>
             } />
 
             <Route path="approvals" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.APPROVALS.VIEW}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.APPROVALS.VIEW}>
                     <ApprovalsPage />
                 </ProtectedRoute>
             } />
 
             {/* Knowledge Base */}
             <Route path="guide" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.GUIDE.VIEW}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.GUIDE.VIEW}>
                     <PlatformOverviewPage />
                 </ProtectedRoute>
             } />
 
             {/* System Console */}
             <Route path="console" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.CONSOLE.VIEW}>
+                <ProtectedRoute
+                    requiredPermissions={[
+                        PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.MONITORING.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.AUDIT.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.SCHEDULER.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.RETENTION.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.FEATURES.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.POLICY.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.FEEDBACK.READ,
+                        PermissionSlugs.SYSTEM.CONSOLE.TOOLS.READ
+                    ]}
+                    mode="any"
+                >
                     <ConsolePage />
                 </ProtectedRoute>
             } />
 
             {/* Monitoring */}
             <Route path="monitoring/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.CONSOLE.DASHBOARD.READ}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ}>
                     <MonitoringRoutes />
                 </ProtectedRoute>
             } />
 
             {/* Developer Hub */}
             <Route path="developer" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.DEVELOPER.VIEW}>
+                <ProtectedRoute
+                    requiredPermissions={[
+                        PermissionSlugs.SYSTEM.DEVELOPER.API.READ,
+                        PermissionSlugs.SYSTEM.DEVELOPER.SDK.READ,
+                        PermissionSlugs.SYSTEM.DEVELOPER.WEBHOOKS.READ,
+                        PermissionSlugs.SYSTEM.DEVELOPER.PERM_MAP.READ
+                    ]}
+                    mode="any"
+                >
                     <DeveloperHubPage />
                 </ProtectedRoute>
             } />
 
             {/* Billing */}
             <Route path="billing/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.VIEW}>
+                <ProtectedRoute
+                    requiredPermissions={[
+                        PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.VIEW,
+                        PermissionSlugs.SYSTEM.BILLING.PACKAGES.VIEW,
+                        PermissionSlugs.SYSTEM.BILLING.PLANS.READ,
+                        PermissionSlugs.SYSTEM.BILLING.INVOICES.READ,
+                        PermissionSlugs.SYSTEM.BILLING.LICENSES.READ
+                    ]}
+                    mode="any"
+                >
                     <BillingRoutes />
                 </ProtectedRoute>
             } />
 
             {/* Finance */}
             <Route path="finance" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.BILLING.VIEW}>
+                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.BILLING.INVOICES.READ}>
                     <FinancePage />
                 </ProtectedRoute>
             } />

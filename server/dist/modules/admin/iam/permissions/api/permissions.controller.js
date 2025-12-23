@@ -24,11 +24,21 @@ let PermissionsController = class PermissionsController {
     constructor(permissionsService) {
         this.permissionsService = permissionsService;
     }
+    async findAll() {
+        return this.permissionsService.findAll();
+    }
     async preview(dto) {
         return this.permissionsService.previewPermissions(dto);
     }
 };
 exports.PermissionsController = PermissionsController;
+__decorate([
+    (0, common_1.Get)(),
+    (0, swagger_1.ApiOperation)({ summary: 'List all system permissions' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], PermissionsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Post)('preview'),
     (0, swagger_1.ApiOperation)({ summary: 'Preview effective permissions and visible menus for a set of roles' }),

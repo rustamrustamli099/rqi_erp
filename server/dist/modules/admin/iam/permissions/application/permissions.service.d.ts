@@ -16,5 +16,7 @@ export declare class PermissionsService {
         };
         accessState: string;
     }>;
+    findAll(): Promise<any[]>;
+    private flattenPermissionsMap;
     private getAllRoutes;
 }

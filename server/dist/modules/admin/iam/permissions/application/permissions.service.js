@@ -82,6 +82,32 @@ let PermissionsService = class PermissionsService {
             accessState: 'GRANTED'
         };
     }
+    async findAll() {
+        const { admin_panel_permissions } = require('../../../../../common/constants/perms');
+        const systemSlugs = this.flattenPermissionsMap(admin_panel_permissions, 'system');
+        return systemSlugs.map(slug => ({
+            id: slug,
+            slug: slug,
+            description: slug
+        }));
+    }
+    flattenPermissionsMap(obj, prefix) {
+        let permissions = [];
+        for (const key in obj) {
+            if (key === 'perms' && Array.isArray(obj[key])) {
+                obj[key].forEach((action) => {
+                    permissions.push(`${prefix}.${action}`);
+                });
+            }
+            else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                const nextPrefix = prefix ? `${prefix}.${key}` : key;
+                permissions.push(...this.flattenPermissionsMap(obj[key], nextPrefix));
+            }
+        }
+        if (obj.perms && Array.isArray(obj.perms)) {
+        }
+        return permissions;
+    }
     getAllRoutes() {
         const getRoutes = (items) => {
             let routes = [];

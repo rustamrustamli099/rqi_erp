@@ -33,35 +33,50 @@ export const useMenu = () => {
         const filterRecursive = (items: MenuItem[]): MenuItem[] => {
             return items.reduce((acc: MenuItem[], item) => {
                 // Step 1: Filter children first (Bottom-Up)
-                let visibleChildren: MenuItem[] | undefined = undefined;
+                let visibleChildren: MenuItem[] = [];
                 if (item.children && item.children.length > 0) {
                     visibleChildren = filterRecursive(item.children);
                 }
 
-                // Step 2: Check Direct Permission
-                // If requiredPermissions is empty/undefined -> it is PUBLIC (within scope)
+                // Step 2: Check Direct Permission (for Leafs)
                 const hasDirectPermission =
                     !item.requiredPermissions ||
                     item.requiredPermissions.length === 0 ||
-                    hasAll(item.requiredPermissions);
+                    hasAny(item.requiredPermissions); // Use hasAny for flexibility if array provided (Mode "any")
 
                 // Step 3: Determine Visibility
-                const hasVisibleChildren = visibleChildren && visibleChildren.length > 0;
-                const isParent = item.children && item.children.length > 0; // Check original children to determine if it is a container
+                const isContainer = (item.children && item.children.length > 0);
+                const hasVisibleChildren = visibleChildren.length > 0;
 
-                // vSAP Rule: 
-                // - Containers/Parents are visible ONLY if they have visible children (Menu Rehydration).
-                // - Leaf nodes are visible ONLY if they have direct permission.
-                const isVisible = isParent ? hasVisibleChildren : hasDirectPermission;
+                // RULE:
+                // - Container: Visible IF it has visible children.
+                // - Leaf: Visible IF it has direct permission.
+                const isVisible = isContainer ? hasVisibleChildren : hasDirectPermission;
 
                 if (isVisible) {
                     // Step 4: Construct the item
+                    // Smart Path Logic:
+                    // If it is a container with visible children, auto-resolve path to the first visible child.
+                    // This prevents "Access Denied" if the default parent path points to a forbidden tab.
+                    // If direct permission exists, user might want the specific parent path, BUT if that path is a redirect (like /settings -> /settings?tab=general), checking child is safer.
+
+                    let finalPath = item.path;
+                    if (isContainer && hasVisibleChildren) {
+                        // Find first child with a valid path
+                        const firstChildWithPath = visibleChildren.find(c => c.path);
+                        if (firstChildWithPath) {
+                            finalPath = firstChildWithPath.path;
+                        }
+                    } else if (isContainer && !hasVisibleChildren) {
+                        // Should technically be invisible, but just in case
+                        finalPath = undefined;
+                    }
+                    // Leaf nodes keep their path
+
                     const finalItem: MenuItem = {
                         ...item,
-                        children: visibleChildren || [],
-                        // Rule: Ensure parent acts as Group Header if strictly rehydrated (not relying on own permission)
-                        // though broadly we just want to preserve the path if it was valid and permitted.
-                        path: hasDirectPermission ? item.path : undefined
+                        path: finalPath,
+                        children: visibleChildren
                     };
 
                     acc.push(finalItem);
@@ -72,7 +87,7 @@ export const useMenu = () => {
         };
 
         return (menu: MenuItem[]) => filterRecursive(sortItems(menu));
-    }, [hasAll]); // Dependency on permission checker
+    }, [hasAny]); // Dependency on permission checker
 
     const filteredMenu = useMemo(() => filterMenuTree(rawMenu), [rawMenu, filterMenuTree]);
 

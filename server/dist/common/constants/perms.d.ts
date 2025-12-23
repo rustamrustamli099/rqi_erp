@@ -130,6 +130,7 @@ export declare const admin_panel_permissions: {
                 };
             };
             dictionary: {
+                perms: string[];
                 sectors: {
                     perms: string[];
                 };
@@ -140,6 +141,7 @@ export declare const admin_panel_permissions: {
                     perms: string[];
                 };
                 addresses: {
+                    perms: string[];
                     country: {
                         perms: string[];
                     };

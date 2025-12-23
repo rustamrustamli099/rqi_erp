@@ -77,27 +77,56 @@ const DesktopMenuItem = ({
     openMap?: Record<string, boolean>,
     navigate: any,
     location: any,
-    onToggle?: (label: string) => void
+    onToggle?: (id: string) => void
 }) => {
-    // Determine active state strictly (exact match or child match)
-    // Note: item.path is optional for parents
-    const isOpen = openMap ? !!openMap[item.label] : false;
-    const isActiveLink = item.path === location.pathname;
+    // Robust Key: Prefer ID, fallback to label
+    const itemKey = item.id || item.label;
+    const isOpen = openMap ? !!openMap[itemKey] : false;
 
-    // FORCE FLAT RENDERING: User requested revert to previous design
-    const hasChildren = false; // item.children && item.children.length > 0;
+    // 1. Recursive Check - Forced Flat Logic (User Req: Submenus handled via Page Tabs)
+    // We treat all items as "Leafs" visually.
+    // The 'path' is already smart-resolved by useMenu to point to the first accessible child.
+    const hasChildren = false; // !!(item.children && item.children.length > 0);
 
-    const isChildActive = item.children?.some(c => c.path?.split('?')[0] === location.pathname);
+    // 2. Active State Logic (Robust)
+    // Matches if current path starts with item path (for sub-routes) OR exact match
+    // Query params: If tab is present, stricter match
+    const isActiveLink = (() => {
+        if (!item.path) return false;
+        const currentPath = location.pathname;
+        const currentSearch = location.search;
+
+        // Base path match
+        const pathMatch = item.path.split('?')[0] === currentPath;
+        if (!pathMatch) return false;
+
+        // Query match?
+        const itemQuery = item.path.split('?')[1];
+        if (itemQuery) {
+            // If item has specific query (e.g. ?tab=users), we must match it
+            const itemParams = new URLSearchParams(itemQuery);
+            const currentParams = new URLSearchParams(currentSearch);
+            for (const [key, val] of itemParams.entries()) {
+                if (currentParams.get(key) !== val) return false;
+            }
+        }
+        return true;
+    })();
+
+    const isChildActive = !!(item.children?.some(c => {
+        // Recursive active check for parent highlight
+        const cPath = c.path?.split('?')[0];
+        // Section Active: Ignore query params for container highlight
+        return cPath && location.pathname.startsWith(cPath);
+    }));
+
     const isMainActive = isActiveLink || isChildActive;
 
-    // Icon handling: Item has component or string?
-    // In new definition it is component. In legacy it might be string. 
-    // We cover both.
+    // Icon handling
     let Icon = item.icon as any;
     if (typeof item.icon === 'string') {
         Icon = (LucideIcons as any)[item.icon] || LucideIcons.Circle;
     }
-
     // Fallback if no icon
     if (!Icon && level === 0) Icon = LucideIcons.Circle;
 
@@ -109,7 +138,7 @@ const DesktopMenuItem = ({
         return (
             <Collapsible
                 open={isOpen}
-                onOpenChange={() => onToggle && onToggle(item.label)}
+                onOpenChange={() => onToggle && onToggle(itemKey)}
                 className="w-full"
             >
                 <CollapsibleTrigger asChild>
@@ -117,22 +146,16 @@ const DesktopMenuItem = ({
                         variant="ghost"
                         className={cn(
                             "w-full justify-start gap-3 mb-1 h-10 relative group hover:bg-muted/50 overflow-hidden",
-                            isMainActive && "bg-primary/15 text-primary font-semibold hover:bg-primary/20",
+                            isMainActive && "bg-primary/10 text-primary font-semibold hover:bg-primary/15",
                             collapsed ? "px-0 justify-center" : "px-4"
                         )}
                         style={!collapsed ? { paddingLeft: `${16 + (level * 12)}px` } : {}}
                         onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-
-                            // Strict SAP-Grade Logic:
-                            // 1. Containers (have children) -> ONLY Expand/Collapse
-                            // 2. Leaf Nodes (no children) -> ONLY Navigate
-
-                            if (hasChildren) {
-                                if (onToggle) onToggle(item.label);
-                            } else if (item.path) {
-                                navigate(item.path);
-                            }
+                            // SAP Rule: Parent with children ALWAYS toggles, NEVER navigates (initially).
+                            // User request: "Parent menu behavior (SAP-style): ... Clicking parent toggles open/close, does not navigate"
+                            if (onToggle) onToggle(itemKey);
                         }}
                     >
                         {isMainActive && (
@@ -158,8 +181,8 @@ const DesktopMenuItem = ({
                                     <span className="truncate font-medium">{item.label}</span>
                                     <ChevronDown
                                         className={cn(
-                                            "h-4 w-4 shrink-0 transition-transform duration-200",
-                                            isOpen ? "rotate-180" : ""
+                                            "h-4 w-4 shrink-0 transition-transform duration-200 opacity-50",
+                                            isOpen && "transform rotate-180"
                                         )}
                                     />
                                 </div>
@@ -172,7 +195,7 @@ const DesktopMenuItem = ({
                     <div className={cn("space-y-1 mt-1", collapsed && "bg-muted/10 rounded-md py-1 border border-border/20")}>
                         {item.children?.map((child, idx) => (
                             <DesktopMenuItem
-                                key={idx}
+                                key={child.id || idx}
                                 item={child}
                                 collapsed={collapsed}
                                 level={level + 1}
@@ -217,24 +240,13 @@ const DesktopMenuItem = ({
                 variant="ghost"
                 className={cn(
                     "w-full justify-start gap-3 mb-1 h-10 hover:bg-muted/50 relative group",
-                    isMainActive && "bg-primary/15 text-primary font-semibold hover:bg-primary/20",
+                    isMainActive && "bg-primary/10 text-primary font-semibold hover:bg-primary/15",
                     "px-4"
                 )}
                 style={{ paddingLeft: `${16 + (level * 12)}px` }}
                 onClick={() => {
-                    let targetPath = item.path;
-                    // SMART LOGIC: If no path but has children, use first child's path
-                    if (!targetPath && item.children && item.children.length > 0) {
-                        targetPath = item.children[0].path;
-                        console.log("Sidebar: Auto-Resolved Child Path", targetPath);
-                    }
-
-                    console.log("Sidebar: Clicked Item", item.label, "Target:", targetPath);
-
-                    if (targetPath) {
-                        navigate(targetPath);
-                    } else {
-                        console.warn("Sidebar: Clicked Item HAS NO PATH & NO CHILDREN", item.label);
+                    if (item.path) {
+                        navigate(item.path);
                     }
                 }}
             >
@@ -290,14 +302,12 @@ export function DesktopSidebar() {
 
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
-    const [openBaseMenus, setOpenBaseMenus] = useState<Record<string, boolean>>({
-        "Admin Panel": true
-    })
+    const [openBaseMenus, setOpenBaseMenus] = useState<Record<string, boolean>>({})
 
-    const toggleMenu = (label: string) => {
+    const toggleMenu = (id: string) => {
         setOpenBaseMenus(prev => ({
             ...prev,
-            [label]: !prev[label]
+            [id]: !prev[id]
         }))
     }
 
@@ -372,7 +382,7 @@ export function DesktopSidebar() {
                     ) : filteredMenuItems.length > 0 ? (
                         filteredMenuItems.map((item, index) => (
                             <DesktopMenuItem
-                                key={index}
+                                key={item.id || index}
                                 item={item}
                                 collapsed={collapsed}
                                 openMap={openBaseMenus}

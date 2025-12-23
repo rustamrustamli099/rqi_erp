@@ -133,6 +133,7 @@ export const admin_panel_permissions = {
                 },
             },
             dictionary: {
+                perms: ['view'],
                 sectors: {
                     perms: ['view', 'read', 'create', 'update', 'delete']
                 },
@@ -143,6 +144,7 @@ export const admin_panel_permissions = {
                     perms: ['view', 'read', 'create', 'update', 'delete']
                 },
                 addresses: {
+                    perms: ['view'],
                     country: { perms: ['view', 'read', 'create', 'update', 'delete'] },
                     city: { perms: ['view', 'read', 'create', 'update', 'delete'] },
                     district: { perms: ['view', 'read', 'create', 'update', 'delete'] },
@@ -251,4 +253,4 @@ function generatePermissionMap(obj: any, prefix: string = 'platform'): any {
     return map;
 }
 
-export const PERMISSIONS = generatePermissionMap(admin_panel_permissions, 'platform');
+export const PERMISSIONS = generatePermissionMap(admin_panel_permissions, 'system');

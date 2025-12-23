@@ -96,6 +96,50 @@ export class PermissionsService {
         };
     }
 
+    /**
+     * Returns all available system permissions as flat list.
+     * Used by Permission Editor UI.
+     */
+    async findAll(): Promise<any[]> {
+        // We import the source of truth
+        const { admin_panel_permissions } = require('../../../../../common/constants/perms');
+        const systemSlugs = this.flattenPermissionsMap(admin_panel_permissions, 'system');
+        // TODO: Merge with Tenant Slugs if needed
+        return systemSlugs.map(slug => ({
+            id: slug,
+            slug: slug,
+            description: slug // TODO: Add human readable descriptions map
+        }));
+    }
+
+    private flattenPermissionsMap(obj: any, prefix: string): string[] {
+        let permissions: string[] = [];
+
+        for (const key in obj) {
+            if (key === 'perms' && Array.isArray(obj[key])) {
+                obj[key].forEach((action: string) => {
+                    permissions.push(`${prefix}.${action}`);
+                });
+            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                const nextPrefix = prefix ? `${prefix}.${key}` : key;
+                permissions.push(...this.flattenPermissionsMap(obj[key], nextPrefix));
+            }
+        }
+
+        // Handle hybrid nodes (perm array at same level as children)
+        if (obj.perms && Array.isArray(obj.perms)) {
+            // Already handled in loop? No, loop iterates keys. perms is a key.
+            // If perms is a key, it hits the first if block.
+            // So this check is redundant unless perms is not enumerable?
+            // Actually, if structure is { child: {}, perms: [] }
+            // Loop hits 'child' -> recursion.
+            // Loop hits 'perms' -> first if block.
+            // So we are good.
+        }
+
+        return permissions;
+    }
+
     private getAllRoutes(): string[] {
         const getRoutes = (items: any[]): string[] => {
             let routes: string[] = [];

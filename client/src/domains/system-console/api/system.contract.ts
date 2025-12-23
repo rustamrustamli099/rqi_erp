@@ -58,7 +58,7 @@ export const systemApi = {
         // I will keep permissions legacy /roles/permissions for now if I didn't change PermissionsController list.
         // Actually, PermissionsController I created ONLY has preview.
         // So I should keep legacy for permission list:
-        return api.get<any[]>("/roles/permissions").then(r => r.data);
+        return api.get<any[]>("/admin/permissions").then(r => r.data);
     },
 
     createRole: async (data: CreateRoleRequest): Promise<Role> => {

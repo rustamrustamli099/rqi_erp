@@ -225,7 +225,7 @@ function PermissionRow({
                     "pl-4 py-3 space-y-3",
                     level === 0 ? "border border-t-0 rounded-b-md p-4 bg-muted/5 shadow-inner" : "border-l-2 ml-7 my-1 border-muted/50"
                 )}>
-                    {node.children!.map(child => (
+                    {node.children?.map(child => (
                         <PermissionRow
                             key={child.id}
                             node={child}

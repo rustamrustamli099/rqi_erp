@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "@/domains/auth/context/AuthContext"
-import { getFirstAllowedRoute } from "@/app/security/route-utils"
+import { findFirstPathFromMenu } from "@/app/security/route-utils"
+import { useMenu } from "@/app/navigation/useMenu"
 import { PageLoader } from "@/shared/components/PageLoader"
 
 /**
@@ -10,7 +11,8 @@ import { PageLoader } from "@/shared/components/PageLoader"
  * Dynamically finds the first accessible route in the user's menu.
  */
 export function RootRedirect() {
-    const { isAuthenticated, permissions, isLoading, activeTenantType } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
+    const { menu } = useMenu();
 
     // SAP-Grade Auth FSM Implementation
     // -------------------------------------------------------------
@@ -27,16 +29,15 @@ export function RootRedirect() {
     }
 
     // State 3: AUTH_READY (Stable Session)
-    // We have a user and loaded permissions.
-    // Calculate the best entry point (Leaf node only).
-
-    // Dynamic Route Resolution (Strict Leaf-Only)
-    const targetRoute = getFirstAllowedRoute(permissions, activeTenantType);
+    // Dynamic Route Resolution from Filtered Menu
+    // This guarantees we only redirect to something that is actually in the sidebar.
+    const targetRoute = findFirstPathFromMenu(menu);
+    // Note: useMenu already handles filtering by permission.
 
     // State 4: DENIED_TERMINAL (Zero Permissions)
     // If no accessible route is found, user is locked out.
-    if (targetRoute === '/access-denied') {
-        console.warn("[RootRedirect] Access Denied: User has no valid routes.");
+    if (!targetRoute) {
+        console.warn("[RootRedirect] Access Denied: User has no valid routes in filtered menu.");
         return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />;
     }
 

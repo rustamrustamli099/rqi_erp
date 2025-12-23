@@ -18,94 +18,350 @@ const tenant_permissions = {
     settings: { perms: ['read', 'manage'] },
 };
 
-const ADMIN_MENU_TREE = [
-    { id: 'dashboard', label: 'İdarə etmə paneli', icon: 'LayoutDashboard', path: '/admin/dashboard', permission: 'platform.dashboard.view' },
-    { id: 'tenants', label: 'Tenantlar', icon: 'Building2', path: '/admin/tenants', permission: 'platform.tenants.view' },
-    { id: 'branches', label: 'Filiallar', icon: 'GitBranch', path: '/admin/branches', permission: 'platform.branches.view' },
+const ADMIN_MENU_TREE = [{
+    id: 'dashboard',
+    label: 'İdarə etmə paneli',
+    icon: 'LayoutDashboard',
+    path: '/admin/dashboard',
+    permission: 'system.dashboard.view'
+},
+{
+    id: 'tenants',
+    label: 'Tenantlar',
+    icon: 'Building2',
+    path: '/admin/tenants',
+    permission: 'system.tenants.view'
+},
+{
+    id: 'branches',
+    label: 'Filiallar',
+    icon: 'GitBranch',
+    path: '/admin/branches',
+    permission: 'system.branches.view'
+},
+{
+    id: 'users_group',
+    label: 'İstifadəçilər',
+    icon: 'Users',
+    permission: 'system.users.users.view',
+    children: [{
+        id: 'users',
+        label: 'İstifadəçilər',
+        path: '/admin/users?tab=users',
+        permission: 'system.users.users.view'
+    },
     {
-        id: 'users_group', label: 'İstifadəçilər', icon: 'Users', permission: 'platform.users.users.view', children: [
-            { id: 'users', label: 'İstifadəçilər', path: '/admin/users?tab=users', permission: 'platform.users.users.view' },
-            { id: 'curators', label: 'Kuratorlar', path: '/admin/users?tab=curators', permission: 'platform.users.curators.view' }
+        id: 'curators',
+        label: 'Kuratorlar',
+        path: '/admin/users?tab=curators',
+        permission: 'system.users.curators.view'
+    }
+    ]
+},
+{
+    id: 'billing',
+    label: 'Bilinq',
+    icon: 'CreditCard',
+    path: '/admin/billing',
+    permission: 'system.billing.view',
+    children: [{
+        id: 'market_place',
+        label: 'Marketplace',
+        path: '/admin/billing?tab=market_place',
+        permission: 'system.billing.market_place.read'
+    }, // Keeping read if view not explicit in map, but map has view. Let used view.
+    {
+        id: 'compact_packages',
+        label: 'Kompakt Paketlər',
+        path: '/admin/billing?tab=packages',
+        permission: 'system.billing.compact_packages.read'
+    },
+    {
+        id: 'plans',
+        label: 'Planlar',
+        path: '/admin/billing?tab=plans',
+        permission: 'system.billing.plans.read'
+    },
+    {
+        id: 'invoices',
+        label: 'Fakturalar',
+        path: '/admin/billing?tab=invoices',
+        permission: 'system.billing.invoices.read'
+    },
+    {
+        id: 'licenses',
+        label: 'Lisenziyalar',
+        path: '/admin/billing?tab=licenses',
+        permission: 'system.billing.licenses.read'
+    },
+    ]
+},
+{
+    id: 'approvals',
+    label: 'Təsdiqləmələr',
+    icon: 'CheckSquare',
+    path: '/admin/approvals',
+    permission: 'system.approvals.view'
+},
+{
+    id: 'files',
+    label: 'Fayl Meneceri',
+    icon: 'Folder',
+    path: '/admin/files',
+    permission: 'system.file_manager.view'
+},
+{
+    id: 'guide',
+    label: 'Sistem Bələdçisi',
+    icon: 'BookOpen',
+    path: '/admin/guide',
+    permission: 'system.system_guide.view'
+},
+{
+    id: 'settings',
+    label: 'Tənzimləmələr',
+    icon: 'Settings',
+    path: '/admin/settings',
+    permission: 'system.settings.view',
+    children: [{
+        id: 'general',
+        label: 'Ümumi',
+        icon: 'Sliders',
+        permission: 'system.settings.general.view',
+        children: [ // Groups need view
+            {
+                id: 'company_profile',
+                label: 'Şirkət Profili',
+                path: '/admin/settings?tab=general',
+                permission: 'system.settings.general.company_profile.view'
+            },
+            {
+                id: 'notification_engine',
+                label: 'Bildiriş Mühərriki',
+                path: '/admin/settings?tab=notifications',
+                permission: 'system.settings.general.notification_engine.view'
+            },
         ]
     },
     {
-        id: 'billing', label: 'Bilinq', icon: 'CreditCard', path: '/admin/billing', permission: 'platform.billing.view', children: [
-            { id: 'market_place', label: 'Marketplace', path: '/admin/billing?tab=market_place', permission: 'platform.billing.market_place.read' }, // Keeping read if view not explicit in map, but map has view. Let used view.
-            { id: 'compact_packages', label: 'Kompakt Paketlər', path: '/admin/billing?tab=packages', permission: 'platform.billing.compact_packages.read' },
-            { id: 'plans', label: 'Planlar', path: '/admin/billing?tab=plans', permission: 'platform.billing.plans.read' },
-            { id: 'invoices', label: 'Fakturalar', path: '/admin/billing?tab=invoices', permission: 'platform.billing.invoices.read' },
-            { id: 'licenses', label: 'Lisenziyalar', path: '/admin/billing?tab=licenses', permission: 'platform.billing.licenses.read' },
+        id: 'communication',
+        label: 'Kommunikasiya',
+        icon: 'MessageSquare',
+        permission: 'system.settings.communication.view',
+        children: [{
+            id: 'smtp_email',
+            label: 'SMTP Email',
+            path: '/admin/settings?tab=smtp',
+            permission: 'system.settings.communication.smtp_email.view'
+        },
+        {
+            id: 'smtp_sms',
+            label: 'SMS Gateway',
+            path: '/admin/settings?tab=sms',
+            permission: 'system.settings.communication.smtp_sms.view'
+        },
         ]
     },
-    { id: 'approvals', label: 'Təsdiqləmələr', icon: 'CheckSquare', path: '/admin/approvals', permission: 'platform.approvals.view' },
-    { id: 'files', label: 'Fayl Meneceri', icon: 'Folder', path: '/admin/files', permission: 'platform.file_manager.view' },
-    { id: 'guide', label: 'Sistem Bələdçisi', icon: 'BookOpen', path: '/admin/guide', permission: 'platform.system_guide.view' },
     {
-        id: 'settings', label: 'Tənzimləmələr', icon: 'Settings', path: '/admin/settings', permission: 'platform.settings.view', children: [
-            {
-                id: 'general', label: 'Ümumi', icon: 'Sliders', permission: 'platform.settings.general.view', children: [ // Groups need view
-                    { id: 'company_profile', label: 'Şirkət Profili', path: '/admin/settings?tab=general', permission: 'platform.settings.general.company_profile.view' },
-                    { id: 'notification_engine', label: 'Bildiriş Mühərriki', path: '/admin/settings?tab=notifications', permission: 'platform.settings.general.notification_engine.view' },
-                ]
+        id: 'security',
+        label: 'Təhlükəsizlik',
+        icon: 'Shield',
+        permission: 'system.settings.security.view',
+        children: [{
+            id: 'policies',
+            label: 'Siyasətlər',
+            path: '/admin/settings?tab=security',
+            permission: 'system.settings.security.security_policy.global_policy.view'
+        },
+        {
+            id: 'sso',
+            label: 'SSO & OAuth',
+            path: '/admin/settings?tab=sso',
+            permission: 'system.settings.security.sso_OAuth.view'
+        },
+        {
+            id: 'rights',
+            label: 'İstifadəçi Hüquqları',
+            path: '/admin/settings?tab=roles',
+            permission: 'system.settings.security.user_rights.role.view'
+        },
+        ]
+    },
+    {
+        id: 'system_config',
+        label: 'Sistem Konfiqurasiyası',
+        icon: 'Database',
+        permission: 'system.settings.system_configurations.view',
+        children: [{
+            id: 'billing_config',
+            label: 'Bilinq Ayarları',
+            path: '/admin/settings?tab=billing_config',
+            permission: 'system.settings.system_configurations.billing_configurations.price_rules.view'
+        },
+        {
+            id: 'dictionaries',
+            label: 'Soraqçalar',
+            icon: 'Book',
+            permission: 'system.settings.system_configurations.dictionary.view',
+            children: [{
+                id: 'sectors',
+                label: 'Sektorlar',
+                path: '/admin/settings?tab=dictionaries&entity=sectors',
+                permission: 'system.settings.system_configurations.dictionary.sectors.view'
             },
             {
-                id: 'communication', label: 'Kommunikasiya', icon: 'MessageSquare', permission: 'platform.settings.communication.view', children: [
-                    { id: 'smtp_email', label: 'SMTP Email', path: '/admin/settings?tab=smtp', permission: 'platform.settings.communication.smtp_email.view' },
-                    { id: 'smtp_sms', label: 'SMS Gateway', path: '/admin/settings?tab=sms', permission: 'platform.settings.communication.smtp_sms.view' },
-                ]
+                id: 'units',
+                label: 'Ölçü Vahidləri',
+                path: '/admin/settings?tab=dictionaries&entity=units',
+                permission: 'system.settings.system_configurations.dictionary.units.view'
             },
             {
-                id: 'security', label: 'Təhlükəsizlik', icon: 'Shield', permission: 'platform.settings.security.view', children: [
-                    { id: 'policies', label: 'Siyasətlər', path: '/admin/settings?tab=security', permission: 'platform.settings.security.security_policy.global_policy.view' },
-                    { id: 'sso', label: 'SSO & OAuth', path: '/admin/settings?tab=sso', permission: 'platform.settings.security.sso_OAuth.view' },
-                    { id: 'rights', label: 'İstifadəçi Hüquqları', path: '/admin/settings?tab=roles', permission: 'platform.settings.security.user_rights.role.view' },
-                ]
+                id: 'currencies',
+                label: 'Valyutalar',
+                path: '/admin/settings?tab=dictionaries&entity=currencies',
+                permission: 'system.settings.system_configurations.dictionary.currencies.view'
             },
             {
-                id: 'system_config', label: 'Sistem Konfiqurasiyası', icon: 'Database', permission: 'platform.settings.system_configurations.view', children: [
-                    { id: 'billing_config', label: 'Bilinq Ayarları', path: '/admin/settings?tab=billing_config', permission: 'platform.settings.system_configurations.billing_configurations.price_rules.view' },
+                id: 'time_zones',
+                label: 'Saat Qurşaqları',
+                path: '/admin/settings?tab=dictionaries&entity=time_zones',
+                permission: 'system.settings.system_configurations.dictionary.time_zones.view'
+            },
+            {
+                id: 'addresses',
+                label: 'Ünvanlar',
+                permission: 'system.settings.system_configurations.dictionary.addresses.view',
+                children: [ // Corrected to view
                     {
-                        id: 'dictionaries', label: 'Soraqçalar', icon: 'Book', permission: 'platform.settings.system_configurations.dictionary.view', children: [
-                            { id: 'sectors', label: 'Sektorlar', path: '/admin/settings?tab=dictionaries&entity=sectors', permission: 'platform.settings.system_configurations.dictionary.sectors.view' },
-                            { id: 'units', label: 'Ölçü Vahidləri', path: '/admin/settings?tab=dictionaries&entity=units', permission: 'platform.settings.system_configurations.dictionary.units.view' },
-                            { id: 'currencies', label: 'Valyutalar', path: '/admin/settings?tab=dictionaries&entity=currencies', permission: 'platform.settings.system_configurations.dictionary.currencies.view' },
-                            { id: 'time_zones', label: 'Saat Qurşaqları', path: '/admin/settings?tab=dictionaries&entity=time_zones', permission: 'platform.settings.system_configurations.dictionary.time_zones.view' },
-                            {
-                                id: 'addresses', label: 'Ünvanlar', permission: 'platform.settings.system_configurations.dictionary.addresses.view', children: [ // Corrected to view
-                                    { id: 'country', label: 'Ölkələr', path: '/admin/settings?tab=dictionaries&entity=country', permission: 'platform.settings.system_configurations.dictionary.addresses.country.view' },
-                                    { id: 'city', label: 'Şəhərlər', path: '/admin/settings?tab=dictionaries&entity=city', permission: 'platform.settings.system_configurations.dictionary.addresses.city.view' },
-                                    { id: 'district', label: 'Rayonlar', path: '/admin/settings?tab=dictionaries&entity=district', permission: 'platform.settings.system_configurations.dictionary.addresses.district.view' },
-                                ]
-                            }
-                        ]
+                        id: 'country',
+                        label: 'Ölkələr',
+                        path: '/admin/settings?tab=dictionaries&entity=country',
+                        permission: 'system.settings.system_configurations.dictionary.addresses.country.view'
                     },
-                    { id: 'templates', label: 'Sənəd Şablonları', path: '/admin/settings?tab=templates', permission: 'platform.settings.system_configurations.document_templates.view' },
-                    { id: 'workflow', label: 'Workflow', path: '/admin/settings?tab=workflow', permission: 'platform.settings.system_configurations.workflow.configuration.view' },
+                    {
+                        id: 'city',
+                        label: 'Şəhərlər',
+                        path: '/admin/settings?tab=dictionaries&entity=city',
+                        permission: 'system.settings.system_configurations.dictionary.addresses.city.view'
+                    },
+                    {
+                        id: 'district',
+                        label: 'Rayonlar',
+                        path: '/admin/settings?tab=dictionaries&entity=district',
+                        permission: 'system.settings.system_configurations.dictionary.addresses.district.view'
+                    },
                 ]
             }
+            ]
+        },
+        {
+            id: 'templates',
+            label: 'Sənəd Şablonları',
+            path: '/admin/settings?tab=templates',
+            permission: 'system.settings.system_configurations.document_templates.view'
+        },
+        {
+            id: 'workflow',
+            label: 'Workflow',
+            path: '/admin/settings?tab=workflow',
+            permission: 'system.settings.system_configurations.workflow.configuration.view'
+        },
         ]
+    }
+    ]
+},
+{
+    id: 'system_console',
+    label: 'Sistem Konsolu',
+    icon: 'Terminal',
+    permission: 'system.system_console.view',
+    children: [{
+        id: 'console_dash',
+        label: 'Dashboard',
+        path: '/admin/console?tab=dashboard',
+        permission: 'system.system_console.dashboard.view'
     },
     {
-        id: 'system_console', label: 'Sistem Konsolu', icon: 'Terminal', permission: 'platform.system_console.view', children: [
-            { id: 'console_dash', label: 'Dashboard', path: '/admin/console?tab=dashboard', permission: 'platform.system_console.dashboard.view' },
-            { id: 'monitoring', label: 'Monitoring', path: '/admin/console?tab=monitoring', permission: 'platform.system_console.monitoring.dashboard.view' },
-            { id: 'audit', label: 'Audit & Compliance', path: '/admin/console?tab=audit', permission: 'platform.system_console.audit_compliance.view' },
-            { id: 'scheduler', label: 'Job Scheduler', path: '/admin/console?tab=scheduler', permission: 'platform.system_console.job_scheduler.view' },
-            { id: 'retention', label: 'Data Retention', path: '/admin/console?tab=retention', permission: 'platform.system_console.data_retention.view' },
-            { id: 'feature_flags', label: 'Feature Flags', path: '/admin/console?tab=feature_flags', permission: 'platform.system_console.feature_flags.view' },
-            { id: 'policy_security', label: 'Policy Security', path: '/admin/console?tab=policy', permission: 'platform.system_console.policy_security.view' },
-            { id: 'feedback', label: 'Feedback', path: '/admin/console?tab=feedback', permission: 'platform.system_console.feedback.view' },
-            { id: 'tools', label: 'Tools', path: '/admin/console?tab=tools', permission: 'platform.system_console.tools.view' },
-        ]
+        id: 'monitoring',
+        label: 'Monitoring',
+        path: '/admin/console?tab=monitoring',
+        permission: 'system.system_console.monitoring.dashboard.view'
     },
     {
-        id: 'developer_hub', label: 'Developer Hub', icon: 'Code', permission: 'platform.developer_hub.view', children: [
-            { id: 'api', label: 'API Reference', path: '/admin/developer?tab=api', permission: 'platform.developer_hub.api_reference.view' },
-            { id: 'sdk', label: 'SDKs', path: '/admin/developer?tab=sdk', permission: 'platform.developer_hub.sdk.view' },
-            { id: 'webhooks', label: 'Webhooks', path: '/admin/developer?tab=webhooks', permission: 'platform.developer_hub.webhooks.view' },
-            { id: 'perm_map', label: 'Permission Map', path: '/admin/developer?tab=permissions', permission: 'platform.developer_hub.permission_map.view' },
-        ]
+        id: 'audit',
+        label: 'Audit & Compliance',
+        path: '/admin/console?tab=audit',
+        permission: 'system.system_console.audit_compliance.view'
     },
+    {
+        id: 'scheduler',
+        label: 'Job Scheduler',
+        path: '/admin/console?tab=scheduler',
+        permission: 'system.system_console.job_scheduler.view'
+    },
+    {
+        id: 'retention',
+        label: 'Data Retention',
+        path: '/admin/console?tab=retention',
+        permission: 'system.system_console.data_retention.view'
+    },
+    {
+        id: 'feature_flags',
+        label: 'Feature Flags',
+        path: '/admin/console?tab=feature_flags',
+        permission: 'system.system_console.feature_flags.view'
+    },
+    {
+        id: 'policy_security',
+        label: 'Policy Security',
+        path: '/admin/console?tab=policy',
+        permission: 'system.system_console.policy_security.view'
+    },
+    {
+        id: 'feedback',
+        label: 'Feedback',
+        path: '/admin/console?tab=feedback',
+        permission: 'system.system_console.feedback.view'
+    },
+    {
+        id: 'tools',
+        label: 'Tools',
+        path: '/admin/console?tab=tools',
+        permission: 'system.system_console.tools.view'
+    },
+    ]
+},
+{
+    id: 'developer_hub',
+    label: 'Developer Hub',
+    icon: 'Code',
+    permission: 'system.developer_hub.view',
+    children: [{
+        id: 'api',
+        label: 'API Reference',
+        path: '/admin/developer?tab=api',
+        permission: 'system.developer_hub.api_reference.view'
+    },
+    {
+        id: 'sdk',
+        label: 'SDKs',
+        path: '/admin/developer?tab=sdk',
+        permission: 'system.developer_hub.sdk.view'
+    },
+    {
+        id: 'webhooks',
+        label: 'Webhooks',
+        path: '/admin/developer?tab=webhooks',
+        permission: 'system.developer_hub.webhooks.view'
+    },
+    {
+        id: 'perm_map',
+        label: 'Permission Map',
+        path: '/admin/developer?tab=permissions',
+        permission: 'system.developer_hub.permission_map.view'
+    },
+    ]
+},
 ];
 
 
@@ -159,7 +415,7 @@ async function main() {
 
     // 2. Seed Permissions
     console.log('🌱 Seeding Permissions...');
-    const platformSlugs = flattenPermissions(platform_permissions, 'platform');
+    const platformSlugs = flattenPermissions(platform_permissions, 'system');
     const tenantSlugs = flattenPermissions(tenant_permissions, 'tenant');
     const allSlugs = Array.from(new Set([...platformSlugs, ...tenantSlugs]));
     const permissionMap = new Map<string, string>();
@@ -177,6 +433,23 @@ async function main() {
         permissionMap.set(slug, perm.id);
     }
     console.log(`✅ Seeded ${allSlugs.length} permissions.`);
+
+    // SAP-Grade Drift Check: Remove Orphaned Permissions
+    console.log('⚖️ Checking for Permission Drift...');
+    const allDbPermissions = await prisma.permission.findMany({ select: { slug: true } });
+    const codeSlugs = new Set(allSlugs);
+    const orphans = allDbPermissions.filter(p => !codeSlugs.has(p.slug));
+
+    if (orphans.length > 0) {
+        console.warn(`⚠️ Found ${orphans.length} orphaned permissions in DB (not in code). Deleting...`);
+        const orphanSlugs = orphans.map(p => p.slug);
+        await prisma.permission.deleteMany({
+            where: { slug: { in: orphanSlugs } }
+        });
+        console.log(`🗑️ Deleted orphaned permissions: ${orphanSlugs.join(', ')}`);
+    } else {
+        console.log('✅ No permission drift detected.');
+    }
 
     // 3. Seed Roles
     console.log('👑 Seeding Roles...');
@@ -263,11 +536,13 @@ async function main() {
     for (const u of ownerUsers) {
         console.log(`... Updating user ${u.email} to have Owner role`);
 
-        // Update legacy roleId
+        // Update legacy roleId (REMOVED: Field no longer exists in Schema)
+        /*
         await prisma.user.update({
             where: { id: u.id },
             data: { roleId: ownerRole.id }
         });
+        */
 
         // Add to UserRole table if not exists
         // Check first
