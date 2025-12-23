@@ -31,46 +31,46 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'İdarə etmə paneli', // Dashboard
     path: '/admin/dashboard',
     icon: LayoutDashboard,
-    requiredPermissions: ['platform.dashboard.view']
+    requiredPermissions: [PermissionSlugs.SYSTEM.DASHBOARD.VIEW]
 },
 {
     id: 'tenants',
     label: 'Tenantlar', // Tenants
     path: '/admin/tenants',
     icon: Building2,
-    requiredPermissions: ['platform.tenants.view']
+    requiredPermissions: [PermissionSlugs.SYSTEM.TENANTS.VIEW]
 },
 {
     id: 'branches',
     label: 'Filiallar', // Branches
     path: '/admin/branches',
     icon: GitBranch,
-    requiredPermissions: ['platform.branches.view']
+    requiredPermissions: [PermissionSlugs.SYSTEM.BRANCHES.VIEW]
 },
 {
     id: 'users',
     label: 'İstifadəçilər', // Users
     path: '/admin/users',
     icon: Users,
-    // requiredPermissions: ['platform.users.users.view'],
+    // requiredPermissions: [PermissionSlugs.SYSTEM.USERS.VIEW],
     children: [{
         id: 'users.all',
         label: 'İstifadəçilər',
         path: '/admin/users?tab=users',
-        requiredPermissions: ['platform.users.users.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.USERS.VIEW]
     },
     {
         id: 'users.curators',
         label: 'Kuratorlar',
         path: '/admin/users?tab=curators',
-        requiredPermissions: ['platform.users.curators.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CURATORS.VIEW]
     },
     {
         // Phantom Item: Allows users with ONLY connect permission to access the main list
         id: 'users.connect',
         label: 'Əməliyyat Girişi',
         path: '/admin/users?tab=users',
-        requiredPermissions: ['platform.users.users.connect_to_employee']
+        requiredPermissions: [PermissionSlugs.SYSTEM.USERS.CONNECT_TO_EMPLOYEE]
     }
     ]
 },
@@ -79,36 +79,36 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'Bilinq və Maliyyə', // Billing
     path: '/admin/billing?tab=marketplace',
     icon: CreditCard,
-    // requiredPermissions: ['platform.billing.view'], // Removed for Bottom-Up Logic
+    // requiredPermissions: [PermissionSlugs.SYSTEM.BILLING.VIEW], // Removed for Bottom-Up Logic
     children: [{
         id: 'billing.marketplace',
         label: 'Marketplace',
         path: '/admin/billing?tab=marketplace',
-        requiredPermissions: ['platform.billing.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.VIEW]
     },
     {
         id: 'billing.packages',
         label: 'Komponent Paketlər',
         path: '/admin/billing?tab=packages',
-        requiredPermissions: ['platform.billing.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.BILLING.PACKAGES.VIEW]
     },
     {
         id: 'billing.plans',
         label: 'Planlar',
         path: '/admin/billing?tab=subscriptions',
-        requiredPermissions: ['platform.billing.plans.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.BILLING.PLANS.READ]
     },
     {
         id: 'billing.invoices',
         label: 'Fakturalar',
         path: '/admin/billing?tab=invoices',
-        requiredPermissions: ['platform.billing.invoices.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.BILLING.INVOICES.READ]
     },
     {
         id: 'billing.licenses',
         label: 'Lisenziyalar',
         path: '/admin/billing?tab=licenses',
-        requiredPermissions: ['platform.billing.licenses.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.BILLING.LICENSES.READ]
     }
     ]
 },
@@ -117,112 +117,112 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'Təsdiqləmələr', // Approvals
     path: '/admin/approvals',
     icon: CheckSquare,
-    requiredPermissions: ['platform.approvals.view']
+    requiredPermissions: [PermissionSlugs.SYSTEM.APPROVALS.VIEW]
 },
 {
     id: 'files',
     label: 'Fayl Meneceri', // File Manager
     path: '/admin/files',
     icon: Folder,
-    requiredPermissions: ['platform.file_manager.view']
+    requiredPermissions: [PermissionSlugs.SYSTEM.FILES.VIEW]
 },
 {
     id: 'guide',
     label: 'Sistem Bələdçisi', // System Guide
     path: '/admin/guide',
     icon: BookOpen,
-    requiredPermissions: ['platform.system_guide.view']
+    requiredPermissions: [PermissionSlugs.SYSTEM.GUIDE.VIEW]
 },
 {
     id: 'settings',
     label: 'Tənzimləmələr', // Settings group
     path: '/admin/settings?tab=general',
     icon: Settings,
-    // requiredPermissions: ['platform.settings.view'], // Removed for Bottom-Up Logic
+    // requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.VIEW], // Removed for Bottom-Up Logic
     children: [{
         id: 'settings.general',
         label: 'Ümumi',
         path: '/admin/settings?tab=general',
-        requiredPermissions: ['platform.settings.general.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.GENERAL.VIEW]
     },
     {
         id: 'settings.notifications',
         label: 'Bildiriş Qaydaları',
         path: '/admin/settings?tab=notifications',
-        requiredPermissions: ['platform.settings.general.notification_engine.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.VIEW]
     },
     {
         id: 'settings.communication',
         label: 'Kommunikasiya',
         path: '/admin/settings?tab=smtp',
-        requiredPermissions: ['platform.settings.communication.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW]
     },
     {
         id: 'settings.security',
         label: 'Təhlükəsizlik',
         path: '/admin/settings?tab=security',
-        requiredPermissions: ['platform.settings.security.view']
+        requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW]
     },
     {
         id: 'settings.config',
         label: 'Konfiqurasiyalar',
         path: '/admin/settings?tab=config',
-        requiredPermissions: ['platform.settings.system_configurations.view'],
+        requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW],
         children: [{
             id: 'config.billing',
             label: 'Bilinq Ayarları',
             path: '/admin/settings?tab=billing_config',
-            requiredPermissions: ['platform.settings.system_configurations.billing_configurations.price_rules.view']
+            requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.BILLING.VIEW]
         },
         {
             id: 'config.dictionaries',
             label: 'Soraqçalar',
-            requiredPermissions: ['platform.settings.system_configurations.dictionary.view'],
+            requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.VIEW],
             children: [{
                 id: 'dict.sectors',
                 label: 'Sektorlar',
                 path: '/admin/settings?tab=dictionaries&entity=sectors',
-                requiredPermissions: ['platform.settings.system_configurations.dictionary.sectors.view']
+                requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.SECTORS.VIEW]
             },
             {
                 id: 'dict.units',
                 label: 'Ölçü Vahidləri',
                 path: '/admin/settings?tab=dictionaries&entity=units',
-                requiredPermissions: ['platform.settings.system_configurations.dictionary.units.view']
+                requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.UNITS.VIEW]
             },
             {
                 id: 'dict.currencies',
                 label: 'Valyutalar',
                 path: '/admin/settings?tab=dictionaries&entity=currencies',
-                requiredPermissions: ['platform.settings.system_configurations.dictionary.currencies.view']
+                requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.CURRENCIES.VIEW]
             },
             {
                 id: 'dict.timezones',
                 label: 'Saat Qurşaqları',
                 path: '/admin/settings?tab=dictionaries&entity=time_zones',
-                requiredPermissions: ['platform.settings.system_configurations.dictionary.time_zones.view']
+                requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.TIME_ZONES.VIEW]
             },
             {
                 id: 'config.addresses',
                 label: 'Ünvanlar',
-                requiredPermissions: ['platform.settings.system_configurations.dictionary.addresses.view'],
+                requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.ADDRESSES.VIEW],
                 children: [{
                     id: 'addr.country',
                     label: 'Ölkələr',
                     path: '/admin/settings?tab=dictionaries&entity=country',
-                    requiredPermissions: ['platform.settings.system_configurations.dictionary.addresses.country.view']
+                    requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.ADDRESSES.COUNTRY.VIEW]
                 },
                 {
                     id: 'addr.city',
                     label: 'Şəhərlər',
                     path: '/admin/settings?tab=dictionaries&entity=city',
-                    requiredPermissions: ['platform.settings.system_configurations.dictionary.addresses.city.view']
+                    requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.ADDRESSES.CITY.VIEW]
                 },
                 {
                     id: 'addr.district',
                     label: 'Rayonlar',
                     path: '/admin/settings?tab=dictionaries&entity=district',
-                    requiredPermissions: ['platform.settings.system_configurations.dictionary.addresses.district.view']
+                    requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.ADDRESSES.DISTRICT.VIEW]
                 }
                 ]
             }
@@ -232,13 +232,13 @@ export const PLATFORM_MENU: MenuItem[] = [{
             id: 'config.templates',
             label: 'Sənəd Şablonları',
             path: '/admin/settings?tab=templates',
-            requiredPermissions: ['platform.settings.system_configurations.document_templates.view']
+            requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.TEMPLATES.VIEW]
         },
         {
             id: 'config.workflow',
             label: 'Workflow',
             path: '/admin/settings?tab=workflow',
-            requiredPermissions: ['platform.settings.system_configurations.workflow.configuration.view']
+            requiredPermissions: [PermissionSlugs.SYSTEM.SETTINGS.CONFIG.WORKFLOW.VIEW]
         }
         ]
     }
@@ -249,60 +249,60 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'Sistem Konsolu',
     // path: '/admin/console', // Removed for Container Mode
     icon: Terminal,
-    // requiredPermissions: ['platform.system_console.view'], // Removed for Bottom-Up Logic
+    // requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.VIEW], // Removed for Bottom-Up Logic
     children: [{
         id: 'console.dashboard',
         label: 'Dashboard',
         path: '/admin/console?tab=dashboard',
-        requiredPermissions: ['platform.system_console.dashboard.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ]
     },
     {
         id: 'console.monitoring',
         label: 'Monitoring',
         path: '/admin/console?tab=monitoring',
-        requiredPermissions: ['platform.system_console.monitoring.dashboard.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.MONITORING.READ]
     },
     {
         id: 'console.audit',
         label: 'Audit & Compliance',
         path: '/admin/console?tab=audit',
-        requiredPermissions: ['platform.system_console.audit_compliance.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.AUDIT.READ]
     },
     {
         id: 'console.scheduler',
         label: 'Job Scheduler',
         path: '/admin/console?tab=scheduler',
-        requiredPermissions: ['platform.system_console.job_scheduler.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.SCHEDULER.READ]
     },
     {
         id: 'console.retention',
         label: 'Data Retention',
         path: '/admin/console?tab=retention',
-        requiredPermissions: ['platform.system_console.data_retention.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.RETENTION.READ]
     },
     {
         id: 'console.features',
         label: 'Feature Flags',
         path: '/admin/console?tab=features',
-        requiredPermissions: ['platform.system_console.feature_flags.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.FEATURES.READ]
     },
     {
         id: 'console.policy',
         label: 'Policy Security',
         path: '/admin/console?tab=policy',
-        requiredPermissions: ['platform.system_console.policy_security.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.POLICY.READ]
     },
     {
         id: 'console.feedback',
         label: 'Feedback',
         path: '/admin/console?tab=feedback',
-        requiredPermissions: ['platform.system_console.feedback.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.FEEDBACK.READ]
     },
     {
         id: 'console.tools',
         label: 'Tools',
         path: '/admin/console?tab=tools',
-        requiredPermissions: ['platform.system_console.tools.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.CONSOLE.TOOLS.READ]
     }
     ]
 },
@@ -311,30 +311,30 @@ export const PLATFORM_MENU: MenuItem[] = [{
     label: 'Developer Hub', // Developer Hub group
     path: '/admin/developer?tab=api',
     icon: Code,
-    // requiredPermissions: ['platform.developer_hub.view'],
+    // requiredPermissions: [PermissionSlugs.SYSTEM.DEVELOPER.VIEW],
     children: [{
         id: 'dev.api',
         label: 'API İstinadları',
         path: '/admin/developer?tab=api',
-        requiredPermissions: ['platform.developer_hub.api_reference.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.DEVELOPER.API.READ]
     },
     {
         id: 'dev.sdk',
         label: 'SDK & Kitabxanalar',
         path: '/admin/developer?tab=sdk',
-        requiredPermissions: ['platform.developer_hub.sdk.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.DEVELOPER.SDK.READ]
     },
     {
         id: 'dev.webhooks',
         label: 'Webhooks',
         path: '/admin/developer?tab=webhooks',
-        requiredPermissions: ['platform.developer_hub.webhooks.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.DEVELOPER.WEBHOOKS.READ]
     },
     {
         id: 'dev.perm_map',
         label: 'Permission Map',
         path: '/admin/developer?tab=permissions',
-        requiredPermissions: ['platform.developer_hub.permission_map.read']
+        requiredPermissions: [PermissionSlugs.SYSTEM.DEVELOPER.PERM_MAP.READ]
     }
     ]
 }

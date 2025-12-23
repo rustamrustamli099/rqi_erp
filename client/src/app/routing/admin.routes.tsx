@@ -114,9 +114,18 @@ export default function AdminRoutes() {
             } />
 
             {/* Settings */}
+            {/* Settings */}
             <Route path="settings" element={
                 <ProtectedRoute
-                    requiredPermission={PermissionSlugs.PLATFORM.SETTINGS.VIEW}
+                    requiredPermissions={[
+                        PermissionSlugs.SYSTEM.SETTINGS.GENERAL.VIEW,
+                        PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.VIEW,
+                        PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW,
+                        PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW,
+                        PermissionSlugs.SYSTEM.ROLES.VIEW,
+                        PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW
+                    ]}
+                    mode="any"
                 >
                     <SettingsPage />
                 </ProtectedRoute>

@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Strategy 0: Robust Permission Check (Fixes Owner sidebar issue)
         // If user has platform permissions, they are in SYSTEM context.
-        if (permissions.some(p => p.startsWith('platform.'))) return 'SYSTEM';
+        if (permissions.some(p => p.startsWith('platform.') || p.startsWith('system.'))) return 'SYSTEM';
         // FIX Phase 38: Explicitly detect TENANT context if user has tenant permissions
         if (permissions.some(p => p.startsWith('tenant.'))) return 'TENANT';
 
@@ -107,6 +107,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 // Mapped (Canonical)
                 const mappedPerms = rawPerms.map(p => {
+                    // Phase 31 Migration: Dynamic platform->system replacement
+                    if (p.startsWith('platform.')) {
+                        return p.replace('platform.', 'system.');
+                    }
+
                     if (isCanonical(p)) return p;
                     if (LEGACY_TO_CANONICAL_MAP[p]) return LEGACY_TO_CANONICAL_MAP[p];
                     return p;

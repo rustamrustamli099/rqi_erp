@@ -73,32 +73,32 @@ const ALL_SIDEBAR_ITEMS = [
     {
         title: "Ümumi Tənzimləmələr",
         items: [
-            { id: "general", label: "Şirkət Profili", icon: Settings, permission: 'platform.settings.general.view' },
-            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: 'platform.settings.general.notification_engine.view' },
+            { id: "general", label: "Şirkət Profili", icon: Settings, permission: PermissionSlugs.SYSTEM.SETTINGS.GENERAL.VIEW },
+            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.VIEW },
         ]
     },
     {
         title: "Kommunikasiya",
         items: [
-            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: 'platform.settings.communication.view' },
-            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: 'platform.settings.communication.view' },
+            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW },
+            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW },
         ]
     },
     {
         title: "Təhlükəsizlik & Giriş",
         items: [
-            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: 'platform.settings.security.view' },
-            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: 'platform.settings.security.view' },
-            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: 'platform.settings.security.user_rights.role.view' },
+            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW },
+            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW },
+            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: PermissionSlugs.SYSTEM.ROLES.VIEW },
         ]
     },
     {
         title: "Sistem Konfiqurasiyası",
         items: [
-            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: 'platform.settings.system_configurations.view' },
-            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: 'platform.settings.system_configurations.view' },
-            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: 'platform.settings.system_configurations.view' },
-            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: 'platform.settings.system_configurations.workflow.configuration.view' },
+            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW },
+            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW },
+            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW },
+            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.WORKFLOW.VIEW },
         ]
     }
 ]
@@ -264,33 +264,33 @@ export default function SettingsPage() {
 
                         {/* 2. SMTP SETTINGS (SAP Style Logic) */}
                         {activeTab === 'smtp' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW) ? (
                                 <EmailSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 3. NOTIFICATIONS */}
                         {activeTab === 'notifications' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.GENERAL.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.VIEW) ? (
                                 <NotificationsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 5. SMS GATEWAY */}
                         {activeTab === 'sms' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.COMMUNICATION.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW) ? (
                                 <SmsSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 6. SECURITY */}
                         {activeTab === 'security' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW) ? (
                                 <SecuritySettingsTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'sso' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW) ? (
                                 <SSOSettingsTab />
                             ) : <Inline403 />
                         )}
@@ -337,27 +337,27 @@ export default function SettingsPage() {
 
                         {/* --- EXISTING TABS MIGRATED --- */}
                         {activeTab === 'billing-config' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW) ? (
                                 <BillingConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'dictionaries' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW) ? (
                                 <DictionariesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'templates' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW) ? (
                                 <DocumentTemplatesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'workflow' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.CONFIG.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.WORKFLOW.VIEW) ? (
                                 <WorkflowConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'roles' && (
-                            can(PermissionSlugs.PLATFORM.SETTINGS.SECURITY.VIEW) ? (
+                            can(PermissionSlugs.SYSTEM.ROLES.VIEW) ? (
                                 <RolesPage />
                             ) : <Inline403 />
                         )}
