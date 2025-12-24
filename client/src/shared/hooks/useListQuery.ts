@@ -1,93 +1,120 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
-function useDebounce<T>(value: T, delay: number): T {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value);
-    useEffect(() => {
-        const timer = setTimeout(() => setDebouncedValue(value), delay);
-        return () => clearTimeout(timer);
-    }, [value, delay]);
-    return debouncedValue;
-}
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useDebounce } from "@/shared/hooks/useDebounce"; // Ensure this exists or use utility
 
 export interface ListQueryConfig {
+    defaultPage?: number;
+    defaultPageSize?: number;
     defaultSortBy?: string;
     defaultSortDir?: 'asc' | 'desc';
-    defaultPageSize?: number;
+    defaultFilters?: Record<string, string>;
 }
 
-export const useListQuery = (config: ListQueryConfig = {}) => {
+export function useListQuery(config: ListQueryConfig = {}) {
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Init State from URL or Defaults
-    const [page, setPage] = useState<number>(Number(searchParams.get('page')) || 1);
-    const [pageSize, setPageSize] = useState<number>(Number(searchParams.get('pageSize')) || config.defaultPageSize || 10);
-    const [search, setSearch] = useState<string>(searchParams.get('search') || '');
-    const [sortBy, setSortBy] = useState<string>(searchParams.get('sortBy') || config.defaultSortBy || 'createdAt');
-    const [sortDir, setSortDir] = useState<'asc' | 'desc'>((searchParams.get('sortDir') as 'asc' | 'desc') || config.defaultSortDir || 'desc');
-    const [filters, setFilters] = useState<Record<string, any>>({});
+    // 1. Raw State (Canonical Source is URL)
+    const page = Number(searchParams.get("page")) || config.defaultPage || 1;
+    const pageSize = Number(searchParams.get("pageSize")) || config.defaultPageSize || 20;
+    const sortBy = searchParams.get("sortBy") || config.defaultSortBy || "createdAt";
+    const sortDir = (searchParams.get("sortDir") || config.defaultSortDir || "desc") as 'asc' | 'desc';
 
-    // Debounce Search
-    const debouncedSearch = useDebounce(search, 500);
+    // Search is special: we need local state for input readiness + debounced URL update
+    const urlSearch = searchParams.get("search") || "";
+    const [searchTerm, setSearchTerm] = useState(urlSearch);
+    const debouncedSearch = useDebounce(searchTerm, 500);
 
-    // Sync to URL
+    // Filters Parsing (filters[status]=APPROVED)
+    const filters = useMemo(() => {
+        const f: Record<string, any> = {};
+        searchParams.forEach((value, key) => {
+            if (key.startsWith("filters[")) {
+                // filters[status] -> status
+                const match = key.match(/filters\[(.*?)\]/);
+                if (match) f[match[1]] = value;
+            }
+        });
+        return { ...config.defaultFilters, ...f };
+    }, [searchParams, config.defaultFilters]);
+
+    // 2. Sync Debounce to URL
     useEffect(() => {
-        setSearchParams((prev) => {
+        if (debouncedSearch !== urlSearch) {
+            updateParams({ search: debouncedSearch, page: 1 }); // Reset page on search
+        }
+    }, [debouncedSearch]);
+
+    // 3. Setters (State Mutations)
+    const updateParams = (updates: Record<string, any>) => {
+        setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
 
-            if (page > 1) newParams.set('page', page.toString()); else newParams.delete('page');
-
-            if (pageSize !== 10) newParams.set('pageSize', pageSize.toString()); else newParams.delete('pageSize');
-
-            if (debouncedSearch) newParams.set('search', debouncedSearch); else newParams.delete('search');
-
-            if (sortBy !== config.defaultSortBy) newParams.set('sortBy', sortBy); else newParams.delete('sortBy');
-
-            if (sortDir !== config.defaultSortDir) newParams.set('sortDir', sortDir); else newParams.delete('sortDir');
+            Object.entries(updates).forEach(([key, value]) => {
+                if (value === null || value === undefined || value === "") {
+                    newParams.delete(key);
+                } else if (key === 'filters') {
+                    // Handle complex filters object
+                    // Clear old filters first? No, merge.
+                    // Actually, for safety, if passing bulk filters, we might want to spread them.
+                    // Implementation: Passing { filters: { status: 'X' } }
+                    Object.entries(value).forEach(([fKey, fVal]) => {
+                        if (fVal === null || fVal === undefined || fVal === "") {
+                            newParams.delete(`filters[${fKey}]`);
+                        } else {
+                            newParams.set(`filters[${fKey}]`, String(fVal));
+                        }
+                    });
+                } else {
+                    newParams.set(key, String(value));
+                }
+            });
 
             return newParams;
-        }, { replace: true });
-    }, [page, pageSize, debouncedSearch, sortBy, sortDir, setSearchParams /* config is stable usually */]);
+        });
+    };
 
-    // Handlers
-    const handleSearch = useCallback((value: string) => {
-        setSearch(value);
-        setPage(1); // Reset to page 1 on search
-    }, []);
+    const setPage = (p: number) => updateParams({ page: p });
+    const setPageSize = (ps: number) => updateParams({ pageSize: ps, page: 1 }); // Reset page on size change
+    const setSort = (by: string) => {
+        const newDir = (by === sortBy && sortDir === 'asc') ? 'desc' : 'asc';
+        updateParams({ sortBy: by, sortDir: newDir });
+    };
+    const setFilter = (key: string, value: string | null) => updateParams({ filters: { [key]: value }, page: 1 });
+    const handleSearch = (val: string) => setSearchTerm(val);
 
-    const handleSort = useCallback((field: string) => {
-        setSortBy(field);
-        setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-    }, []);
+    // 4. Reset
+    const reset = () => {
+        setSearchParams(new URLSearchParams());
+        setSearchTerm("");
+    };
 
-    const handlePageChange = useCallback((newPage: number) => {
-        setPage(newPage);
-    }, []);
-
-    const queryParams = useMemo(() => ({
+    // 5. Output Object (API Ready)
+    const query = useMemo(() => ({
         page,
         pageSize,
-        search: debouncedSearch,
         sortBy,
         sortDir,
-        ...filters
-    }), [page, pageSize, debouncedSearch, sortBy, sortDir, filters]);
+        search: urlSearch || undefined, // Send undefined if empty to clean API calls
+        filters
+    }), [page, pageSize, sortBy, sortDir, urlSearch, filters]);
 
     return {
+        // State
         page,
         pageSize,
-        search,
-        debouncedSearch,
         sortBy,
         sortDir,
         filters,
-        setPage: handlePageChange,
+        searchTerm, // For Input value
+        query,      // For API call
+
+        // Actions
+        setPage,
         setPageSize,
+        setSort,
+        setFilter,
         setSearch: handleSearch,
-        setSortBy, // Direct set if needed
-        setSortDir,
-        toggleSort: handleSort,
-        setFilters,
-        queryParams
+        reset
     };
-};
+}

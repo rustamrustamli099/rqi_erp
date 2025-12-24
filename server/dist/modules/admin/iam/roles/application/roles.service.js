@@ -96,15 +96,21 @@ let RolesService = class RolesService {
         return role;
     }
     async findAll(query) {
-        const { skip, take, orderBy, page, pageSize, search } = query_parser_1.QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope']);
+        const { skip, take, orderBy, page, pageSize, search, filters } = query_parser_1.QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope', 'status']);
         const where = {};
         if (search) {
-            where.name = { contains: search, mode: 'insensitive' };
+            where.OR = [
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
         }
-        if (query.filters?.scope) {
-            where.scope = query.filters.scope;
+        if (filters) {
+            if (filters.scope)
+                where.scope = filters.scope;
+            if (filters.status)
+                where.status = filters.status;
         }
-        console.log("RolesService.findAll DEBUG:", { where, skip, take, orderBy });
+        console.log("RolesService.findAll [SAP-Grade]:", { where, skip, take, orderBy });
         const [items, total] = await Promise.all([
             this.prisma.role.findMany({
                 where,
@@ -126,10 +132,10 @@ let RolesService = class RolesService {
                 totalPages: Math.ceil(total / pageSize)
             },
             query: {
-                sortBy: query.sortBy,
-                sortDir: query.sortDir,
+                sortBy: Object.keys(orderBy)[0],
+                sortDir: Object.values(orderBy)[0],
                 search,
-                filters: query.filters
+                filters
             }
         };
     }

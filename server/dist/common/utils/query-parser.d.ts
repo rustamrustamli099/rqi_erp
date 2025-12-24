@@ -1,11 +1,14 @@
-import { ListQueryDto } from '../dto/pagination.dto';
+import { ListQueryDto } from "../dto/pagination.dto";
 export declare class QueryParser {
-    static parse(dto: ListQueryDto, allowedSorts?: string[]): {
+    static parse(query: ListQueryDto, allowedSorts?: string[]): {
         skip: number;
         take: number;
-        orderBy: any;
+        orderBy: {
+            [x: string]: "asc" | "desc";
+        };
         page: number;
         pageSize: number;
         search: string | undefined;
+        filters: Record<string, any>;
     };
 }

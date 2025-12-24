@@ -4,7 +4,7 @@ export declare class ListQueryDto {
     search?: string;
     sortBy?: string;
     sortDir?: 'asc' | 'desc' | 'ASC' | 'DESC';
-    filters?: Record<string, any>;
+    filters?: any;
 }
 export interface PaginatedResult<T> {
     items: T[];

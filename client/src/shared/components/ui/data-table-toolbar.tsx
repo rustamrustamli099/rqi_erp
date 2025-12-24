@@ -24,6 +24,9 @@ interface DataTableToolbarProps<TData> {
     addLabel?: string // Added
     hideViewOptions?: boolean // Added to fix type error
     onFilterClick?: () => void // Added
+    // Controlled Mode
+    searchValue?: string
+    onSearchChange?: (value: string) => void
 }
 
 export function DataTableToolbar<TData>({
@@ -36,10 +39,29 @@ export function DataTableToolbar<TData>({
     onAddClick,
     addLabel,
     hideViewOptions,
-    onFilterClick
+    onFilterClick,
+    searchValue,
+    onSearchChange
 }: DataTableToolbarProps<TData>) {
     const isFiltered = table.getState().columnFilters.length > 0
     const placeholder = searchPlaceholder || filterPlaceholder || "Filter...";
+
+    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        if (onSearchChange) {
+            onSearchChange(value);
+        } else if (filterColumn) {
+            table.getColumn(filterColumn)?.setFilterValue(value);
+        } else {
+            table.setGlobalFilter(value);
+        }
+    };
+
+    const getSearchValue = () => {
+        if (searchValue !== undefined) return searchValue;
+        if (filterColumn) return (table.getColumn(filterColumn)?.getFilterValue() as string) ?? "";
+        return (table.getState().globalFilter as string) ?? "";
+    }
 
     return (
         <div className="flex items-center justify-between p-1 gap-2">
@@ -48,15 +70,8 @@ export function DataTableToolbar<TData>({
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder={placeholder}
-                        value={(filterColumn ? (table.getColumn(filterColumn)?.getFilterValue() as string) : (table.getState().globalFilter as string)) ?? ""}
-                        onChange={(event) => {
-                            const value = event.target.value;
-                            if (filterColumn) {
-                                table.getColumn(filterColumn)?.setFilterValue(value);
-                            } else {
-                                table.setGlobalFilter(value);
-                            }
-                        }}
+                        value={getSearchValue()}
+                        onChange={handleSearchChange}
                         className="h-9 w-[150px] lg:w-[250px] pl-8"
                     />
                 </div>

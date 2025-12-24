@@ -67,24 +67,66 @@ import { PermissionSlugs } from "@/app/security/permission-slugs"
 import { permissionsStructure } from "./_components/permission-data"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
 import { PermissionPreviewSimulator } from "./_components/PermissionPreviewSimulator"
+import { useListQuery } from "@/shared/hooks/useListQuery"
 
 import { Skeleton } from "@/shared/components/ui/skeleton"
+import { Input } from "@/shared/components/ui/input"
+import { FilterDrawer } from "@/shared/components/ui/filter-drawer"
+import { Label } from "@/shared/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 
 // Helper Role Table Component to reduce duplication
 const RoleTable = ({
     data, columns, sorting, columnVisibility, rowSelection, columnFilters,
     setSorting, setColumnVisibility, setRowSelection, setColumnFilters, onRowClick,
-    onAddClick, isLoading
+    onAddClick, isLoading,
+    // Hook Connections
+    searchTerm, setSearch, setPage, setPageSize, pagination,
+    // Filter Connections
+    query, setFilter, reset
 }: any) => {
+    // Local state for "Apply" logic
+    const [draftFilters, setDraftFilters] = useState(query.filters || {});
+
+    // Sync draft with URL when query changes
+    useEffect(() => {
+        setDraftFilters(query.filters || {});
+    }, [query.filters]);
+
+    const handleApply = () => {
+        // Apply all draft filters to the URL
+        Object.keys(draftFilters).forEach(key => {
+            setFilter(key, draftFilters[key]);
+        });
+
+        // Also ensure removed keys are cleared? 
+        // Current setFilter(key, value) handles update. 
+        // If I want to remove keys that are in query but not in draft? 
+        // Simplified: We only have 2 known filters.
+        if (draftFilters.scope === undefined) setFilter('scope', undefined);
+        if (draftFilters.status === undefined) setFilter('status', undefined);
+    };
+
     const table = useReactTable({
         data,
         columns,
-        state: { sorting, columnVisibility, rowSelection, columnFilters },
+        state: { sorting, columnVisibility, rowSelection, columnFilters, pagination },
         enableRowSelection: true,
+        // Manual Pagination
+        manualPagination: true,
+        pageCount: -1, // Server-side
         onRowSelectionChange: setRowSelection,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
+        onPaginationChange: (updater) => {
+            // TanStack passes updater func
+            if (typeof updater === 'function') {
+                const newState = updater(pagination);
+                setPage(newState.pageIndex + 1);
+                setPageSize(newState.pageSize);
+            }
+        },
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -96,11 +138,54 @@ const RoleTable = ({
             <CardContent className="p-0">
                 <DataTableToolbar
                     table={table}
-                    filterColumn="name"
                     searchPlaceholder="Rolları axtar..."
                     addLabel="Yeni Rol"
                     onAddClick={onAddClick}
-                />
+                    searchValue={searchTerm}
+                    onSearchChange={setSearch}
+                >
+                    <FilterDrawer
+                        resetFilters={reset}
+                        onApply={handleApply}
+                    >
+                        <div className="grid gap-4">
+                            <div className="space-y-2">
+                                <Label>Scope</Label>
+                                <Select
+                                    value={draftFilters.scope || "ALL"}
+                                    onValueChange={(val) => setDraftFilters({ ...draftFilters, scope: val === "ALL" ? undefined : val })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Bütün Scope-lar" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">Hamısı</SelectItem>
+                                        <SelectItem value="TENANT">Tenant</SelectItem>
+                                        <SelectItem value="SYSTEM">System</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Status</Label>
+                                <Select
+                                    value={draftFilters.status || "ALL"}
+                                    onValueChange={(val) => setDraftFilters({ ...draftFilters, status: val === "ALL" ? undefined : val })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Bütün Statuslar" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">Hamısı</SelectItem>
+                                        <SelectItem value="ACTIVE">Aktiv</SelectItem>
+                                        <SelectItem value="DRAFT">Qaralama (Draft)</SelectItem>
+                                        <SelectItem value="ARCHIVED">Arxiv</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </FilterDrawer>
+                </DataTableToolbar>
+
                 <div className="rounded-md border mt-4">
                     <Table>
                         <TableHeader>
@@ -138,15 +223,12 @@ const RoleTable = ({
                                     <TableRow
                                         key={row.id}
                                         data-state={row.getIsSelected() && "selected"}
-                                        onClick={() => onRowClick(row.original)}
                                         className="cursor-pointer"
+                                        onClick={() => onRowClick(row.original)}
                                     >
                                         {row.getVisibleCells().map((cell) => (
                                             <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </TableCell>
                                         ))}
                                     </TableRow>
@@ -180,11 +262,40 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const [loading, setLoading] = useState(true)
     const [permissionsLoading, setPermissionsLoading] = useState(false)
 
+    // SAP-Grade List Query Engine
+    const defaultFilters = useMemo(() => ({
+        scope: context === 'admin' ? undefined : 'TENANT'
+    }), [context]);
+
+    const {
+        query,
+        searchTerm,
+        setSearch,
+        setPage,
+        setPageSize,
+        setSort,
+        setFilter,
+        reset
+    } = useListQuery({
+        defaultSortBy: 'createdAt',
+        defaultSortDir: 'desc',
+        defaultFilters
+    });
+
+    // Derived Table State for TanStack Table (Sync with URL)
+    const pagination = useMemo(() => ({
+        pageIndex: query.page - 1,
+        pageSize: query.pageSize,
+    }), [query.page, query.pageSize]);
+
+    const sortingState = useMemo<SortingState>(() => [
+        { id: query.sortBy || 'createdAt', desc: query.sortDir === 'desc' }
+    ], [query.sortBy, query.sortDir]);
+
     // Table State
     const [rowSelection, setRowSelection] = useState({})
     const [columnVisibility, setColumnVisibility] = useState({})
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-    const [sorting, setSorting] = useState<SortingState>([])
 
     // Permission State
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
@@ -350,8 +461,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     // Fetch Logic
 
 
-    // Use systemApi in fetchRoles
-    // Lazy Load Permissions for Dialogs
+    // Fetch Logic
     const fetchAllPermissions = async () => {
         if (allPermissions.length > 0) return; // Already loaded
         try {
@@ -362,19 +472,15 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
         }
     }
 
-    // Use systemApi in fetchRoles
-    // Use systemApi in fetchRoles
     const fetchRoles = async () => {
         setLoading(true);
         try {
-            const response = await systemApi.getRoles();
-            console.log("DEBUG: systemApi.getRoles response:", response);
+            const response = await systemApi.getRoles(query); // Canonical Query
+
             const rolesData = (response as any).items || response;
-            console.log("DEBUG: rolesData extracted:", rolesData);
 
             // STRICT BACKEND MODE: No Mock Fallback
             const finalRoles = Array.isArray(rolesData) ? rolesData : [];
-            console.log("DEBUG: finalRoles array:", finalRoles);
 
             setRoles(finalRoles.map((r: any) => ({
                 id: r.id,
@@ -383,25 +489,22 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 type: (r.isSystem || r.scope === 'SYSTEM') ? 'system' : 'custom',
                 scope: r.scope || 'TENANT',
                 usersCount: r._count?.users || r.usersCount || 0,
-                // MAP PERMISSIONS COUNT EXPLICITLY
                 permissionsCount: r._count?.permissions || (r.permissions || []).length || 0,
                 permissions: r.permissions || [],
-                status: r.status || 'ACTIVE' // Ensure status is mapped
+                status: r.status || 'ACTIVE'
             })));
-            // Permissions are now lazy loaded!
         } catch (e) {
             console.error("Failed to fetch roles:", e);
-            toast.error("Rollar backend-dən yüklənərkən xəta baş verdi.");
-            setRoles([]); // Empty on error to show failure clearly
+            toast.error("Rollar yüklənərkən xəta baş verdi.");
+            setRoles([]);
         } finally {
             setLoading(false);
         }
     };
 
-
     useEffect(() => {
         fetchRoles();
-    }, []);
+    }, [query]); // Refetch on query change
 
     // Use systemApi in handleSaveRole
     const handleSaveRole = async (values: RoleFormValues) => {
@@ -426,8 +529,6 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
             fetchRoles();
             setDialogOpen(false);
         } catch {
-            // silent fail or handled elsewhere
-
             toast.error("Xəta baş verdi");
         }
     };
@@ -572,17 +673,31 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                     <RoleTable
                         data={roles} // Show ALL roles
                         columns={columns}
-                        sorting={sorting}
+                        sorting={sortingState}
                         columnVisibility={columnVisibility}
                         rowSelection={rowSelection}
                         columnFilters={columnFilters}
-                        setSorting={setSorting}
+                        setSorting={(updaterOrValue: any) => {
+                            const newState = typeof updaterOrValue === 'function' ? updaterOrValue(sortingState) : updaterOrValue;
+                            const first = newState[0];
+                            if (first) setSort(first.id);
+                        }}
                         setColumnVisibility={setColumnVisibility}
                         setRowSelection={setRowSelection}
                         setColumnFilters={setColumnFilters}
                         onRowClick={handleRoleSelect}
                         onAddClick={() => setWizardOpen(true)}
                         isLoading={loading}
+                        // Hook Connections
+                        searchTerm={searchTerm}
+                        setSearch={setSearch}
+                        setPage={setPage}
+                        setPageSize={setPageSize}
+                        pagination={pagination}
+                        // Filter Connections
+                        query={query}
+                        setFilter={setFilter}
+                        reset={reset}
                     />
                 </TabsContent>
 

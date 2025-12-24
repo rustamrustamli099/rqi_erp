@@ -25,10 +25,10 @@ interface FilterDrawerProps {
     children: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
-    resetFilters?: () => void;
+    onApply?: () => void;
 }
 
-export function FilterDrawer({ children, open, onOpenChange, resetFilters }: FilterDrawerProps) {
+export function FilterDrawer({ children, open, onOpenChange, resetFilters, onApply }: FilterDrawerProps) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <TooltipProvider>
@@ -45,19 +45,28 @@ export function FilterDrawer({ children, open, onOpenChange, resetFilters }: Fil
             </TooltipProvider>
             <SheetContent>
                 <SheetHeader>
-                    <SheetTitle>Filters</SheetTitle>
+                    <SheetTitle>Filtrlər</SheetTitle>
                     <SheetDescription>
-                        Narrow down your results.
+                        Nəticələri daraltmaq üçün aşağıdakı filtrlərdən istifadə edin.
                     </SheetDescription>
                 </SheetHeader>
                 <div className="grid gap-4 py-4">
                     {children}
                 </div>
-                {resetFilters && (
-                    <SheetFooter>
-                        <Button variant="outline" onClick={resetFilters}>Reset</Button>
-                    </SheetFooter>
-                )}
+                <SheetFooter className="flex-row justify-end gap-2">
+                    {resetFilters && (
+                        <Button variant="outline" onClick={() => {
+                            resetFilters();
+                            if (onOpenChange) onOpenChange(false);
+                        }}>Təmizlə</Button>
+                    )}
+                    {onApply && (
+                        <Button onClick={() => {
+                            onApply();
+                            if (onOpenChange) onOpenChange(false);
+                        }}>Axtar</Button>
+                    )}
+                </SheetFooter>
             </SheetContent>
         </Sheet>
     )

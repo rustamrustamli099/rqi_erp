@@ -105,28 +105,33 @@ export class RolesService {
     }
 
     async findAll(query: ListQueryDto): Promise<PaginatedResult<any>> {
-        const { skip, take, orderBy, page, pageSize, search } = QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope']);
+        const { skip, take, orderBy, page, pageSize, search, filters } = QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope', 'status']);
 
         const where: any = {};
-        if (search) {
-            where.name = { contains: search, mode: 'insensitive' };
-        }
-        // Handle explicit filters if passed via DTO (e.g. valid scope)
-        if (query.filters?.scope) {
-            where.scope = query.filters.scope;
-        }
-        // Backward compatibility if generic filters not fully used:
-        // Or if 'scope' property exists in ListQueryDto extended... 
-        // For now, let's assume filters are passed inside `filters` object or mapped manually.
 
-        // ...
-        console.log("RolesService.findAll DEBUG:", { where, skip, take, orderBy });
+        // 1. Search Logic (Indexed fields only)
+        if (search) {
+            where.OR = [
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // 2. Filter Logic (Explicit Parsing per module schema)
+        if (filters) {
+            if (filters.scope) where.scope = filters.scope;
+            if (filters.status) where.status = filters.status;
+            // Add other role-specific filters here
+        }
+
+        console.log("RolesService.findAll [SAP-Grade]:", { where, skip, take, orderBy });
+
         const [items, total] = await Promise.all([
             this.prisma.role.findMany({
                 where,
                 skip,
                 take,
-                orderBy, // Uses strict allowed sorts
+                orderBy,
                 include: {
                     _count: { select: { userRoles: true, permissions: true } }
                 }
@@ -143,10 +148,10 @@ export class RolesService {
                 totalPages: Math.ceil(total / pageSize)
             },
             query: {
-                sortBy: query.sortBy,
-                sortDir: query.sortDir,
+                sortBy: Object.keys(orderBy)[0],
+                sortDir: Object.values(orderBy)[0] as string,
                 search,
-                filters: query.filters
+                filters
             }
         };
     }

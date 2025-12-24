@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, IsIn, Min, Max } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsIn, Min, Max, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ListQueryDto {
@@ -11,9 +11,8 @@ export class ListQueryDto {
     @IsOptional()
     @Type(() => Number)
     @IsNumber()
-    @Min(1)
-    @Max(100)
-    pageSize?: number = 10;
+    @IsIn([10, 20, 50], { message: 'Page size must be one of [10, 20, 50]' })
+    pageSize?: number = 20;
 
     @IsOptional()
     @IsString()
@@ -28,7 +27,7 @@ export class ListQueryDto {
     sortDir?: 'asc' | 'desc' | 'ASC' | 'DESC' = 'desc';
 
     @IsOptional()
-    filters?: Record<string, any>; // Complex filters usually parsed manually or via specific DTOs
+    filters?: any; // Parsed manually in QueryParser. Relaxes validation to avoid 400.
 }
 
 export interface PaginatedResult<T> {
