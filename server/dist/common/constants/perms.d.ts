@@ -134,15 +134,6 @@ export declare const admin_panel_permissions: {
                 };
                 addresses: {
                     perms: string[];
-                    country: {
-                        perms: string[];
-                    };
-                    city: {
-                        perms: string[];
-                    };
-                    district: {
-                        perms: string[];
-                    };
                 };
                 time_zones: {
                     perms: string[];

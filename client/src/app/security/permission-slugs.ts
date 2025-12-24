@@ -2,11 +2,9 @@
 // --- SYSTEM (Admin Panel) ---
 const SYSTEM_SLUGS = {
     DASHBOARD: {
-        VIEW: 'system.dashboard.view',
         READ: 'system.dashboard.read',
     },
     TENANTS: {
-        VIEW: 'system.tenants.view',
         READ: 'system.tenants.read',
         CREATE: 'system.tenants.create',
         UPDATE: 'system.tenants.update',
@@ -15,14 +13,12 @@ const SYSTEM_SLUGS = {
         MANAGE: 'system.tenants.manage_subscription',
     },
     BRANCHES: {
-        VIEW: 'system.branches.view',
         READ: 'system.branches.read',
         CREATE: 'system.branches.create',
         UPDATE: 'system.branches.update',
         DELETE: 'system.branches.delete',
     },
     USERS: {
-        VIEW: 'system.users.users.view',
         READ: 'system.users.users.read',
         CREATE: 'system.users.users.create',
         UPDATE: 'system.users.users.update',
@@ -31,131 +27,97 @@ const SYSTEM_SLUGS = {
         CONNECT_TO_EMPLOYEE: 'system.users.users.connect_to_employee',
     },
     CURATORS: {
-        VIEW: 'system.users.curators.view',
         READ: 'system.users.curators.read',
         CREATE: 'system.users.curators.create',
         UPDATE: 'system.users.curators.update',
         DELETE: 'system.users.curators.delete',
     },
     ROLES: {
-        VIEW: 'system.settings.security.user_rights.role.view',
         READ: 'system.settings.security.user_rights.role.read',
         CREATE: 'system.settings.security.user_rights.role.create',
         UPDATE: 'system.settings.security.user_rights.role.update',
         DELETE: 'system.settings.security.user_rights.role.delete',
     },
     AUDIT: {
-        VIEW: 'system.audit_logs.view',
         READ: 'system.audit_logs.read',
         EXPORT: 'system.audit_logs.export',
     },
     SETTINGS: {
-        VIEW: 'system.settings.view',
         READ: 'system.settings.read',
         UPDATE: 'system.settings.update',
         GENERAL: {
-            VIEW: 'system.settings.general.view',
             READ: 'system.settings.general.read',
             UPDATE: 'system.settings.general.update',
         },
         NOTIFICATIONS: {
-            VIEW: 'system.settings.general.notification_engine.view',
             READ: 'system.settings.general.notification_engine.read',
         },
         COMMUNICATION: {
-            VIEW: 'system.settings.communication.view',
             READ: 'system.settings.communication.read',
             MANAGE: 'system.settings.communication.update',
         },
         SECURITY: {
-            VIEW: 'system.settings.security.view',
             READ: 'system.settings.security.read',
             MANAGE: 'system.settings.security.update',
         },
         CONFIG: {
-            VIEW: 'system.settings.system_configurations.view',
             READ: 'system.settings.system_configurations.read',
             MANAGE: 'system.settings.system_configurations.update',
             BILLING: {
-                VIEW: 'system.settings.system_configurations.billing_configurations.price_rules.view',
+                // VIEW removed
             },
             DICTIONARIES: {
-                VIEW: 'system.settings.system_configurations.dictionary.view',
                 READ: 'system.settings.system_configurations.dictionary.read',
                 SECTORS: {
-                    VIEW: 'system.settings.system_configurations.dictionary.sectors.view',
                     READ: 'system.settings.system_configurations.dictionary.sectors.read'
                 },
                 UNITS: {
-                    VIEW: 'system.settings.system_configurations.dictionary.units.view',
                     READ: 'system.settings.system_configurations.dictionary.units.read'
                 },
                 CURRENCIES: {
-                    VIEW: 'system.settings.system_configurations.dictionary.currencies.view',
                     READ: 'system.settings.system_configurations.dictionary.currencies.read'
                 },
                 TIME_ZONES: {
-                    VIEW: 'system.settings.system_configurations.dictionary.time_zones.view',
                     READ: 'system.settings.system_configurations.dictionary.time_zones.read'
                 },
                 ADDRESSES: {
-                    VIEW: 'system.settings.system_configurations.dictionary.addresses.view',
-                    READ: 'system.settings.system_configurations.dictionary.addresses.read',
-                    COUNTRY: {
-                        VIEW: 'system.settings.system_configurations.dictionary.addresses.country.view',
-                        READ: 'system.settings.system_configurations.dictionary.addresses.country.read'
-                    },
-                    CITY: {
-                        VIEW: 'system.settings.system_configurations.dictionary.addresses.city.view',
-                        READ: 'system.settings.system_configurations.dictionary.addresses.city.read'
-                    },
-                    DISTRICT: {
-                        VIEW: 'system.settings.system_configurations.dictionary.addresses.district.view',
-                        READ: 'system.settings.system_configurations.dictionary.addresses.district.read'
-                    }
+                    READ_COUNTRY: 'system.settings.system_configurations.dictionary.addresses.read_country',
+                    READ_CITY: 'system.settings.system_configurations.dictionary.addresses.read_city',
+                    READ_DISTRICT: 'system.settings.system_configurations.dictionary.addresses.read_district'
                 }
             },
             TEMPLATES: {
-                VIEW: 'system.settings.system_configurations.document_templates.view',
                 READ: 'system.settings.system_configurations.document_templates.read'
             },
             WORKFLOW: {
-                VIEW: 'system.settings.system_configurations.workflow.configuration.view',
                 READ: 'system.settings.system_configurations.workflow.configuration.read'
             }
         }, // End CONFIG
     }, // End SETTINGS
     BILLING: {
-        VIEW: 'system.billing.view',
         READ: 'system.billing.read',
         MARKETPLACE: {
-            VIEW: 'system.billing.market_place.view',
             READ: 'system.billing.market_place.read',
             MANAGE: 'system.billing.market_place.create'
         },
         PACKAGES: {
-            VIEW: 'system.billing.compact_packages.view',
             READ: 'system.billing.compact_packages.read',
             MANAGE: 'system.billing.compact_packages.create'
         },
         PLANS: {
-            VIEW: 'system.billing.plans.view',
             READ: 'system.billing.plans.read',
             MANAGE: 'system.billing.plans.create'
         },
         INVOICES: {
-            VIEW: 'system.billing.invoices.view',
             READ: 'system.billing.invoices.read',
             APPROVE: 'system.billing.invoices.approve'
         },
         LICENSES: {
-            VIEW: 'system.billing.licenses.view',
             READ: 'system.billing.licenses.read',
             MANAGE: 'system.billing.licenses.change_plan'
         }
     },
     CONSOLE: {
-        VIEW: 'system.system_console.view',
         READ: 'system.system_console.read',
         DASHBOARD: {
             READ: 'system.system_console.dashboard.read',
@@ -191,7 +153,6 @@ const SYSTEM_SLUGS = {
         }
     },
     DEVELOPER: {
-        VIEW: 'system.developer_hub.view',
         READ: 'system.developer_hub.read',
         API: {
             READ: 'system.developer_hub.api_reference.read',
@@ -208,24 +169,20 @@ const SYSTEM_SLUGS = {
         }
     },
     FILES: {
-        VIEW: 'system.file_manager.view',
         READ: 'system.file_manager.read',
         UPLOAD: 'system.file_manager.upload',
         DELETE: 'system.file_manager.delete_file',
     },
     GUIDE: {
-        VIEW: 'system.system_guide.view',
         READ: 'system.system_guide.read',
         EDIT: 'system.system_guide.edit',
         MANAGE: 'system.system_guide.create',
     },
     APPROVALS: {
-        VIEW: 'system.approvals.view',
         READ: 'system.approvals.read',
         APPROVE: 'system.approvals.approve',
     },
     COMPLIANCE: {
-        VIEW: 'system.settings.security.user_rights.compliance.view',
         READ: 'system.settings.security.user_rights.compliance.read',
         DOWNLOAD_REPORT: 'system.settings.security.user_rights.compliance.download_report',
     }
@@ -234,33 +191,27 @@ const SYSTEM_SLUGS = {
 // --- TENANT (Client) ---
 const TENANT_SLUGS = {
     DASHBOARD: {
-        VIEW: 'tenant.dashboard.view',
         READ: 'tenant.dashboard.read',
     },
     USERS: {
-        VIEW: 'tenant.users.view',
         READ: 'tenant.users.read',
         CREATE: 'tenant.users.create',
         MANAGE: 'tenant.users.update'
     },
     ROLES: {
-        VIEW: 'tenant.roles.view',
         READ: 'tenant.roles.read',
         CREATE: 'tenant.roles.create',
     },
     SETTINGS: {
-        VIEW: 'tenant.settings.view',
         READ: 'tenant.settings.read',
         UPDATE: 'tenant.settings.update',
         MANAGE: 'tenant.settings.update'
     },
     BILLING: {
-        VIEW: 'tenant.billing.view',
         READ: 'tenant.billing.read',
         PAY: 'tenant.billing.pay_invoice',
     },
     REPORTS: {
-        VIEW: 'tenant.reports.view',
         READ: 'tenant.reports.read',
         EXPORT: 'tenant.reports.export',
     }
@@ -285,16 +236,10 @@ export const PermissionSlugs = {
     PLATFORM: SYSTEM_SLUGS
 } as const;
 
-// Helper to check if a permission string matches a canonical slug pattern
 export const isCanonical = (slug: string) => /^(system|tenant|platform)\./.test(slug);
 
-// MAPPING: Legacy Backend Slug -> Canonical Frontend Slug
-// Includes mapping for pre-migration 'platform.*' slugs to 'system.*'
 export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
     // Tenants
-    'tenants.view': PermissionSlugs.SYSTEM.TENANTS.VIEW,
+    // 'tenants.view' legacy mapping removed as View is dead
     'tenants.create': PermissionSlugs.SYSTEM.TENANTS.CREATE,
-
-    // Legacy Platform Mapping (Dynamic mapping preferred, but explicit helpers here)
-    // NOTE: AuthContext should ideally handle dynamic 'platform.' -> 'system.' replacement.
 };

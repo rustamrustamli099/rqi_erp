@@ -14,12 +14,19 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../../../../prisma.service");
 const client_1 = require("@prisma/client");
 const audit_service_1 = require("../../../../../system/audit/audit.service");
+const query_parser_1 = require("../../../../../common/utils/query-parser");
 let RolesService = class RolesService {
     prisma;
     auditService;
     constructor(prisma, auditService) {
         this.prisma = prisma;
         this.auditService = auditService;
+    }
+    async debugCount() {
+        const total = await this.prisma.role.count();
+        const first = await this.prisma.role.findFirst();
+        console.log("DEBUG COUNT:", { total, first });
+        return { total, first };
     }
     async create(dto, userId) {
         const existing = await this.prisma.role.findFirst({
@@ -31,7 +38,31 @@ let RolesService = class RolesService {
         if (existing) {
             throw new common_1.BadRequestException(`Role with name '${dto.name}' already exists in ${dto.scope} scope.`);
         }
-        return this.prisma.role.create({
+        let permissionConnect = [];
+        let permissionSlugs = [];
+        if (dto.permissionIds && dto.permissionIds.length > 0) {
+            const uniqueSlugs = [...new Set(dto.permissionIds)];
+            permissionSlugs = uniqueSlugs;
+            const permissions = await this.prisma.permission.findMany({
+                where: {
+                    slug: { in: uniqueSlugs }
+                }
+            });
+            const invalidPermissions = permissions.filter(p => {
+                if (dto.scope === 'SYSTEM' && p.scope === 'TENANT')
+                    return true;
+                if (dto.scope === 'TENANT' && p.scope === 'SYSTEM')
+                    return true;
+                return false;
+            });
+            if (invalidPermissions.length > 0) {
+                throw new common_1.BadRequestException(`Security Violation: Attempted to assign invalid scope permissions to ${dto.scope} role: ${invalidPermissions.map(p => p.slug).join(', ')}`);
+            }
+            permissionConnect = permissions.map(p => ({
+                permissionId: p.id
+            }));
+        }
+        const role = await this.prisma.role.create({
             data: {
                 name: dto.name,
                 description: dto.description,
@@ -41,24 +72,66 @@ let RolesService = class RolesService {
                 isEnabled: true,
                 isSystem: dto.scope === 'SYSTEM',
                 status: client_1.RoleStatus.DRAFT,
-                submittedById: userId
+                createdById: userId,
+                submittedById: userId,
+                permissions: {
+                    createMany: {
+                        data: permissionConnect
+                    }
+                }
             }
         });
-    }
-    async findAll(scope) {
-        const where = {};
-        if (scope) {
-            where.scope = scope;
-        }
-        return this.prisma.role.findMany({
-            where,
-            include: {
-                _count: { select: { userRoles: true, permissions: true } }
+        await this.auditService.logAction({
+            action: 'ROLE_CREATED',
+            resource: 'Role',
+            details: {
+                roleId: role.id,
+                name: role.name,
+                scope: role.scope,
+                assigned_permissions: permissionSlugs
             },
-            orderBy: {
-                level: 'desc'
-            }
+            module: 'ACCESS_CONTROL',
+            userId: userId,
         });
+        return role;
+    }
+    async findAll(query) {
+        const { skip, take, orderBy, page, pageSize, search } = query_parser_1.QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope']);
+        const where = {};
+        if (search) {
+            where.name = { contains: search, mode: 'insensitive' };
+        }
+        if (query.filters?.scope) {
+            where.scope = query.filters.scope;
+        }
+        console.log("RolesService.findAll DEBUG:", { where, skip, take, orderBy });
+        const [items, total] = await Promise.all([
+            this.prisma.role.findMany({
+                where,
+                skip,
+                take,
+                orderBy,
+                include: {
+                    _count: { select: { userRoles: true, permissions: true } }
+                }
+            }),
+            this.prisma.role.count({ where })
+        ]);
+        return {
+            items,
+            meta: {
+                page,
+                pageSize,
+                total,
+                totalPages: Math.ceil(total / pageSize)
+            },
+            query: {
+                sortBy: query.sortBy,
+                sortDir: query.sortDir,
+                search,
+                filters: query.filters
+            }
+        };
     }
     async findOne(id) {
         const role = await this.prisma.role.findUnique({
@@ -90,7 +163,7 @@ let RolesService = class RolesService {
             resource: 'Role',
             details: { roleId: id },
             module: 'ACCESS_CONTROL',
-            userId: 'SYSTEM',
+            userId: userId,
         });
         return result;
     }
@@ -99,8 +172,8 @@ let RolesService = class RolesService {
         if (role.status !== client_1.RoleStatus.PENDING_APPROVAL) {
             throw new common_1.BadRequestException('Role is not pending approval');
         }
-        if (role.submittedById === approverId) {
-            throw new common_1.ForbiddenException('You cannot approve your own role request (4-Eyes Principle violation)');
+        if (role.submittedById === approverId || role.createdById === approverId) {
+            throw new common_1.ForbiddenException('Security Violation: 4-Eyes Principle. You cannot approve a role you created or submitted.');
         }
         const result = await this.prisma.role.update({
             where: { id },
@@ -143,60 +216,102 @@ let RolesService = class RolesService {
     async update(id, dto, userId = 'SYSTEM') {
         const role = await this.findOne(id);
         if (role.isLocked) {
-            throw new common_1.ForbiddenException('Cannot edit a locked System Role (e.g. SuperAdmin).');
+            throw new common_1.ForbiddenException('Cannot edit a locked System Role.');
         }
-        const data = { ...dto };
-        delete data.permissionIds;
         if (dto.scope && dto.scope !== role.scope) {
-            throw new common_1.BadRequestException('Role Scope cannot be changed once created (SAP Immutable Rule).');
+            throw new common_1.BadRequestException('Role Scope cannot be changed once created.');
         }
+        let newStatus = role.status;
+        const auditDetails = { roleId: id };
         if (dto.permissionIds) {
-            const permissions = await this.prisma.permission.findMany({
-                where: {
-                    slug: { in: dto.permissionIds }
-                }
+            const oldPermissionsMap = new Map();
+            role.permissions.forEach(rp => {
+                oldPermissionsMap.set(rp.permission.slug, rp.permissionId);
             });
-            const invalidPermissions = permissions.filter(p => {
+            const oldSlugs = Array.from(oldPermissionsMap.keys());
+            const newSlugsUnique = [...new Set(dto.permissionIds)];
+            const validNewPermissions = await this.prisma.permission.findMany({
+                where: { slug: { in: newSlugsUnique } }
+            });
+            const newPermissionsMap = new Map();
+            validNewPermissions.forEach(p => {
+                newPermissionsMap.set(p.slug, p.id);
+            });
+            const newSlugs = Array.from(newPermissionsMap.keys());
+            const invalidScopePerms = validNewPermissions.filter(p => {
                 if (role.scope === 'SYSTEM' && p.scope === 'TENANT')
                     return true;
                 if (role.scope === 'TENANT' && p.scope === 'SYSTEM')
                     return true;
                 return false;
             });
-            if (invalidPermissions.length > 0) {
-                throw new common_1.BadRequestException(`Security Violation: Attempted to assign invalid scope permissions to ${role.scope} role: ${invalidPermissions.map(p => p.slug).join(', ')}`);
+            if (invalidScopePerms.length > 0) {
+                throw new common_1.BadRequestException(`Security Violation: Invalid scope permissions for ${role.scope}: ${invalidScopePerms.map(p => p.slug).join(', ')}`);
             }
+            const slugsToRemove = oldSlugs.filter(s => !newSlugs.includes(s));
+            const slugsToAdd = newSlugs.filter(s => !oldSlugs.includes(s));
+            const idsToRemove = slugsToRemove.map(s => oldPermissionsMap.get(s)).filter(Boolean);
+            const idsToAdd = slugsToAdd.map(s => newPermissionsMap.get(s)).filter(Boolean);
             await this.prisma.$transaction(async (tx) => {
-                await tx.rolePermission.deleteMany({ where: { roleId: id } });
-                if (permissions.length > 0) {
-                    await tx.rolePermission.createMany({
-                        data: permissions.map(p => ({
+                if (idsToRemove.length > 0) {
+                    await tx.rolePermission.deleteMany({
+                        where: {
                             roleId: id,
-                            permissionId: p.id
+                            permissionId: { in: idsToRemove }
+                        }
+                    });
+                }
+                if (idsToAdd.length > 0) {
+                    await tx.rolePermission.createMany({
+                        data: idsToAdd.map(permId => ({
+                            roleId: id,
+                            permissionId: permId
                         }))
                     });
                 }
             });
-            await this.auditService.logAction({
-                action: 'ROLE_PERMISSIONS_UPDATED',
-                resource: 'Role',
-                details: { roleId: id, count: permissions.length, slugs: dto.permissionIds },
-                module: 'ACCESS_CONTROL',
-                userId: userId,
+            auditDetails.permission_changes = {
+                before: oldSlugs.sort(),
+                after: newSlugs.sort(),
+                removed: slugsToRemove,
+                added: slugsToAdd
+            };
+            if (slugsToRemove.length > 0 || slugsToAdd.length > 0) {
+                if (role.status === client_1.RoleStatus.ACTIVE) {
+                    newStatus = client_1.RoleStatus.DRAFT;
+                }
+            }
+        }
+        const updateData = {};
+        if (dto.name)
+            updateData.name = dto.name;
+        if (dto.description !== undefined)
+            updateData.description = dto.description;
+        updateData.status = newStatus;
+        if (dto.name && dto.name !== role.name) {
+            const existing = await this.prisma.role.findFirst({
+                where: {
+                    name: { equals: dto.name, mode: 'insensitive' },
+                    scope: role.scope,
+                    id: { not: id }
+                }
             });
+            if (existing)
+                throw new common_1.BadRequestException(`Role name '${dto.name}' is already taken.`);
         }
-        let newStatus = role.status;
-        if (role.status === client_1.RoleStatus.ACTIVE && dto.permissionIds) {
-            newStatus = client_1.RoleStatus.DRAFT;
-        }
-        return this.prisma.role.update({
+        const updatedRole = await this.prisma.role.update({
             where: { id },
-            data: {
-                ...data,
-                status: newStatus
-            },
-            include: { permissions: true }
+            data: updateData,
+            include: { permissions: { include: { permission: true } } }
         });
+        await this.auditService.logAction({
+            action: 'ROLE_UPDATED',
+            resource: 'Role',
+            details: auditDetails,
+            module: 'ACCESS_CONTROL',
+            userId: userId,
+        });
+        return updatedRole;
     }
 };
 exports.RolesService = RolesService;

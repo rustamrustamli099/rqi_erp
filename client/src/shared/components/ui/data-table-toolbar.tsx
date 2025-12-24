@@ -1,5 +1,5 @@
 import type { Table } from "@tanstack/react-table"
-import { X, Search, RefreshCcw, Plus } from "lucide-react"
+import { X, Search, RefreshCcw, Plus, SlidersHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,7 @@ interface DataTableToolbarProps<TData> {
     onAddClick?: () => void // Added
     addLabel?: string // Added
     hideViewOptions?: boolean // Added to fix type error
+    onFilterClick?: () => void // Added
 }
 
 export function DataTableToolbar<TData>({
@@ -35,6 +36,7 @@ export function DataTableToolbar<TData>({
     onAddClick,
     addLabel,
     hideViewOptions,
+    onFilterClick
 }: DataTableToolbarProps<TData>) {
     const isFiltered = table.getState().columnFilters.length > 0
     const placeholder = searchPlaceholder || filterPlaceholder || "Filter...";
@@ -82,6 +84,20 @@ export function DataTableToolbar<TData>({
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>Yenilə</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+
+                {/* Filter Button */}
+                {onFilterClick && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onFilterClick}>
+                                    <SlidersHorizontal className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Filterləmə</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
                 )}

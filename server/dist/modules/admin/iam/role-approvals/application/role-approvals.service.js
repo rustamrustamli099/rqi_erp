@@ -21,7 +21,7 @@ let RoleApprovalsService = class RoleApprovalsService {
         this.prisma = prisma;
         this.auditService = auditService;
     }
-    async submitRequest(roleId, userId, diffJson = {}) {
+    async submitRequest(roleId, userId, diffJson = {}, reason) {
         const role = await this.prisma.role.findUnique({ where: { id: roleId } });
         if (!role)
             throw new common_1.NotFoundException('Role not found');
@@ -34,6 +34,7 @@ let RoleApprovalsService = class RoleApprovalsService {
                 status: 'PENDING',
                 scope: role.tenantId ? 'TENANT' : 'SYSTEM',
                 diffJson: diffJson,
+                reason: reason
             }
         });
         await this.prisma.role.update({

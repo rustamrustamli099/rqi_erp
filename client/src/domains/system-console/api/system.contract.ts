@@ -22,6 +22,7 @@ export interface Role {
     isEnabled: boolean;
 
     usersCount: number;
+    version: number;
     status?: "DRAFT" | "PENDING_APPROVAL" | "ACTIVE" | "REJECTED";
     approverId?: string;
     approvalNote?: string;
@@ -48,11 +49,52 @@ export interface UpdateRoleRequest {
 // --- Contract ---
 
 export const systemApi = {
-    getRoles: async (scope?: "SYSTEM" | "TENANT"): Promise<Role[]> => {
-        const query = scope ? `?scope=${scope}` : "";
-        const response = await api.get<any>(`/admin/roles${query}`);
-        // Backend returns wrapped object { statusCode: 200, data: [...] }
-        return Array.isArray(response.data) ? response.data : (response.data.data || []);
+    getRoles: async (params?: any): Promise<{ items: Role[], meta: any }> => {
+        // Support both simple scope string or full query object
+        const queryParams = new URLSearchParams();
+        if (typeof params === 'string') {
+            queryParams.append('scope', params);
+            queryParams.append('page', '1');
+            queryParams.append('pageSize', '100');
+        } else if (params) {
+            // Search
+            if (params.search) queryParams.append('search', params.search);
+
+            // Pagination
+            if (params.page) queryParams.append('page', params.page.toString());
+            if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+            if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+            if (params.sortDir) queryParams.append('sortDir', params.sortDir);
+
+            // Filters
+            if (params.filters) {
+                if (params.filters.scope) queryParams.append('filters[scope]', params.filters.scope);
+                if (params.filters.status) queryParams.append('filters[status]', params.filters.status);
+            } else {
+                // Backward compat: direct props
+                if (params.scope) queryParams.append('filters[scope]', params.scope);
+                if (params.status) queryParams.append('filters[status]', params.status);
+            }
+        }
+
+        const response = await api.get<any>(`/admin/roles?${queryParams.toString()}`);
+        console.log("DEBUG: systemApi RAW response:", response);
+
+        // Case 1: Direct PaginatedResult { items: [], meta: ... }
+        if (response.data && Array.isArray(response.data.items)) {
+            return { items: response.data.items, meta: response.data.meta || {} };
+        }
+
+        // Case 2: Nested Wrapped PaginatedResult { data: { items: [], meta: ... } } (Current Backend Format)
+        if (response.data && response.data.data && Array.isArray(response.data.data.items)) {
+            return { items: response.data.data.items, meta: response.data.data.meta || {} };
+        }
+
+        // Fallback for flat arrays
+        const flatItems = Array.isArray(response.data) ? response.data :
+            (Array.isArray(response.data.data) ? response.data.data : []);
+
+        return { items: flatItems, meta: { total: flatItems.length, page: 1, pageSize: flatItems.length } };
     },
 
     getPermissions: async (): Promise<any[]> => {
@@ -76,6 +118,11 @@ export const systemApi = {
     updateRole: async (id: string, data: UpdateRoleRequest): Promise<Role> => {
         const response = await api.patch<any>(`/admin/roles/${id}`, data);
         return response.data.data || response.data;
+    },
+
+    updateRolePermissions: async (id: string, payload: { expectedVersion: number, permissionSlugs: string[], comment?: string }) => {
+        const response = await api.put(`/admin/roles/${id}/permissions`, payload);
+        return response.data;
     },
 
     deleteRole: async (id: string): Promise<void> => {

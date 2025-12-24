@@ -1,11 +1,10 @@
 import { RoleApprovalsService } from '../application/role-approvals.service';
+import { CreateRoleChangeRequestDto } from './dto/create-role-change-request.dto';
+import { RejectRequestDto } from './dto/reject-request.dto';
 export declare class RoleApprovalsController {
     private readonly approvalsService;
     constructor(approvalsService: RoleApprovalsService);
-    create(body: {
-        roleId: string;
-        diff?: any;
-    }, req: any): Promise<{
+    create(dto: CreateRoleChangeRequestDto, req: any): Promise<{
         id: string;
         scope: string;
         roleId: string;
@@ -31,9 +30,11 @@ export declare class RoleApprovalsController {
             approverId: string | null;
             approvalNote: string | null;
             submittedById: string | null;
+            createdById: string | null;
             tenantId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            version: number;
         };
     } & {
         id: string;
@@ -59,9 +60,7 @@ export declare class RoleApprovalsController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    reject(id: string, body: {
-        reason: string;
-    }, req: any): Promise<{
+    reject(id: string, dto: RejectRequestDto, req: any): Promise<{
         id: string;
         scope: string;
         roleId: string;

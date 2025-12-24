@@ -228,19 +228,19 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                         id: 'country',
                         label: 'Ölkələr',
                         path: '/admin/settings?tab=dictionaries&entity=country',
-                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.country.view
+                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.read_country
                     },
                     {
                         id: 'city',
                         label: 'Şəhərlər',
                         path: '/admin/settings?tab=dictionaries&entity=city',
-                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.city.view
+                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.read_city
                     },
                     {
                         id: 'district',
                         label: 'Rayonlar',
                         path: '/admin/settings?tab=dictionaries&entity=district',
-                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.district.view
+                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.read_district
                     },
                     ]
                 }

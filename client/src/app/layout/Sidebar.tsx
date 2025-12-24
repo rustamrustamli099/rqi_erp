@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/shared/lib/utils"
@@ -6,7 +7,6 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useDispatch } from "react-redux"
 import { logout } from "@/domains/auth/state/authSlice"
 import {
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Menu,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import * as LucideIcons from "lucide-react"
 import { useMenu } from "@/app/navigation/useMenu";
-import { type MenuItem } from "@/app/navigation/menu.definitions";
+import { type AdminMenuItem } from "@/app/navigation/menu.definitions";
 
 import {
     Tooltip,
@@ -36,7 +36,6 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/shared/components/ui/sheet"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -50,168 +49,63 @@ import {
 
 import logo from "@/assets/logo.png"
 
-// Helper for Deep Navigation Logic
-const findDeepPath = (item: MenuItem): string | undefined => {
-    if (item.path) return item.path;
-    if (item.children) {
-        for (const child of item.children) {
-            const found = findDeepPath(child);
-            if (found) return found;
-        }
-    }
-    return undefined;
-};
-
 const DesktopMenuItem = ({
     item,
     collapsed,
-    level = 0,
-    openMap,
-    onToggle,
     navigate,
     location
 }: {
-    item: MenuItem,
+    item: AdminMenuItem,
     collapsed: boolean,
-    level?: number,
-    openMap?: Record<string, boolean>,
     navigate: any,
-    location: any,
-    onToggle?: (id: string) => void
+    location: any
 }) => {
-    // Robust Key: Prefer ID, fallback to label
-    const itemKey = item.id || item.label;
-    const isOpen = openMap ? !!openMap[itemKey] : false;
 
-    // 1. Recursive Check - Forced Flat Logic (User Req: Submenus handled via Page Tabs)
-    // We treat all items as "Leafs" visually.
-    // The 'path' is already smart-resolved by useMenu to point to the first accessible child.
-    const hasChildren = false; // !!(item.children && item.children.length > 0);
+    // SAP GRADE: Flat Navigation Logic using 'route'
+    // Matches if current pathname starts with route (Active State)
 
-    // 2. Active State Logic (Robust)
-    // Matches if current path starts with item path (for sub-routes) OR exact match
-    // Query params: If tab is present, stricter match
-    const isActiveLink = (() => {
-        if (!item.path) return false;
+    // Query param strictness:
+    // If route has ?tab=foo, we require that tab to be present.
+    const isActive = (() => {
         const currentPath = location.pathname;
         const currentSearch = location.search;
 
-        // Base path match
-        const pathMatch = item.path.split('?')[0] === currentPath;
-        if (!pathMatch) return false;
+        // Base Route Match (e.g. /admin/settings)
+        // Must match exactly or be start of sub-path (if handled by routing)
+        // But for flat sidebar, usually exact match on module root.
+        const baseRoute = item.route.split('?')[0];
 
-        // Query match?
-        const itemQuery = item.path.split('?')[1];
-        if (itemQuery) {
-            // If item has specific query (e.g. ?tab=users), we must match it
-            const itemParams = new URLSearchParams(itemQuery);
-            const currentParams = new URLSearchParams(currentSearch);
-            for (const [key, val] of itemParams.entries()) {
-                if (currentParams.get(key) !== val) return false;
-            }
+        if (currentPath !== baseRoute && !currentPath.startsWith(baseRoute + '/')) {
+            return false;
         }
+
+        // Query Match
+        // If item has default tab (item.tab), we usually navigate to it.
+        // But highlighting: If generic match (/admin/users) and we are on /admin/users, it's active.
+        // If we are on /admin/users?tab=curators, is 'Users' (tab=users) active? 
+        // Yes, the Module is active.
+        // In this Flat Model, the MenuItem represents the MODULE.
+        // So simple path match is usually sufficient.
         return true;
     })();
 
-    const isChildActive = !!(item.children?.some(c => {
-        // Recursive active check for parent highlight
-        const cPath = c.path?.split('?')[0];
-        // Section Active: Ignore query params for container highlight
-        return cPath && location.pathname.startsWith(cPath);
-    }));
-
-    const isMainActive = isActiveLink || isChildActive;
-
-    // Icon handling
+    // Resolve Icon
     let Icon = item.icon as any;
     if (typeof item.icon === 'string') {
         Icon = (LucideIcons as any)[item.icon] || LucideIcons.Circle;
     }
-    // Fallback if no icon
-    if (!Icon && level === 0) Icon = LucideIcons.Circle;
+    const iconSize = "h-5 w-5";
 
-    const iconSize = level > 0 ? "h-4 w-4" : "h-5 w-5";
-    const isSubmenu = level > 0;
+    // Navigate Handler
+    const handleNavigate = () => {
+        let target = item.route;
+        // Append default tab if specified and not already in route string
+        if (item.tab && !target.includes('?')) {
+            target += `?tab=${item.tab}`;
+        }
+        navigate(target);
+    };
 
-    // In-Place Expansion Logic
-    if (hasChildren) {
-        return (
-            <Collapsible
-                open={isOpen}
-                onOpenChange={() => onToggle && onToggle(itemKey)}
-                className="w-full"
-            >
-                <CollapsibleTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        className={cn(
-                            "w-full justify-start gap-3 mb-1 h-10 relative group hover:bg-muted/50 overflow-hidden",
-                            isMainActive && "bg-primary/10 text-primary font-semibold hover:bg-primary/15",
-                            collapsed ? "px-0 justify-center" : "px-4"
-                        )}
-                        style={!collapsed ? { paddingLeft: `${16 + (level * 12)}px` } : {}}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            // SAP Rule: Parent with children ALWAYS toggles, NEVER navigates (initially).
-                            // User request: "Parent menu behavior (SAP-style): ... Clicking parent toggles open/close, does not navigate"
-                            if (onToggle) onToggle(itemKey);
-                        }}
-                    >
-                        {isMainActive && (
-                            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-r-full" />
-                        )}
-                        {collapsed ? (
-                            <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex items-center justify-center w-full h-full relative">
-                                            {Icon && <Icon className={cn(iconSize, "shrink-0 transition-all", isSubmenu && "ml-1")} />}
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                        {item.label} (Click to expand)
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        ) : (
-                            <>
-                                {Icon && <Icon className={cn(iconSize, "shrink-0")} />}
-                                <div className="flex flex-1 items-center justify-between overflow-hidden">
-                                    <span className="truncate font-medium">{item.label}</span>
-                                    <ChevronDown
-                                        className={cn(
-                                            "h-4 w-4 shrink-0 transition-transform duration-200 opacity-50",
-                                            isOpen && "transform rotate-180"
-                                        )}
-                                    />
-                                </div>
-                            </>
-                        )}
-                    </Button>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-                    <div className={cn("space-y-1 mt-1", collapsed && "bg-muted/10 rounded-md py-1 border border-border/20")}>
-                        {item.children?.map((child, idx) => (
-                            <DesktopMenuItem
-                                key={child.id || idx}
-                                item={child}
-                                collapsed={collapsed}
-                                level={level + 1}
-                                navigate={navigate}
-                                location={location}
-                                openMap={openMap}
-                                onToggle={onToggle}
-                            />
-                        ))}
-                    </div>
-                </CollapsibleContent>
-            </Collapsible>
-        )
-    }
-
-    // Leaf Node
     return (
         collapsed ? (
             <TooltipProvider delayDuration={0}>
@@ -221,17 +115,17 @@ const DesktopMenuItem = ({
                             variant="ghost"
                             className={cn(
                                 "w-full justify-center mb-1 h-10 px-0 hover:bg-muted/50",
-                                isMainActive && "bg-primary/15 text-primary font-semibold hover:bg-primary/20"
+                                isActive && "bg-primary/15 text-primary font-semibold hover:bg-primary/20"
                             )}
-                            onClick={() => item.path && navigate(item.path)}
+                            onClick={handleNavigate}
                         >
                             <div className="flex items-center justify-center w-full h-full">
-                                {Icon && <Icon className={cn(iconSize, "shrink-0 transition-all", isSubmenu && "ml-1")} />}
+                                {Icon && <Icon className={cn(iconSize, "shrink-0 transition-all")} />}
                             </div>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                        {item.label}
+                        {item.title}
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -239,22 +133,16 @@ const DesktopMenuItem = ({
             <Button
                 variant="ghost"
                 className={cn(
-                    "w-full justify-start gap-3 mb-1 h-10 hover:bg-muted/50 relative group",
-                    isMainActive && "bg-primary/10 text-primary font-semibold hover:bg-primary/15",
-                    "px-4"
+                    "w-full justify-start gap-3 mb-1 h-10 hover:bg-muted/50 relative group px-4",
+                    isActive && "bg-primary/10 text-primary font-semibold hover:bg-primary/15"
                 )}
-                style={{ paddingLeft: `${16 + (level * 12)}px` }}
-                onClick={() => {
-                    if (item.path) {
-                        navigate(item.path);
-                    }
-                }}
+                onClick={handleNavigate}
             >
-                {isMainActive && (
+                {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-r-full" />
                 )}
                 {Icon && <Icon className={cn(iconSize, "shrink-0")} />}
-                <span className={cn("truncate font-medium flex-1 text-left", !Icon && "pl-0")}>{item.label}</span>
+                <span className={cn("truncate font-medium flex-1 text-left", !Icon && "pl-0")}>{item.title}</span>
             </Button>
         )
     )
@@ -273,22 +161,15 @@ export function MobileSidebar() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-72">
-                <div className="h-16 flex items-center justify-center border-b border-border/50 bg-background/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 relative flex items-center justify-center shrink-0 rounded-full overflow-hidden border border-primary/20">
-                            <img src={logo} alt="Logo" className="object-cover w-full h-full" />
-                        </div>
-                        <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent font-bold text-lg">
-                            RQI ERP
-                        </span>
-                    </div>
+                <div className="h-full">
+                    <DesktopSidebar isMobile={true} />
                 </div>
             </SheetContent>
         </Sheet>
     )
 }
 
-export function DesktopSidebar() {
+export function DesktopSidebar({ isMobile = false }: { isMobile?: boolean }) {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const location = useLocation()
@@ -296,24 +177,16 @@ export function DesktopSidebar() {
     const { menu, loading: menuLoading } = useMenu();
 
     const [collapsed, setCollapsed] = useState(() => {
+        if (isMobile) return false;
         const saved = localStorage.getItem("sidebarCollapsed")
         return saved ? JSON.parse(saved) : false
     })
 
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
-    const [openBaseMenus, setOpenBaseMenus] = useState<Record<string, boolean>>({})
-
-    const toggleMenu = (id: string) => {
-        setOpenBaseMenus(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }))
-    }
-
     useEffect(() => {
-        localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed))
-    }, [collapsed])
+        if (!isMobile) localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed))
+    }, [collapsed, isMobile])
 
     const filteredMenuItems = menu || [];
     const loading = menuLoading;
@@ -331,18 +204,21 @@ export function DesktopSidebar() {
         <motion.div
             className={cn(
                 "h-screen bg-card border-r border-border flex flex-col transition-all duration-300 relative z-20",
-                collapsed ? "w-[80px]" : "w-64"
+                !isMobile && (collapsed ? "w-[80px]" : "w-64"),
+                isMobile && "w-full"
             )}
         >
-            {/* Collapse Toggle */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="absolute -right-3 top-6 h-6 w-6 rounded-full border bg-background shadow-md z-50 hover:bg-accent"
-                onClick={() => setCollapsed(!collapsed)}
-            >
-                {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </Button>
+            {/* Collapse Toggle (Desktop Only) */}
+            {!isMobile && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -right-3 top-6 h-6 w-6 rounded-full border bg-background shadow-md z-50 hover:bg-accent"
+                    onClick={() => setCollapsed(!collapsed)}
+                >
+                    {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                </Button>
+            )}
 
             {/* Logo Area */}
             <div className="h-16 flex items-center justify-center border-b border-border/50 bg-background/50 backdrop-blur-sm sticky top-0 z-40">
@@ -385,8 +261,6 @@ export function DesktopSidebar() {
                                 key={item.id || index}
                                 item={item}
                                 collapsed={collapsed}
-                                openMap={openBaseMenus}
-                                onToggle={toggleMenu}
                                 navigate={navigate}
                                 location={location}
                             />

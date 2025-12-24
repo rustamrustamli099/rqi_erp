@@ -26,6 +26,11 @@ const MOCK_ROLES: Role[] = [
     { id: '3', name: 'Finance Viewer', description: 'Read-only access to finance', usersCount: 1, permissions: ['system.finance.view'], isSystem: false }
 ];
 
+// ... imports
+import { RoleApprovalModal } from '@/domains/identity/components/RoleApprovalModal';
+
+// ... (MOCK_ROLES and Role Interface remain)
+
 export const RoleManagementPage = () => {
     const [roles, setRoles] = useState<Role[]>(MOCK_ROLES);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -35,6 +40,10 @@ export const RoleManagementPage = () => {
     const [roleName, setRoleName] = useState('');
     const [roleDesc, setRoleDesc] = useState('');
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+
+    // Approval State
+    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+    const [pendingDiff, setPendingDiff] = useState<{ added: string[], removed: string[] } | undefined>(undefined);
 
     const handleEdit = (role: Role) => {
         setEditingRole(role);
@@ -52,12 +61,38 @@ export const RoleManagementPage = () => {
         setIsDialogOpen(true);
     };
 
-    const handleSave = () => {
+    const calculateDiff = (original: string[], current: string[]) => {
+        const added = current.filter(p => !original.includes(p));
+        const removed = original.filter(p => !current.includes(p));
+        return { added, removed };
+    };
+
+    const handleSaveAttempt = () => {
+        // Calculate Diff
+        const originalPerms = editingRole ? editingRole.permissions : [];
+        const diff = calculateDiff(originalPerms, selectedPermissions);
+
+        // If no changes to permissions, and just name/desc, maybe allow direct save?
+        // But for SAP-Grade, we enforce approval for EVERYTHING if it's a "Sensitive" module.
+        // For this demo, let's trigger approval if permissions changed OR it's a new role.
+
+        const hasCriticalChanges = diff.added.length > 0 || diff.removed.length > 0 || !editingRole;
+
+        if (hasCriticalChanges) {
+            setPendingDiff(diff);
+            setIsApprovalModalOpen(true);
+        } else {
+            // Minor update (name/desc only) - Can save directly (or request approval too based on policy)
+            // For now, simple save simulation
+            toast.success("Role info updated (No permission changes).");
+            finalizeSave();
+        }
+    };
+
+    const finalizeSave = () => {
         if (editingRole) {
-            // Update
             setRoles(roles.map(r => r.id === editingRole.id ? { ...r, name: roleName, description: roleDesc, permissions: selectedPermissions } : r));
         } else {
-            // Create
             const newRole: Role = {
                 id: Math.random().toString(36).substr(2, 9),
                 name: roleName,
@@ -71,9 +106,25 @@ export const RoleManagementPage = () => {
         setIsDialogOpen(false);
     };
 
+    const handleApprovalRequest = async (reason?: string) => {
+        // Here we would call the Backend: roleApprovalsService.submitRequest(...)
+        // const payload = { roleId: editingRole?.id, diff: pendingDiff, reason };
+
+        console.log("Submitting for Approval:", { roleName, diff: pendingDiff, reason });
+
+        // Simulating Success
+        toast.info("Təsdiq sorğusu göndərildi! (Request Submitted)");
+        setIsApprovalModalOpen(false);
+        setIsDialogOpen(false);
+
+        // In real app, we wouldn't update local state immediately. 
+        // We would fetch "Pending" status.
+    };
+
     return (
         <RequirePermission permission="system.roles.view">
             <div className="space-y-6 p-6">
+                {/* ... Header and Table (unchanged) ... */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Roles & Permissions</h1>
@@ -101,6 +152,7 @@ export const RoleManagementPage = () => {
                                         <TableHead>Role Name</TableHead>
                                         <TableHead>Users</TableHead>
                                         <TableHead>Permissions</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -123,11 +175,14 @@ export const RoleManagementPage = () => {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex flex-wrap gap-1">
+                                                <div className="flex flex-wrap gap-1 max-w-[300px]">
                                                     {role.permissions.map(p => (
                                                         <Badge key={p} variant="outline" className="text-[10px] font-mono">{p}</Badge>
                                                     ))}
                                                 </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <RequirePermission permission="system.roles.manage" mode="disabled">
@@ -150,6 +205,10 @@ export const RoleManagementPage = () => {
                             <DialogTitle>{editingRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
                             <DialogDescription>
                                 Configure role details and assign permissions.
+                                <span className="block mt-1 text-amber-600 font-medium text-xs">
+                                    <ShieldAlert className="inline h-3 w-3 mr-1" />
+                                    Changes require 4-Eyes Approval.
+                                </span>
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -170,24 +229,29 @@ export const RoleManagementPage = () => {
                                     value={selectedPermissions}
                                     onChange={setSelectedPermissions}
                                 />
-                                {editingRole && editingRole.usersCount > 0 && (
-                                    <div className="flex items-center gap-2 text-amber-500 text-sm mt-2">
-                                        <ShieldAlert className="h-4 w-4" />
-                                        <span>Modifying this role will affect {editingRole.usersCount} users immediately.</span>
-                                    </div>
-                                )}
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleSave}>Save Changes</Button>
+                            <Button onClick={handleSaveAttempt}>Request Approval</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* APPROVAL MODAL */}
+                <RoleApprovalModal
+                    isOpen={isApprovalModalOpen}
+                    onClose={() => setIsApprovalModalOpen(false)}
+                    mode="REQUEST"
+                    roleName={roleName}
+                    diff={pendingDiff}
+                    onConfirm={(reason) => handleApprovalRequest(reason)}
+                />
             </div>
         </RequirePermission>
     );
 };
+
 
 // Start of missing import block simulation (since I cannot actually import icons that are not installed, 
 // I rely on standard lucide-react which is installed)

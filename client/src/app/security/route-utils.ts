@@ -57,8 +57,10 @@ export const getFirstAllowedRoute = (
 /**
  * Finds the first valid leaf path from an ALREADY FILTERED menu tree.
  * Use this when you have the output of useMenu().
+ * 
+ * Supports both legacy 'path' (MenuItem) and new 'route' (AdminMenuItem).
  */
-export const findFirstPathFromMenu = (items: MenuItem[]): string | null => {
+export const findFirstPathFromMenu = (items: any[]): string | null => {
     for (const item of items) {
         // 1. Check Children (Containers)
         if (item.children && item.children.length > 0) {
@@ -67,9 +69,20 @@ export const findFirstPathFromMenu = (items: MenuItem[]): string | null => {
             continue;
         }
 
-        // 2. Leaf Node
-        if (item.path && item.path.trim() !== "") {
-            return item.path;
+        // 2. Leaf Node (Check 'route' OR 'path')
+        const link = item.route || item.path;
+
+        if (link && link.trim() !== "") {
+            // If it has a tab default, append it? 
+            // The logic in useMenu already does this? No, useMenu's 'getFirstAllowedRoute' is separate.
+            // But RootRedirect uses THIS function.
+            // Let's ensure query params are preserved if present in 'route'.
+
+            // Fix: If item has a default 'tab' property, append it if not present.
+            if (item.tab && !link.includes('?')) {
+                return `${link}?tab=${item.tab}`;
+            }
+            return link;
         }
     }
     return null;

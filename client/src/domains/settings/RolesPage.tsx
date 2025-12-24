@@ -367,10 +367,14 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const fetchRoles = async () => {
         setLoading(true);
         try {
-            const rolesData = await systemApi.getRoles();
+            const response = await systemApi.getRoles();
+            console.log("DEBUG: systemApi.getRoles response:", response);
+            const rolesData = (response as any).items || response;
+            console.log("DEBUG: rolesData extracted:", rolesData);
 
             // STRICT BACKEND MODE: No Mock Fallback
             const finalRoles = Array.isArray(rolesData) ? rolesData : [];
+            console.log("DEBUG: finalRoles array:", finalRoles);
 
             setRoles(finalRoles.map((r: any) => ({
                 id: r.id,
@@ -619,7 +623,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
 
             {/* Permission Editor Section (Visible when role selected) */}
             <div className="space-y-4 pt-4 border-t">
-                {selectedRole ? (
+                {true ? (
                     <Accordion type="single" collapsible defaultValue="permissions" className="w-full">
                         <AccordionItem value="permissions" className="border rounded-md bg-card overflow-hidden">
                             <AccordionTrigger className="hover:no-underline px-4 py-3 bg-muted/30 border-b">

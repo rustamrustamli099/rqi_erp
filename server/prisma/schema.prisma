@@ -155,6 +155,7 @@ model Role {
   approverId  String?
   approvalNote String?
   submittedById String?
+  createdById String?
 
   tenantId    String?
   tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -166,6 +167,7 @@ model Role {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
+  version     Int      @default(1)
 
   @@unique([tenantId, name])
   @@map("roles")

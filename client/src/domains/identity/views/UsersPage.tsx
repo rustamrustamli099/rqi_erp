@@ -18,10 +18,10 @@ export default function UsersPage() {
 
     // Permission Logic
     const canViewUsers = hasAny([
-        PermissionSlugs.PLATFORM.USERS.VIEW,
-        PermissionSlugs.PLATFORM.USERS.CONNECT_TO_EMPLOYEE
+        PermissionSlugs.SYSTEM.USERS.READ,
+        PermissionSlugs.SYSTEM.USERS.CONNECT_TO_EMPLOYEE
     ]);
-    const canViewCurators = hasAny([PermissionSlugs.PLATFORM.CURATORS.VIEW]);
+    const canViewCurators = hasAny([PermissionSlugs.SYSTEM.CURATORS.READ]);
 
     // Valid Tabs Calculation
     const validTabs: string[] = [];

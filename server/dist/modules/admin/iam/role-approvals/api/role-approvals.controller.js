@@ -18,14 +18,16 @@ const role_approvals_service_1 = require("../application/role-approvals.service"
 const jwt_auth_guard_1 = require("../../../../../platform/auth/jwt-auth.guard");
 const permissions_guard_1 = require("../../../../../platform/auth/permissions.guard");
 const swagger_1 = require("@nestjs/swagger");
+const create_role_change_request_dto_1 = require("./dto/create-role-change-request.dto");
+const reject_request_dto_1 = require("./dto/reject-request.dto");
 let RoleApprovalsController = class RoleApprovalsController {
     approvalsService;
     constructor(approvalsService) {
         this.approvalsService = approvalsService;
     }
-    async create(body, req) {
+    async create(dto, req) {
         const userId = req.user.sub || req.user.userId;
-        return this.approvalsService.submitRequest(body.roleId, userId, body.diff);
+        return this.approvalsService.submitRequest(dto.roleId, userId, dto.diff, dto.reason);
     }
     async findAll(status) {
         return this.approvalsService.findAll(status);
@@ -34,27 +36,26 @@ let RoleApprovalsController = class RoleApprovalsController {
         const userId = req.user.sub || req.user.userId;
         return this.approvalsService.approveRequest(id, userId);
     }
-    async reject(id, body, req) {
+    async reject(id, dto, req) {
         const userId = req.user.sub || req.user.userId;
-        if (!body.reason)
-            throw new common_1.BadRequestException('Reason is required');
-        return this.approvalsService.rejectRequest(id, body.reason, userId);
+        return this.approvalsService.rejectRequest(id, dto.reason, userId);
     }
 };
 exports.RoleApprovalsController = RoleApprovalsController;
 __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({ summary: 'Submit a role change request' }),
-    (0, permissions_guard_1.RequirePermissions)('role.manage'),
+    (0, permissions_guard_1.RequirePermissions)('system.roles.manage'),
+    (0, swagger_1.ApiBody)({ type: create_role_change_request_dto_1.CreateRoleChangeRequestDto }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [create_role_change_request_dto_1.CreateRoleChangeRequestDto, Object]),
     __metadata("design:returntype", Promise)
 ], RoleApprovalsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, permissions_guard_1.RequirePermissions)('role.view'),
+    (0, permissions_guard_1.RequirePermissions)('system.roles.view'),
     __param(0, (0, common_1.Query)('status')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -62,7 +63,7 @@ __decorate([
 ], RoleApprovalsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Post)(':id/approve'),
-    (0, permissions_guard_1.RequirePermissions)('role.approve'),
+    (0, permissions_guard_1.RequirePermissions)('system.roles.approve'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -71,12 +72,13 @@ __decorate([
 ], RoleApprovalsController.prototype, "approve", null);
 __decorate([
     (0, common_1.Post)(':id/reject'),
-    (0, permissions_guard_1.RequirePermissions)('role.approve'),
+    (0, permissions_guard_1.RequirePermissions)('system.roles.approve'),
+    (0, swagger_1.ApiBody)({ type: reject_request_dto_1.RejectRequestDto }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, reject_request_dto_1.RejectRequestDto, Object]),
     __metadata("design:returntype", Promise)
 ], RoleApprovalsController.prototype, "reject", null);
 exports.RoleApprovalsController = RoleApprovalsController = __decorate([

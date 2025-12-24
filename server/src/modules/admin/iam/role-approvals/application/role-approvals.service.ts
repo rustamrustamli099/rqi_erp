@@ -11,7 +11,7 @@ export class RoleApprovalsService {
     ) { }
 
     // 1. Submit a Change Request
-    async submitRequest(roleId: string, userId: string, diffJson: any = {}) {
+    async submitRequest(roleId: string, userId: string, diffJson: any = {}, reason?: string) {
         const role = await this.prisma.role.findUnique({ where: { id: roleId } });
         if (!role) throw new NotFoundException('Role not found');
 
@@ -30,6 +30,7 @@ export class RoleApprovalsService {
                 status: 'PENDING',
                 scope: role.tenantId ? 'TENANT' : 'SYSTEM',
                 diffJson: diffJson,
+                reason: reason
             }
         });
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,17 @@ import { Info, AlertTriangle, Shield, CreditCard, Bell, Lock, AlertCircle } from
 import { toast } from "sonner";
 
 export function BillingConfigForm() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentSubTab = searchParams.get('subTab') || 'pricing';
+
+    const handleTabChange = (value: string) => {
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('subTab', value);
+            return newParams;
+        }, { replace: true });
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -19,7 +31,7 @@ export function BillingConfigForm() {
                 <p className="text-sm text-muted-foreground">Qiymət, limitlər və billing qaydaları üçün qlobal konfiqurasiya.</p>
             </div>
 
-            <Tabs defaultValue="pricing" className="space-y-4">
+            <Tabs value={currentSubTab} onValueChange={handleTabChange} className="space-y-4">
                 <div className="w-full overflow-x-auto pb-2">
                     <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                         <TabsTrigger value="pricing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background">Qiymət Qaydaları</TabsTrigger>

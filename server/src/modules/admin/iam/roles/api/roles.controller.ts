@@ -1,14 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, BadRequestException, Query, Put } from '@nestjs/common';
 import { RolesService } from '../application/roles.service';
+import { RolePermissionsService } from '../application/role-permissions.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 import { JwtAuthGuard } from '../../../../../platform/auth/jwt-auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../../platform/auth/permissions.guard';
+import { PermissionCacheService } from '../../../../../platform/auth/permission-cache.service';
+import { ListQueryDto } from '../../../../../common/dto/pagination.dto';
 
 @Controller('admin/roles')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class RolesController {
-    constructor(private readonly rolesService: RolesService) { }
+    constructor(
+        private readonly rolesService: RolesService,
+        private readonly rolePermissionsService: RolePermissionsService
+    ) { }
+
+    @Put(':id/permissions')
+    @RequirePermissions('system.roles.manage_permissions') // Make sure this permission exists or use a generic one
+    updatePermissions(
+        @Param('id') id: string,
+        @Body() dto: UpdateRolePermissionsDto,
+        @Request() req
+    ) {
+        const userId = req.user.sub || req.user.userId;
+        return this.rolePermissionsService.updateRolePermissions(userId, id, dto);
+    }
 
     @Post()
     create(@Body() createRoleDto: CreateRoleDto, @Request() req) {
@@ -18,8 +36,14 @@ export class RolesController {
     }
 
     @Get()
-    findAll(@Query('scope') scope?: 'SYSTEM' | 'TENANT') {
-        return this.rolesService.findAll(scope);
+    findAll(@Query() query: ListQueryDto) {
+        return this.rolesService.findAll(query);
+    }
+
+    @Get('debug-check')
+    @UseGuards() // Public for debug (bypass PermissionsGuard if needed, but risky)
+    async debugCheck() {
+        return this.rolesService.debugCount();
     }
 
     @Get(':id')

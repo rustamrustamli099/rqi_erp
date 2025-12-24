@@ -42,5 +42,8 @@ export function RootRedirect() {
     }
 
     // Success: Redirect to calculated leaf node
+    // Debug Log to diagnose loop
+    console.log(`[RootRedirect] Navigating to: ${targetRoute}`);
+
     return <Navigate to={targetRoute} replace />;
 }

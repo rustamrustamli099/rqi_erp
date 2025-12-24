@@ -269,6 +269,7 @@ export function PermissionTreeEditor({ permissions = [], selectedSlugs = [], onC
                         />
                     ))
                 ) : (
+
                     <div className="text-center py-16 text-muted-foreground flex flex-col items-center border-2 border-dashed rounded-xl bg-muted/5">
                         <ShieldAlert className="w-12 h-12 text-muted-foreground/20 mb-3" />
                         <p className="font-medium text-lg">Göstəriləcək icazə tapılmadı.</p>

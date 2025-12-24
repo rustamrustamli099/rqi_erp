@@ -1,5 +1,6 @@
 
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
     flexRender,
     getCoreRowModel,
@@ -59,16 +60,41 @@ import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
 
 export function DictionariesTab() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentSubTab = searchParams.get('subTab') || 'sectors';
+
+    const handleTabChange = (value: string) => {
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('subTab', value);
+            return newParams;
+        }, { replace: true });
+    };
+
     return (
         <div className="space-y-4">
-            <Tabs defaultValue="sectors" className="w-full">
+            <Tabs value={currentSubTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full h-auto flex-wrap grid-cols-2 md:grid-cols-5 gap-1">
+                    <TabsTrigger value="currency">Valyutalar</TabsTrigger>
+                    <TabsTrigger value="country">Ölkələr</TabsTrigger>
+                    <TabsTrigger value="city">Şəhərlər</TabsTrigger>
                     <TabsTrigger value="sectors">Sektorlar</TabsTrigger>
                     <TabsTrigger value="units">Ölçü Vahidləri</TabsTrigger>
-                    <TabsTrigger value="currencies">Valyutalar</TabsTrigger>
-                    <TabsTrigger value="address">Ünvanlar</TabsTrigger>
                     <TabsTrigger value="timezones">Zaman Zonaları</TabsTrigger>
+                    <TabsTrigger value="address">Ünvanlar</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="currency" className="space-y-4 mt-4">
+                    <CurrenciesManager />
+                </TabsContent>
+
+                <TabsContent value="country" className="space-y-4 mt-4">
+                    <AddressSettingsTab />
+                </TabsContent>
+
+                <TabsContent value="city" className="space-y-4 mt-4">
+                    <AddressSettingsTab />
+                </TabsContent>
 
                 <TabsContent value="sectors" className="space-y-4 mt-4">
                     <SectorsManager />
@@ -78,19 +104,11 @@ export function DictionariesTab() {
                     <UnitsManager />
                 </TabsContent>
 
-                <TabsContent value="currencies" className="space-y-4 mt-4">
-                    <CurrenciesManager />
-                </TabsContent>
-
-                <TabsContent value="address" className="space-y-4 mt-4">
-                    <AddressSettingsTab />
-                </TabsContent>
-
                 <TabsContent value="timezones" className="space-y-4 mt-4">
                     <TimezoneSettingsTab />
                 </TabsContent>
             </Tabs>
-        </div>
+        </div >
     )
 }
 

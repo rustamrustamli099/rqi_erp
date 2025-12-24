@@ -15,21 +15,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesController = void 0;
 const common_1 = require("@nestjs/common");
 const roles_service_1 = require("../application/roles.service");
+const role_permissions_service_1 = require("../application/role-permissions.service");
 const create_role_dto_1 = require("./dto/create-role.dto");
 const update_role_dto_1 = require("./dto/update-role.dto");
+const update_role_permissions_dto_1 = require("./dto/update-role-permissions.dto");
 const jwt_auth_guard_1 = require("../../../../../platform/auth/jwt-auth.guard");
 const permissions_guard_1 = require("../../../../../platform/auth/permissions.guard");
+const pagination_dto_1 = require("../../../../../common/dto/pagination.dto");
 let RolesController = class RolesController {
     rolesService;
-    constructor(rolesService) {
+    rolePermissionsService;
+    constructor(rolesService, rolePermissionsService) {
         this.rolesService = rolesService;
+        this.rolePermissionsService = rolePermissionsService;
+    }
+    updatePermissions(id, dto, req) {
+        const userId = req.user.sub || req.user.userId;
+        return this.rolePermissionsService.updateRolePermissions(userId, id, dto);
     }
     create(createRoleDto, req) {
         const userId = req.user.sub || req.user.userId;
         return this.rolesService.create(createRoleDto, userId);
     }
-    findAll(scope) {
-        return this.rolesService.findAll(scope);
+    findAll(query) {
+        return this.rolesService.findAll(query);
+    }
+    async debugCheck() {
+        return this.rolesService.debugCount();
     }
     findOne(id) {
         return this.rolesService.findOne(id);
@@ -54,6 +66,16 @@ let RolesController = class RolesController {
 };
 exports.RolesController = RolesController;
 __decorate([
+    (0, common_1.Put)(':id/permissions'),
+    (0, permissions_guard_1.RequirePermissions)('system.roles.manage_permissions'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_role_permissions_dto_1.UpdateRolePermissionsDto, Object]),
+    __metadata("design:returntype", void 0)
+], RolesController.prototype, "updatePermissions", null);
+__decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
@@ -63,11 +85,18 @@ __decorate([
 ], RolesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('scope')),
+    __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [pagination_dto_1.ListQueryDto]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('debug-check'),
+    (0, common_1.UseGuards)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], RolesController.prototype, "debugCheck", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -111,6 +140,7 @@ __decorate([
 exports.RolesController = RolesController = __decorate([
     (0, common_1.Controller)('admin/roles'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
-    __metadata("design:paramtypes", [roles_service_1.RolesService])
+    __metadata("design:paramtypes", [roles_service_1.RolesService,
+        role_permissions_service_1.RolePermissionsService])
 ], RolesController);
 //# sourceMappingURL=roles.controller.js.map

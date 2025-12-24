@@ -1,6 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { useAuth } from '@/domains/auth/context/AuthContext';
+import { useMenu } from '@/app/navigation/useMenu';
+import { findFirstPathFromMenu } from '@/app/security/route-utils';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 
@@ -42,12 +44,23 @@ export const ProtectedRoute = ({
         ? hasAll(perms)
         : hasAny(perms);
 
-    // Diagnostic Log (Phase 31)
+    // Diagnostic Log
     if (!hasAccess) {
-        console.warn("[ProtectedRoute] DENIED:", location.pathname, "Req:", perms, "User:", isAuthenticated);
+        console.warn("[ProtectedRoute] DENIED:", location.pathname, "Req:", perms);
     }
 
+    // SAP-Grade Friendly Redirect (Task D)
+    const { menu } = useMenu();
+
     if (!hasAccess) {
+        const target = findFirstPathFromMenu(menu);
+
+        // Prevent Loop: If target is same as current (unlikely due to perm check) or null
+        // Also check if we are ALREADY at /access-denied
+        if (target && target !== location.pathname + location.search) {
+            return <Navigate to={target} replace />;
+        }
+
         return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />;
     }
 

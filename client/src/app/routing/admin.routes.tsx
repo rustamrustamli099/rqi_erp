@@ -83,7 +83,7 @@ export default function AdminRoutes() {
             } />
 
             {/* System Console */}
-            <Route path="console" element={
+            <Route path="system-console" element={
                 <ProtectedRoute
                     requiredPermissions={[
                         PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ,
@@ -128,8 +128,8 @@ export default function AdminRoutes() {
             <Route path="billing/*" element={
                 <ProtectedRoute
                     requiredPermissions={[
-                        PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.VIEW,
-                        PermissionSlugs.SYSTEM.BILLING.PACKAGES.VIEW,
+                        PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.READ,
+                        PermissionSlugs.SYSTEM.BILLING.PACKAGES.READ,
                         PermissionSlugs.SYSTEM.BILLING.PLANS.READ,
                         PermissionSlugs.SYSTEM.BILLING.INVOICES.READ,
                         PermissionSlugs.SYSTEM.BILLING.LICENSES.READ
@@ -148,16 +148,15 @@ export default function AdminRoutes() {
             } />
 
             {/* Settings */}
-            {/* Settings */}
             <Route path="settings" element={
                 <ProtectedRoute
                     requiredPermissions={[
-                        PermissionSlugs.SYSTEM.SETTINGS.GENERAL.VIEW,
-                        PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.VIEW,
-                        PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.VIEW,
-                        PermissionSlugs.SYSTEM.SETTINGS.SECURITY.VIEW,
-                        PermissionSlugs.SYSTEM.ROLES.VIEW,
-                        PermissionSlugs.SYSTEM.SETTINGS.CONFIG.VIEW
+                        PermissionSlugs.SYSTEM.SETTINGS.GENERAL.READ,
+                        PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.READ,
+                        PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ,
+                        PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ,
+                        PermissionSlugs.SYSTEM.ROLES.READ,
+                        PermissionSlugs.SYSTEM.SETTINGS.CONFIG.READ
                     ]}
                     mode="any"
                 >

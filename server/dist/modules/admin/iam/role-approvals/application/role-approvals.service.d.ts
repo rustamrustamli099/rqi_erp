@@ -4,7 +4,7 @@ export declare class RoleApprovalsService {
     private prisma;
     private auditService;
     constructor(prisma: PrismaService, auditService: AuditService);
-    submitRequest(roleId: string, userId: string, diffJson?: any): Promise<{
+    submitRequest(roleId: string, userId: string, diffJson?: any, reason?: string): Promise<{
         id: string;
         scope: string;
         roleId: string;
@@ -54,9 +54,11 @@ export declare class RoleApprovalsService {
             approverId: string | null;
             approvalNote: string | null;
             submittedById: string | null;
+            createdById: string | null;
             tenantId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            version: number;
         };
     } & {
         id: string;

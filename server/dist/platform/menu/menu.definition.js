@@ -208,19 +208,19 @@ exports.ADMIN_MENU_TREE = [
                                         id: 'country',
                                         label: 'Ölkələr',
                                         path: '/admin/settings?tab=dictionaries&entity=country',
-                                        permission: perms_1.PERMISSIONS.settings.system_configurations.dictionary.addresses.country.view
+                                        permission: perms_1.PERMISSIONS.settings.system_configurations.dictionary.addresses.read_country
                                     },
                                     {
                                         id: 'city',
                                         label: 'Şəhərlər',
                                         path: '/admin/settings?tab=dictionaries&entity=city',
-                                        permission: perms_1.PERMISSIONS.settings.system_configurations.dictionary.addresses.city.view
+                                        permission: perms_1.PERMISSIONS.settings.system_configurations.dictionary.addresses.read_city
                                     },
                                     {
                                         id: 'district',
                                         label: 'Rayonlar',
                                         path: '/admin/settings?tab=dictionaries&entity=district',
-                                        permission: perms_1.PERMISSIONS.settings.system_configurations.dictionary.addresses.district.view
+                                        permission: perms_1.PERMISSIONS.settings.system_configurations.dictionary.addresses.read_district
                                     },
                                 ]
                             }

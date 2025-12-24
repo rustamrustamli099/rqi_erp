@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RolesService } from './application/roles.service';
+import { RolePermissionsService } from './application/role-permissions.service';
 import { RolesController } from './api/roles.controller';
 import { PrismaService } from '../../../../prisma.service';
 import { PermissionCacheService } from '../../../../platform/auth/permission-cache.service';
@@ -13,6 +14,6 @@ import { AuthModule } from '../../../../platform/auth/auth.module'; // Or path t
 @Module({
     imports: [],
     controllers: [RolesController],
-    providers: [RolesService, PrismaService, PermissionCacheService, AuditService]
+    providers: [RolesService, RolePermissionsService, PrismaService, PermissionCacheService, AuditService]
 })
 export class RolesModule { }
