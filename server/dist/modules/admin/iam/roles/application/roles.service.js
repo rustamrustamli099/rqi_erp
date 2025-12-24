@@ -229,7 +229,30 @@ let RolesService = class RolesService {
                 oldPermissionsMap.set(rp.permission.slug, rp.permissionId);
             });
             const oldSlugs = Array.from(oldPermissionsMap.keys());
-            const newSlugsUnique = [...new Set(dto.permissionIds)];
+            let newSlugsUnique = [...new Set(dto.permissionIds)];
+            const potentialReadSlugs = new Set();
+            newSlugsUnique.forEach(slug => {
+                const parts = slug.split('.');
+                if (parts.length > 1) {
+                    const action = parts[parts.length - 1];
+                    if (action !== 'read' && action !== 'view') {
+                        const base = parts.slice(0, parts.length - 1).join('.');
+                        potentialReadSlugs.add(`${base}.read`);
+                        potentialReadSlugs.add(`${base}.view`);
+                    }
+                }
+            });
+            if (potentialReadSlugs.size > 0) {
+                const existingReadPerms = await this.prisma.permission.findMany({
+                    where: { slug: { in: Array.from(potentialReadSlugs) } },
+                    select: { slug: true }
+                });
+                existingReadPerms.forEach(p => {
+                    if (!newSlugsUnique.includes(p.slug)) {
+                        newSlugsUnique.push(p.slug);
+                    }
+                });
+            }
             const validNewPermissions = await this.prisma.permission.findMany({
                 where: { slug: { in: newSlugsUnique } }
             });

@@ -267,7 +267,45 @@ export class RolesService {
             const oldSlugs = Array.from(oldPermissionsMap.keys());
 
             // 2. New Permissions (New State) - From Payload
-            const newSlugsUnique = [...new Set(dto.permissionIds)]; // Dedupe
+            let newSlugsUnique = [...new Set(dto.permissionIds)]; // Dedupe
+
+            // --- AUTO-READ RULE (SAP / Oracle Standard) ---
+            // If any action exists (create, update, delete, etc.), ensure 'read' is present.
+            // Heuristic: Replace last segment with 'read' OR 'view' (based on convention).
+            // Convention Check: Most are *.read, some might be *.view. 
+            // We'll perform a DB lookup optimization: If we generate a slug, does it exist?
+
+            // 2a. Generate Potential Read Slugs
+            const potentialReadSlugs = new Set<string>();
+            newSlugsUnique.forEach(slug => {
+                const parts = slug.split('.');
+                if (parts.length > 1) {
+                    const action = parts[parts.length - 1];
+                    // If action is NOT read/view, we propose read/view
+                    if (action !== 'read' && action !== 'view') {
+                        const base = parts.slice(0, parts.length - 1).join('.');
+                        potentialReadSlugs.add(`${base}.read`);
+                        potentialReadSlugs.add(`${base}.view`);
+                    }
+                }
+            });
+
+            // 2b. Verify which actually exist in DB
+            if (potentialReadSlugs.size > 0) {
+                const existingReadPerms = await this.prisma.permission.findMany({
+                    where: { slug: { in: Array.from(potentialReadSlugs) } },
+                    select: { slug: true }
+                });
+
+                // 2c. Add valid implicit read permissions
+                existingReadPerms.forEach(p => {
+                    if (!newSlugsUnique.includes(p.slug)) {
+                        newSlugsUnique.push(p.slug);
+                    }
+                });
+            }
+            // ----------------------------------------------
+
             const validNewPermissions = await this.prisma.permission.findMany({
                 where: { slug: { in: newSlugsUnique } }
             });

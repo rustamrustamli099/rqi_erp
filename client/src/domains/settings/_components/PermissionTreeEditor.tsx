@@ -103,25 +103,34 @@ function PermissionRow({
         ]
 
         const handleSmartChange = (values: string[]) => {
-            console.log("[SmartChange] Input:", values, "State:", { isFullAccess, isHidden })
             const hasAll = values.includes("__ALL__")
             const hasNone = values.includes("__NONE__")
 
             let newClusterSlugs: string[] = []
 
             if (hasAll && !isFullAccess) {
-                console.log("-> Select ALL triggered")
                 newClusterSlugs = realOptions.map(o => o.value)
             } else if (isFullAccess && !hasAll && !hasNone) {
-                console.log("-> Uncheck ALL triggered (Clearing)")
                 newClusterSlugs = []
             } else if (hasNone && !isHidden) {
-                console.log("-> HIDE triggered (Clearing)")
                 newClusterSlugs = []
             } else {
-                console.log("-> Standard Update")
                 newClusterSlugs = values.filter(v => v !== "__ALL__" && v !== "__NONE__")
             }
+
+            // --- AUTO-READ LOGIC (Frontend UX) ---
+            // If any permission is selected in this cluster (which represents a module/entity),
+            // and there is a "read" or "view" permission in this cluster, ensure it is selected.
+            if (newClusterSlugs.length > 0) {
+                const readNode = node.children!.find(c => c.id.endsWith('.read') || c.id.endsWith('.view'));
+                if (readNode) {
+                    if (!newClusterSlugs.includes(readNode.id)) {
+                        newClusterSlugs.push(readNode.id);
+                        // Optional: Toast "Read permission auto-selected"
+                    }
+                }
+            }
+            // -------------------------------------
 
             const otherSlugs = selectedSlugs.filter(s => !leafSlugs.includes(s))
             onChange([...otherSlugs, ...newClusterSlugs])
