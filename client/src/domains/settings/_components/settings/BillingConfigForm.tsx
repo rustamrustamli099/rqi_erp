@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -13,15 +12,16 @@ import { Info, AlertTriangle, Shield, CreditCard, Bell, Lock, AlertCircle } from
 import { toast } from "sonner";
 
 export function BillingConfigForm() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const currentSubTab = searchParams.get('subTab') || 'pricing';
+    // Read subTab from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSubTab = urlParams.get('subTab') || 'pricing';
+    const [currentSubTab, setCurrentSubTab] = useState(initialSubTab);
 
     const handleTabChange = (value: string) => {
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set('subTab', value);
-            return newParams;
-        }, { replace: true });
+        setCurrentSubTab(value);
+        // Update URL with correct parent tab
+        const newUrl = `${window.location.pathname}?tab=billing_config&subTab=${value}`;
+        window.history.replaceState(null, '', newUrl);
     };
 
     return (

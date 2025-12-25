@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { PermissionSlugs } from "@/app/security/permission-slugs"
@@ -63,10 +63,10 @@ export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
     const { can, isLoading } = usePermissions()
 
-    // Read initial tab from URL, then use local state for subsequent changes
+    // Read initial tab from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const initialTab = urlParams.get('tab') || 'general';
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const urlTab = urlParams.get('tab') || 'general';
+    const [activeTab, setActiveTab] = useState(urlTab);
 
     // Handler for tab change - update local state AND URL
     const handleTabChange = (tabId: string) => {
@@ -93,11 +93,42 @@ export default function SettingsPage() {
         ...group,
         items: group.items.filter(item => {
             if (!item.permission) return true;
-            return can(item.permission);
+            const hasPermission = can(item.permission);
+            // Debug dictionaries specifically
+            if (item.id === 'dictionaries') {
+                console.log('[SettingsPage] DICTIONARIES check:', {
+                    id: item.id,
+                    permission: item.permission,
+                    hasPermission
+                });
+            }
+            return hasPermission;
         })
     })).filter(group => group.items.length > 0);
 
     const allVisibleItems = visibleSidebarGroups.flatMap(g => g.items);
+    const visibleIds = allVisibleItems.map(i => i.id);
+
+    // After permissions load, validate URL tab and sync if needed
+    useEffect(() => {
+        const currentUrlTab = new URLSearchParams(window.location.search).get('tab');
+
+        // If URL has a tab, check if it's valid (user has permission)
+        if (currentUrlTab && visibleIds.includes(currentUrlTab)) {
+            // URL tab is valid - use it
+            if (activeTab !== currentUrlTab) {
+                console.log('[SettingsPage] Syncing valid URL tab:', currentUrlTab);
+                setActiveTab(currentUrlTab);
+            }
+        } else if (currentUrlTab && !visibleIds.includes(currentUrlTab) && visibleIds.length > 0) {
+            // URL tab exists but user has no permission - fallback to first visible
+            const fallback = visibleIds[0];
+            console.log('[SettingsPage] URL tab not permitted, falling back to:', fallback);
+            setActiveTab(fallback);
+            // Update URL to reflect actual tab
+            window.history.replaceState(null, '', `${window.location.pathname}?tab=${fallback}`);
+        }
+    }, [visibleIds.join(',')]); // Re-run when visible tabs change
 
     if (allVisibleItems.length === 0) {
         return (
@@ -108,7 +139,7 @@ export default function SettingsPage() {
     }
 
     // Debug log
-    console.log('[SettingsPage] Tab State:', { activeTab, visibleIds: allVisibleItems.map(i => i.id) });
+    console.log('[SettingsPage] Tab State:', { activeTab, visibleIds });
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">

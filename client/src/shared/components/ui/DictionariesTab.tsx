@@ -60,11 +60,23 @@ import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
 
 export function DictionariesTab() {
-    const [currentSubTab, setCurrentSubTab] = useState('sectors');
+    // Read subTab from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSubTab = urlParams.get('subTab') || 'sectors';
+    const [currentSubTab, setCurrentSubTab] = useState(initialSubTab);
+
+    // Handler for subTab change - update state AND URL
+    const handleSubTabChange = (value: string) => {
+        setCurrentSubTab(value);
+        // Update URL to keep subTab in sync
+        const currentTab = urlParams.get('tab') || 'dictionaries';
+        const newUrl = `${window.location.pathname}?tab=${currentTab}&subTab=${value}`;
+        window.history.replaceState(null, '', newUrl);
+    };
 
     return (
         <div className="space-y-4">
-            <Tabs value={currentSubTab} onValueChange={setCurrentSubTab} className="w-full">
+            <Tabs value={currentSubTab} onValueChange={handleSubTabChange} className="w-full">
                 {/* Horizontal scrollable tabs */}
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                     <TabsList className="inline-flex w-max gap-1 h-10 justify-start">
