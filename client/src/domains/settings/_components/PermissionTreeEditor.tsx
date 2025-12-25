@@ -10,14 +10,8 @@ import {
     CollapsibleContent,
 } from "@/shared/components/ui/collapsible"
 
-export interface PermissionNode {
-    id: string
-    label: string
-    description?: string
-    isDangerous?: boolean
-    scope?: 'SYSTEM' | 'TENANT' | 'COMMON'
-    children?: PermissionNode[]
-}
+import { getLeafSlugs } from "./permission-utils"
+import type { PermissionNode } from "./permission-utils"
 
 interface PermissionTreeEditorProps {
     permissions: PermissionNode[]
@@ -26,12 +20,6 @@ interface PermissionTreeEditorProps {
     className?: string
 }
 
-const getLeafSlugs = (node: PermissionNode): string[] => {
-    if (!node.children || node.children.length === 0) {
-        return [node.id]
-    }
-    return node.children.flatMap(getLeafSlugs)
-}
 
 function PermissionRow({
     node,

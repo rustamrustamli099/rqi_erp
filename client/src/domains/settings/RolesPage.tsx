@@ -26,7 +26,7 @@ import {
     PopoverTrigger,
 } from "@/shared/components/ui/popover"
 import { Badge } from "@/shared/components/ui/badge"
-import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List, History, CheckCircle2, XCircle, FileText, Download, Building2, Terminal, Loader2 } from "lucide-react"
+import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List, History, CheckCircle2, XCircle, FileText, Download, Building2, Terminal, Loader2, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/shared/components/ui/button"
@@ -312,6 +312,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
     const [isDiffOpen, setIsDiffOpen] = useState(false) // For review dialog
     const [isPreviewOpen, setIsPreviewOpen] = useState(false) // For Simulator
+    const [currentTab, setCurrentTab] = useState("list")
 
     // Handlers
     const handleCreateRole = async (values: any) => {
@@ -601,9 +602,9 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     // Now handleRoleSelect is the single source of truth for setting current role and permissions.
 
     // Trigger review dialog
-    const handlePermissionsSaveClick = () => {
-        setIsDiffOpen(true);
-    }
+    // const handlePermissionsSaveClick = () => {
+    //     setIsDiffOpen(true);
+    // }
 
     // Actually save after confirmation
     // Actually save after confirmation
@@ -640,6 +641,36 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
         setDialogOpen(true)
     }
 
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSavePermissions = async () => {
+        if (!currentRole) return;
+        setIsSaving(true);
+        try {
+            await systemApi.updateRole(currentRole.id, {
+                // Partial update relying on backend handling or sending existing values
+                name: currentRole.name,
+                description: currentRole.description,
+                scope: currentRole.scope,
+                permissionIds: selectedPermissions
+            });
+            toast.success("İcazələr yadda saxlanıldı");
+            fetchRoles();
+            // Update current role local state to reflect new permissions? 
+            // fetchRoles updates list, but currentRole might need refresh if we stay on it.
+            // For now good enough.
+        } catch (error: any) {
+            toast.error("Xəta baş verdi: " + error.message)
+        } finally {
+            setIsSaving(false);
+            setIsDiffOpen(false);
+        }
+    };
+
+    const handlePermissionChange = (newSlugs: string[]) => {
+        setSelectedPermissions(newSlugs);
+    };
+
     return (
         <div className="space-y-4">
 
@@ -650,10 +681,10 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
 
             {/* TABS ARCHITECTURE */}
             {/* TABS ARCHITECTURE */}
-            <Tabs defaultValue="list" className="w-full">
-                <div className="flex items-center justify-between mb-4">
-                    <TabsList>
-                        <TabsTrigger value="list" className="flex items-center gap-2">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="h-full space-y-6">
+                <div className="flex items-center justify-between">
+                    <TabsList className="bg-muted/50 p-1">
+                        <TabsTrigger value="list" className="gap-2">
                             <List className="w-4 h-4" />
                             Rollar Siyahısı
                         </TabsTrigger>
@@ -732,39 +763,47 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 </TabsContent>
 
                 <TabsContent value="matrix">
-                    <PermissionMatrix />
+                    <PermissionMatrix roles={roles} />
                 </TabsContent>
             </Tabs>
 
-            {/* Permission Editor Section (Visible when role selected) */}
-            <div className="space-y-4 pt-4 border-t">
-                {true ? (
-                    <Accordion type="single" collapsible defaultValue="permissions" className="w-full">
-                        <AccordionItem value="permissions" className="border rounded-md bg-card overflow-hidden">
-                            <AccordionTrigger className="hover:no-underline px-4 py-3 bg-muted/30 border-b">
-                                <div className="flex items-center gap-2">
-                                    <Shield className="h-5 w-5 text-primary" />
+            {/* Permission Editor Section (Visible ONLY in list view) */}
+            {currentTab === 'list' && (
+                <div className="space-y-4 pt-4 border-t">
+                    {currentRole ? (
+                        <Accordion type="single" collapsible defaultValue="permissions" className="w-full">
+                            <AccordionItem value="permissions" className="border rounded-md bg-card overflow-hidden">
+                                <AccordionTrigger className="hover:no-underline px-4 py-3 bg-muted/30 border-b">
                                     <div className="flex items-center gap-2">
-                                        <h3 className="text-lg font-semibold">İcazələr: <span className="text-primary">{selectedRole}</span></h3>
-                                        {currentRole?.scope === "SYSTEM" ? (
-                                            <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">System Scope</Badge>
-                                        ) : (
-                                            <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">Tenant Scope</Badge>
-                                        )}
+                                        <Shield className="h-5 w-5 text-primary" />
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-lg font-semibold">İcazələr: <span className="text-primary">{selectedRole}</span></h3>
+                                            {currentRole.scope === "SYSTEM" ? (
+                                                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">System Scope</Badge>
+                                            ) : (
+                                                <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-200">Tenant Scope</Badge>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                {permissionsLoading ? (
-                                    <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
-                                        <Loader2 className="h-8 w-8 animate-spin mb-2 text-primary" />
-                                        <p>İcazələr yüklənir...</p>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-0">
+                                    <div className="p-4 bg-muted/5 border-b flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-background px-3 py-1.5 rounded-md border shadow-sm">
+                                            <Info className="h-4 w-4 text-blue-500" />
+                                            <span>Dəyişikliklər avtomatik yadda saxlanılır.</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button size="sm" variant="secondary" onClick={() => setIsPreviewOpen(true)}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                Simulyasiya (Preview)
+                                            </Button>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="p-4 space-y-4">
+
+                                    {/* Permission Tree Editor */}
+                                    <div className="p-6 bg-card min-h-[500px]">
                                         {(() => {
-                                            const activeRoleObj = roles.find(r => r.name === selectedRole);
-                                            const roleScope = activeRoleObj?.scope || "TENANT";
+                                            const roleScope = currentRole?.scope || "TENANT";
 
                                             // SAP FILTERING RULE: 
                                             // System Role -> Only System/Common permissions
@@ -783,33 +822,37 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                                                 <PermissionTreeEditor
                                                     permissions={filteredTree}
                                                     selectedSlugs={selectedPermissions}
-                                                    onChange={setSelectedPermissions}
+                                                    onChange={handlePermissionChange}
                                                 />
                                             );
                                         })()}
+                                    </div>
 
-                                        <div className="pt-4 flex justify-end gap-2">
-                                            <Button size="lg" variant="secondary" onClick={() => setIsPreviewOpen(true)}>
-                                                <Eye className="mr-2 h-4 w-4" />
-                                                Simulyasiya (Preview)
+                                    <div className="p-4 bg-muted/30 border-t flex justify-between items-center">
+                                        <div className="text-xs text-muted-foreground">
+                                            * Qırmızı (Təhlükəli) icazələr xüsusi təsdiq tələb edə bilər.
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button variant="ghost" onClick={() => setSelectedPermissions(originalPermissions)}>
+                                                Ləğv et
                                             </Button>
-                                            <Button size="lg" onClick={handlePermissionsSaveClick}>
-                                                Yadda Saxla
+                                            <Button onClick={() => setIsDiffOpen(true)} disabled={isSaving}>
+                                                {isSaving ? "Yadda saxlanılır..." : "Yadda Saxla"}
                                             </Button>
                                         </div>
                                     </div>
-                                )}
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                ) : (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg text-muted-foreground bg-muted/5">
-                        <Shield className="h-12 w-12 opacity-20 mb-4" />
-                        <h3 className="text-lg font-medium">İcazələri redaktə etmək üçün cədvəldən rol seçin</h3>
-                        <p className="text-sm opacity-70">Sistem və ya Tenant rollarından birini seçərək davam edin.</p>
-                    </div>
-                )}
-            </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg text-muted-foreground bg-muted/5">
+                            <Shield className="h-12 w-12 opacity-20 mb-4" />
+                            <h3 className="text-lg font-medium">İcazələri redaktə etmək üçün cədvəldən rol seçin</h3>
+                            <p className="text-sm opacity-70">Sistem və ya Tenant rollarından birini seçərək davam edin.</p>
+                        </div>
+                    )}
+                </div>
+            )}
 
 
             {/* Shared Reusable Modal */}
@@ -858,7 +901,9 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
 
                     <DialogFooter className="gap-2 sm:gap-0">
                         <Button variant="outline" onClick={() => setIsDiffOpen(false)}>Ləğv et</Button>
-                        <Button onClick={confirmPermissionsSave}>Təsdiqlə və Yadda Saxla</Button>
+                        <Button onClick={handleSavePermissions} disabled={isSaving}>
+                            {isSaving ? "Yadda saxlanılır..." : "Təsdiqlə və Yadda Saxla"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

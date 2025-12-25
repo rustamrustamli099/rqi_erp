@@ -86,21 +86,43 @@ const isDangerous = (action: string) => {
  * @param obj The object value of the current module
  * @param prefix The dot-notation prefix for slugs (e.g. "system.settings")
  */
-const buildNode = (key: string, obj: any, prefix: string): PermissionNode => {
+// Scope Definition
+const SCOPE_MAP: Record<string, 'SYSTEM' | 'TENANT' | 'COMMON'> = {
+    dashboard: 'COMMON',
+    tenants: 'SYSTEM',
+    branches: 'TENANT', // Tenants manage branches
+    users: 'COMMON',
+    curators: 'SYSTEM',
+    billing: 'SYSTEM', // Platform billing management
+    approvals: 'COMMON',
+    file_manager: 'COMMON',
+    system_guide: 'COMMON',
+    settings: 'COMMON',
+    system_console: 'SYSTEM',
+    developer_hub: 'SYSTEM',
+};
+
+const getScope = (key: string, parentScope?: 'SYSTEM' | 'TENANT' | 'COMMON'): 'SYSTEM' | 'TENANT' | 'COMMON' => {
+    if (SCOPE_MAP[key]) return SCOPE_MAP[key];
+    return parentScope || 'COMMON'; // Default inherit or Common
+};
+
+const buildNode = (key: string, obj: any, prefix: string, parentScope?: 'SYSTEM' | 'TENANT' | 'COMMON'): PermissionNode => {
     const currentSlug = prefix ? `${prefix}.${key}` : key;
     const label = formatLabel(key);
+    const scope = getScope(key, parentScope);
 
     const subKeys = Object.keys(obj).filter(k => k !== 'perms');
     const hasPerms = Array.isArray(obj.perms) && obj.perms.length > 0;
     const hasSubs = subKeys.length > 0;
 
-    // CASE 1: Group Node (Has Subs) - IGNORE Direct Perms
-    // User Requirement: If a node has sub-menus, do NOT show its own 'view'/'read' perms.
+    // CASE 1: Group Node (Has Subs)
     if (hasSubs) {
         return {
             id: currentSlug,
             label: label,
-            children: subKeys.map(subKey => buildNode(subKey, obj[subKey], currentSlug))
+            scope: scope,
+            children: subKeys.map(subKey => buildNode(subKey, obj[subKey], currentSlug, scope))
         };
     }
 
@@ -109,36 +131,35 @@ const buildNode = (key: string, obj: any, prefix: string): PermissionNode => {
         return {
             id: currentSlug,
             label: label,
+            scope: scope,
             children: obj.perms.map((action: string) => ({
                 id: `${currentSlug}.${action}`,
                 label: formatAction(action),
+                scope: scope, // Inherit scope for actions
                 isDangerous: isDangerous(action)
             }))
         };
     }
 
-    // Fallback (Empty Node)
+    // Fallback
     return {
         id: currentSlug,
         label: label,
+        scope: scope,
         children: []
     };
 };
 
 // Generate the Tree
+// Flatten the top level. The 'system' prefix in original code (line 130) implied all are system.
+// We should likely keep the prefix if existing data relies on it. "system.dashboard.read".
+// If I change prefix, I break DB. I will keep "system" prefix for now as 'namespace', not scope.
 const rawTree = Object.keys(admin_panel_permissions).map(key =>
     buildNode(key, (admin_panel_permissions as any)[key], "system")
 );
 
-// Wrap in Root Node if needed, or export array
-export const permissionsStructure: PermissionNode[] = [
-    {
-        id: "admin_panel",
-        label: "Admin Paneli",
-        scope: "SYSTEM",
-        children: rawTree
-    }
-];
+// Export flattened tree for better filtering
+export const permissionsStructure: PermissionNode[] = rawTree;
 
 // Lookup Helper
 export const getPermissionLabel = (slug: string): string => {

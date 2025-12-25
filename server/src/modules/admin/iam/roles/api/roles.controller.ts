@@ -75,8 +75,9 @@ export class RolesController {
     }
 
     @Post(':id/reject')
-    reject(@Param('id') id: string, @Body('reason') reason: string) {
+    reject(@Param('id') id: string, @Body('reason') reason: string, @Request() req) {
         if (!reason) throw new BadRequestException('Reason is required');
-        return this.rolesService.reject(id, reason);
+        const userId = req.user.sub || req.user.userId;
+        return this.rolesService.reject(id, reason, userId);
     }
 }

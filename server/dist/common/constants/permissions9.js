@@ -1,7 +1,7 @@
-export const PERMISSIONS = {
-    // =============================================================================
-    // 🌍 SYSTEM ADMIN PANEL
-    // =============================================================================
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SCOPES = exports.PERMISSIONS = void 0;
+exports.PERMISSIONS = {
     SYSTEM: {
         DASHBOARD: {
             VIEW: { slug: 'system:dashboard:view', description: 'Access system dashboard', scope: 'SYSTEM' },
@@ -88,10 +88,6 @@ export const PERMISSIONS = {
             }
         }
     },
-
-    // =============================================================================================
-    // 🏢 TENANT PANEL (Business Operations)
-    // =============================================================================================
     TENANT: {
         DASHBOARD: {
             VIEW: { slug: 'dashboard:view', description: 'Access main dashboard', scope: 'TENANT' },
@@ -124,5 +120,5 @@ export const PERMISSIONS = {
         }
     }
 };
-
-export const SCOPES = ['SYSTEM', 'TENANT', 'BRANCH', 'CURATOR'] as const;
+exports.SCOPES = ['SYSTEM', 'TENANT', 'BRANCH', 'CURATOR'];
+//# sourceMappingURL=permissions9.js.map

@@ -14,7 +14,7 @@ const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class ListQueryDto {
     page = 1;
-    pageSize = 20;
+    pageSize = 25;
     search;
     sortBy;
     sortDir = 'desc';
@@ -32,7 +32,7 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsIn)([10, 20, 50], { message: 'Page size must be one of [10, 20, 50]' }),
+    (0, class_validator_1.IsIn)([10, 25, 50, 100], { message: 'Page size must be one of [10, 25, 50, 100]' }),
     __metadata("design:type", Number)
 ], ListQueryDto.prototype, "pageSize", void 0);
 __decorate([

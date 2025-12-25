@@ -58,10 +58,11 @@ let RolesController = class RolesController {
         const approverId = req.user.sub || req.user.userId;
         return this.rolesService.approve(id, approverId);
     }
-    reject(id, reason) {
+    reject(id, reason, req) {
         if (!reason)
             throw new common_1.BadRequestException('Reason is required');
-        return this.rolesService.reject(id, reason);
+        const userId = req.user.sub || req.user.userId;
+        return this.rolesService.reject(id, reason, userId);
     }
 };
 exports.RolesController = RolesController;
@@ -133,8 +134,9 @@ __decorate([
     (0, common_1.Post)(':id/reject'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('reason')),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "reject", null);
 exports.RolesController = RolesController = __decorate([

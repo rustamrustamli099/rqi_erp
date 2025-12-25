@@ -4,10 +4,10 @@ exports.QueryParser = void 0;
 class QueryParser {
     static parse(query, allowedSorts = ['createdAt']) {
         const page = Math.max(1, Number(query.page) || 1);
-        let pageSize = Number(query.pageSize) || 20;
-        if (![10, 20, 50].includes(pageSize)) {
-            console.warn(`[QueryParser] Invalid pageSize ${pageSize} requested. Resetting to 20.`);
-            pageSize = 20;
+        let pageSize = Number(query.pageSize) || 25;
+        if (![10, 25, 50, 100].includes(pageSize)) {
+            console.warn(`[QueryParser] Invalid pageSize ${pageSize} requested. Resetting to 25.`);
+            pageSize = 25;
         }
         let search = query.search ? query.search.trim() : undefined;
         if (search === "")

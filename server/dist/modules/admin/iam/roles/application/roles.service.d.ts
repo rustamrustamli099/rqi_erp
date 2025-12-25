@@ -120,7 +120,7 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
-    reject(id: string, reason: string): Promise<{
+    reject(id: string, reason: string, userId?: string): Promise<{
         id: string;
         name: string;
         description: string | null;

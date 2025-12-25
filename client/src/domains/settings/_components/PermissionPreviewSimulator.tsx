@@ -67,13 +67,12 @@ export function PermissionPreviewSimulator({ permissions, context = 'admin', cla
                             {(() => {
                                 const renderMenuItem = (item: any, depth = 0) => {
                                     return (
-                                        <div key={item.id} className="space-y-1">
+                                        <div key={item.id} className={cn("space-y-1", depth > 0 && "ml-3 border-l border-border pl-2")}>
                                             <div
                                                 className={cn(
                                                     "flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground rounded-md hover:bg-accent/50 transition-colors select-none",
                                                     depth > 0 && "text-xs text-muted-foreground"
                                                 )}
-                                                style={{ paddingLeft: `${(depth * 12) + 8}px` }}
                                             >
                                                 {item.icon ? (
                                                     typeof item.icon === 'string' ? (
@@ -92,7 +91,7 @@ export function PermissionPreviewSimulator({ permissions, context = 'admin', cla
 
                                             {/* Children */}
                                             {item.children && item.children.length > 0 && (
-                                                <div className={cn("border-l border-border ml-[11px] space-y-0.5", depth === 0 ? "my-1" : "")}>
+                                                <div className="space-y-0.5 mt-0.5">
                                                     {item.children.map((child: any) => renderMenuItem(child, depth + 1))}
                                                 </div>
                                             )}

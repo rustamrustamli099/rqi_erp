@@ -133,7 +133,8 @@ export class RolesService {
                 take,
                 orderBy,
                 include: {
-                    _count: { select: { userRoles: true, permissions: true } }
+                    _count: { select: { userRoles: true, permissions: true } },
+                    permissions: { include: { permission: true } }
                 }
             }),
             this.prisma.role.count({ where })
@@ -222,7 +223,7 @@ export class RolesService {
         return result;
     }
 
-    async reject(id: string, reason: string) {
+    async reject(id: string, reason: string, userId: string = 'SYSTEM') {
         const role = await this.findOne(id);
         if (role.status !== RoleStatus.PENDING_APPROVAL) {
             throw new BadRequestException('Role is not pending approval');
@@ -240,11 +241,12 @@ export class RolesService {
             resource: 'Role',
             details: { roleId: id, reason },
             module: 'ACCESS_CONTROL',
-            userId: 'SYSTEM', // Usually triggered by a user, but kept as SYSTEM if not passed
+            userId: userId,
         });
 
         return result;
     }
+
 
     async update(id: string, dto: UpdateRoleDto, userId: string = 'SYSTEM') {
         const role = await this.findOne(id);
@@ -415,4 +417,5 @@ export class RolesService {
 
         return updatedRole;
     }
+
 }

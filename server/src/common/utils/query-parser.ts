@@ -13,10 +13,11 @@ export class QueryParser {
         const page = Math.max(1, Number(query.page) || 1);
 
         // Strict PageSize Check (Fail-safe: If validation bypassed, force correct values)
-        let pageSize = Number(query.pageSize) || 20;
-        if (![10, 20, 50].includes(pageSize)) {
-            console.warn(`[QueryParser] Invalid pageSize ${pageSize} requested. Resetting to 20.`);
-            pageSize = 20;
+        // Strict PageSize Check (Fail-safe: If validation bypassed, force correct values)
+        let pageSize = Number(query.pageSize) || 25;
+        if (![10, 25, 50, 100].includes(pageSize)) {
+            console.warn(`[QueryParser] Invalid pageSize ${pageSize} requested. Resetting to 25.`);
+            pageSize = 25;
         }
 
         // 2. Search Sanitization

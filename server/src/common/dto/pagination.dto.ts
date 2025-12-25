@@ -11,8 +11,8 @@ export class ListQueryDto {
     @IsOptional()
     @Type(() => Number)
     @IsNumber()
-    @IsIn([10, 20, 50], { message: 'Page size must be one of [10, 20, 50]' })
-    pageSize?: number = 20;
+    @IsIn([10, 25, 50, 100], { message: 'Page size must be one of [10, 25, 50, 100]' })
+    pageSize?: number = 25;
 
     @IsOptional()
     @IsString()
