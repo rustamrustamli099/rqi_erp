@@ -146,9 +146,9 @@ const ADMIN_REGISTRY: Record<string, MenuConfig> = {
             dashboard: { permission: 'system.system_console.dashboard.read', label: 'Dashboard' },
             monitoring: { permission: 'system.system_console.monitoring.dashboard.read', label: 'Monitoring' },
             audit: { permission: 'system.system_console.audit_compliance.read', label: 'Audit & Compliance' },
-            scheduler: { permission: 'system.system_console.job_scheduler.read', label: 'Job Scheduler' },
+            jobs: { permission: 'system.system_console.job_scheduler.read', label: 'Job Scheduler' },
             retention: { permission: 'system.system_console.data_retention.read', label: 'Data Retention' },
-            feature_flags: { permission: 'system.system_console.feature_flags.read', label: 'Feature Flags' },
+            features: { permission: 'system.system_console.feature_flags.read', label: 'Feature Flags' },
             policy: { permission: 'system.system_console.policy_security.read', label: 'Policy Security' },
             feedback: { permission: 'system.system_console.feedback.read', label: 'Feedback' },
             tools: { permission: 'system.system_console.tools.read', label: 'Tools' }
@@ -163,7 +163,7 @@ const ADMIN_REGISTRY: Record<string, MenuConfig> = {
         defaultTab: 'api',
         tabs: {
             api: { permission: 'system.developer_hub.api_reference.read', label: 'API Reference' },
-            sdk: { permission: 'system.developer_hub.sdk.read', label: 'SDKs' },
+            sdks: { permission: 'system.developer_hub.sdk.read', label: 'SDKs' },
             webhooks: { permission: 'system.developer_hub.webhooks.read', label: 'Webhooks' },
             permissions: { permission: 'system.developer_hub.permission_map.read', label: 'Permission Map' }
         }

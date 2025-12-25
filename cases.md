@@ -781,7 +781,290 @@ Error:
 
 ---------------------------15-----------------------------
 ---------------------------16-----------------------------
+🔐 1) SoD (Segregation of Duties) Rules – Bank-Grade Real Siyahı
 
+📋 COPY PROMPT ⬇️
+
+TASK: Implement Bank-Grade Segregation of Duties (SoD) Engine
+
+GOAL:
+Prevent critical risk combinations of permissions and roles, following SAP / Oracle / Core Banking standards.
+
+REQUIREMENTS:
+
+1. DEFINE REAL BANK SoD RULES (NON-NEGOTIABLE):
+
+BLOCK these combinations for the SAME USER:
+
+• Role Management:
+  - role.create + role.approve
+  - role.update + role.approve
+  - role.delete + role.approve
+
+• User Access:
+  - user.create + user.approve
+  - user.assign_role + role.approve
+
+• Billing / Finance:
+  - invoice.create + invoice.approve
+  - payment.execute + payment.approve
+  - refund.create + refund.approve
+
+• Security:
+  - permission.assign + audit.log.delete
+  - impersonate + role.manage
+
+• Export / Data:
+  - data.export + export.approve (HIGH RISK)
+
+2. SoD ENGINE LOGIC:
+
+- Evaluate on:
+  - Role creation
+  - Role update
+  - User role assignment
+- Detect conflicts BEFORE save
+- Return:
+  - conflict_code
+  - readable explanation
+  - risk_level (HIGH)
+
+3. UI BEHAVIOR:
+
+- Show blocking modal:
+  “Bu rol bank təhlükəsizlik qaydalarına zidd icazə kombinasiyası yaradır.”
+- Highlight conflicting permissions
+- Disable Save until resolved
+
+4. AUDIT:
+
+- Log SoD violation attempts
+- Store:
+  user_id, role_id, conflicting_permissions, timestamp
+
+OUTPUT:
+- SoD rule registry
+- SoD validation service
+- UI error contract
+
+🔔 2) Approval Notification UX Wireframe (Text-Based, Enterprise Style)
+
+📋 COPY PROMPT ⬇️
+
+TASK: Design Approval Notification UX (Text Wireframe)
+
+CONTEXT:
+System uses 4-Eyes Principle for:
+- Role creation
+- Permission changes
+- High-risk exports
+- Security changes
+
+REQUIREMENTS:
+
+1. NOTIFICATION TRIGGERS:
+- Role submitted for approval
+- Role approved / rejected
+- Export waiting for approval
+- SoD conflict detected
+
+2. DELIVERY CHANNELS:
+- In-app notification (bell)
+- Approval inbox (Approvals menu)
+- Optional email (future-ready)
+
+3. NOTIFICATION CARD (TEXT WIREFRAME):
+
+[ICON]  Təhlükəsizlik Təsdiqi Tələb Olunur
+Title: Yeni Rol Dəyişiklikləri
+Subtitle: “Finance Admin” rolu
+Details:
+- Dəyişən icazələr: +5 / −2
+- Risk səviyyəsi: HIGH
+- Tələb edən: admin@company.az
+Actions:
+[ Təsdiq Et ]  [ İmtina Et ]  [ Baxış ]
+
+4. APPROVAL PAGE:
+
+Left:
+- Role name
+- Before / After permission diff
+- Risk score
+
+Right:
+- Approver comment (required on reject)
+- Approve / Reject buttons
+
+5. POST-ACTION:
+- Approved → change active
+- Rejected → rollback
+- Timeline entry created
+
+OUTPUT:
+- Text UX wireframe
+- Notification lifecycle
+- Approval UX rules
+
+📊 3) Compliance Auto-Mapping (SOC2 / ISO 27001)
+
+📋 COPY PROMPT ⬇️
+
+TASK: Build Compliance Auto-Mapping Engine (SOC2 + ISO 27001)
+
+GOAL:
+Automatically map system controls to compliance frameworks.
+
+REQUIREMENTS:
+
+1. SOC2 MAPPING:
+
+MAP:
+- Role approval → CC6.2
+- SoD enforcement → CC6.3
+- Audit logs → CC7.2
+- Access reviews → CC6.1
+- Export approval → CC8.1
+
+2. ISO 27001 MAPPING:
+
+MAP:
+- RBAC → A.9.1.2
+- Approval workflow → A.6.1.2
+- Logging → A.12.4
+- SoD → A.6.1.3
+
+3. ENGINE OUTPUT:
+
+Generate table:
+| System Control | SOC2 | ISO | Evidence Source |
+|---------------|------|-----|-----------------|
+
+4. EVIDENCE EXPORT:
+
+- Exportable as:
+  - PDF
+  - Excel
+- Include:
+  - Timestamp
+  - User
+  - Control status
+
+5. AUDITOR VIEW:
+
+- Read-only
+- Filter by framework
+- Evidence drill-down
+
+OUTPUT:
+- Auto-mapping registry
+- Compliance report generator
+- Evidence export spec
+
+📊 4) Risk Scoring Engine (LOW / MEDIUM / HIGH – Bank Grade)
+
+📋 COPY PROMPT ⬇️
+
+TASK: Implement Bank-Grade Risk Scoring Engine
+
+GOAL:
+Assign risk level to roles, actions, and approvals.
+
+RISK RULES:
+
+LOW:
+- Read-only permissions
+- Non-sensitive modules
+
+MEDIUM:
+- CRUD without approval
+- Tenant-level admin
+
+HIGH:
+- Role approval
+- Permission assignment
+- Export data
+- Billing actions
+- Impersonation
+
+SCORING LOGIC:
+- Permission weight sum
+- SoD conflicts auto = HIGH
+- Export always >= MEDIUM
+
+UI:
+- Show badge: LOW / MEDIUM / HIGH
+- HIGH requires approval
+
+AUDIT:
+- Store risk score per action
+- Include in approval timeline
+
+OUTPUT:
+- Risk scoring ruleset
+- UI contract
+- Approval integration
+
+📦 5) Export Permission Prefix + Approval Workflow (SOC2-Ready)
+
+📋 COPY PROMPT ⬇️
+
+TASK: Enterprise Export Control System
+
+1. PERMISSION PREFIX STANDARD:
+
+- export.read
+- export.request
+- export.approve
+- export.execute
+
+2. RULES:
+
+- export.execute requires:
+  - export.approve by another user
+- HIGH-RISK exports:
+  - User data
+  - Finance
+  - Logs
+
+3. MODAL UX:
+
+"Bu əməliyyat yüksək risklidir."
+Options:
+[ Təsdiqə Göndər ] [ Ləğv Et ]
+
+4. EXPORT BEHAVIOR:
+
+- Respect filters
+- Respect search
+- Respect sorting
+IF filters active:
+- Show confirmation summary
+
+5. AUDIT (SOC2):
+
+Log:
+- who requested
+- who approved
+- dataset scope
+- timestamp
+
+OUTPUT:
+- Export workflow
+- Approval integration
+- Audit report spec
+
+📌 Nəticə (qısa, səmimi)
+
+Sənin sistem artıq RBAC deyil, IAM + Governance platformasıdır.
+Bunlar SAP / Oracle / Banking ERP səviyyəsidir:
+
+✔️ SoD
+✔️ 4-Eyes
+✔️ Risk scoring
+✔️ Approval inbox
+✔️ SOC2 / ISO evidence
+✔️ Export governance
 ---------------------------16-----------------------------
 ---------------------------17-----------------------------
 
