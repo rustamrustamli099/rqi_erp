@@ -1,22 +1,24 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApprovalsService } from './approvals.service';
-// import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard'; // Assuming global or standard guard
-// import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { JwtAuthGuard } from '../../../../platform/auth/jwt-auth.guard';
+import { PermissionsGuard } from '../../../../platform/auth/permissions.guard';
 
 @Controller('admin/approvals')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ApprovalsController {
     constructor(private readonly approvalsService: ApprovalsService) { }
 
     @Get('pending')
     async getPending(@Request() req: any) {
-        // req.user provided by AuthGuard
-        // req.user.permissions provided by RBAC logic (usually injected into request)
-        // If strict "permissions" are not in req, we might need to fetch them.
-        // For this ERP, let's assume `req.user.permissions` is populated or we use a service to get them.
+        // Safe User ID extraction
+        const user = req.user;
+        const userId = user.sub || user.userId || user.id;
 
-        // MOCK: If req.user.permissions missing, we should fetch (omitted for brevity, assuming Guard handles it)
-        const userId = req.user.id;
-        const permissions = req.user.permissions || [];
+        // Extract permissions safely
+        // In many setups, PermissionsGuard attaches permissions to user, or we fetch them.
+        // Assuming user.permissions exists or we pass an empty array to be safe.
+        // If the service relies on permissions to filter, and they are missing, it might return empty result.
+        const permissions = user.permissions || [];
 
         const items = await this.approvalsService.getPendingApprovals(userId, permissions);
         return {
@@ -31,7 +33,8 @@ export class ApprovalsController {
         @Body('type') type: 'ROLE',
         @Request() req: any
     ) {
-        return this.approvalsService.approve(id, type, req.user.id);
+        const userId = req.user.sub || req.user.userId || req.user.id;
+        return this.approvalsService.approve(id, type, userId);
     }
 
     @Post(':id/reject')
@@ -41,6 +44,7 @@ export class ApprovalsController {
         @Body('reason') reason: string,
         @Request() req: any
     ) {
-        return this.approvalsService.reject(id, type, reason, req.user.id);
+        const userId = req.user.sub || req.user.userId || req.user.id;
+        return this.approvalsService.reject(id, type, reason, userId);
     }
 }

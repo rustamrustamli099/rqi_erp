@@ -54,41 +54,11 @@ const timezones = [
     { value: "Asia/Dubai", label: "Asia/Dubai (GMT+4)" },
 ]
 
+import { SETTINGS_REGISTRY } from "@/app/navigation/settings.registry";
+
 // --- Sidebar Navigation Items ---
-// Updated to use READ permissions matching SAP-grade visibility rules
-const ALL_SIDEBAR_ITEMS = [
-    {
-        title: "Ümumi Tənzimləmələr",
-        items: [
-            { id: "general", label: "Şirkət Profili", icon: Settings, permission: PermissionSlugs.SYSTEM.SETTINGS.GENERAL.READ },
-            { id: "notifications", label: "Bildiriş Qaydaları", icon: Bell, permission: PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.READ },
-        ]
-    },
-    {
-        title: "Kommunikasiya",
-        items: [
-            { id: "smtp", label: "SMTP (Email)", icon: Mail, permission: PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ },
-            { id: "sms", label: "SMS Gateway", icon: MessageSquare, permission: PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ },
-        ]
-    },
-    {
-        title: "Təhlükəsizlik & Giriş",
-        items: [
-            { id: "security", label: "Təhlükəsizlik Siyasəti", icon: Shield, permission: PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ },
-            { id: "sso", label: "SSO & OAuth", icon: ShieldCheck, permission: PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ },
-            { id: "roles", label: "İstifadəçi hüquqları", icon: Users, permission: PermissionSlugs.SYSTEM.ROLES.READ },
-        ]
-    },
-    {
-        title: "Sistem Konfiqurasiyası",
-        items: [
-            { id: "billing-config", label: "Billing Konfiqurasiyası", icon: CreditCard, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.READ },
-            { id: "dictionaries", label: "Soraqçalar (Dictionaries)", icon: Database, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.READ },
-            { id: "templates", label: "Sənəd Şablonları", icon: FileText, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.TEMPLATES.READ },
-            { id: "workflow", label: "İş Prosesləri (Workflow)", icon: Workflow, permission: PermissionSlugs.SYSTEM.SETTINGS.CONFIG.WORKFLOW.READ },
-        ]
-    }
-]
+// Single Source of Truth from Registry
+const ALL_SIDEBAR_ITEMS = SETTINGS_REGISTRY;
 
 export default function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()

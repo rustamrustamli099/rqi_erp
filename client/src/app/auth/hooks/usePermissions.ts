@@ -18,12 +18,18 @@ export const usePermissions = () => {
 
     const hasAll = useCallback((requiredPermissions: string[]) => {
         if (!requiredPermissions || requiredPermissions.length === 0) return true;
-        return requiredPermissions.every(req => permissions.some(userPerm => req.startsWith(userPerm)));
+        return requiredPermissions.every(req => {
+            if (!req) return false;
+            return permissions.some(userPerm => req.startsWith(userPerm));
+        });
     }, [permissions]);
 
     const hasAny = useCallback((requiredPermissions: string[]) => {
         if (!requiredPermissions || requiredPermissions.length === 0) return true;
-        return requiredPermissions.some(req => permissions.some(userPerm => req.startsWith(userPerm)));
+        return requiredPermissions.some(req => {
+            if (!req) return false;
+            return permissions.some(userPerm => req.startsWith(userPerm));
+        });
     }, [permissions]);
 
     return { hasPermission, can: hasPermission, hasAll, hasAny, permissions, user, isImpersonating, isLoading };

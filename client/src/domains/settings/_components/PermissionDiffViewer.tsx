@@ -4,7 +4,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { ArrowRight, Plus, Minus, MinusCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 // We will simply display slugs if lookup fails, but ideally we use the structure
-import { getPermissionLabel } from "./permission-data"
+import { getPermissionLabel } from "@/app/security/permission-structure"
 
 interface PermissionDiffViewerProps {
     original: string[]

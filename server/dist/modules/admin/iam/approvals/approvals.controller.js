@@ -15,14 +15,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApprovalsController = void 0;
 const common_1 = require("@nestjs/common");
 const approvals_service_1 = require("./approvals.service");
+const jwt_auth_guard_1 = require("../../../../platform/auth/jwt-auth.guard");
+const permissions_guard_1 = require("../../../../platform/auth/permissions.guard");
 let ApprovalsController = class ApprovalsController {
     approvalsService;
     constructor(approvalsService) {
         this.approvalsService = approvalsService;
     }
     async getPending(req) {
-        const userId = req.user.id;
-        const permissions = req.user.permissions || [];
+        const user = req.user;
+        const userId = user.sub || user.userId || user.id;
+        const permissions = user.permissions || [];
         const items = await this.approvalsService.getPendingApprovals(userId, permissions);
         return {
             items,
@@ -30,10 +33,12 @@ let ApprovalsController = class ApprovalsController {
         };
     }
     async approve(id, type, req) {
-        return this.approvalsService.approve(id, type, req.user.id);
+        const userId = req.user.sub || req.user.userId || req.user.id;
+        return this.approvalsService.approve(id, type, userId);
     }
     async reject(id, type, reason, req) {
-        return this.approvalsService.reject(id, type, reason, req.user.id);
+        const userId = req.user.sub || req.user.userId || req.user.id;
+        return this.approvalsService.reject(id, type, reason, userId);
     }
 };
 exports.ApprovalsController = ApprovalsController;
@@ -65,6 +70,7 @@ __decorate([
 ], ApprovalsController.prototype, "reject", null);
 exports.ApprovalsController = ApprovalsController = __decorate([
     (0, common_1.Controller)('admin/approvals'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [approvals_service_1.ApprovalsService])
 ], ApprovalsController);
 //# sourceMappingURL=approvals.controller.js.map

@@ -64,7 +64,7 @@ import { systemApi, type Role, type SystemPermission } from "@/domains/system-co
 import { PermissionMatrix } from "@/domains/system-console/feature-flags/PermissionMatrix";
 import { PermissionTreeEditor, type PermissionNode } from "./_components/PermissionTreeEditor"
 import { PermissionSlugs } from "@/app/security/permission-slugs"
-import { permissionsStructure } from "./_components/permission-data"
+import { permissionsStructure } from "@/app/security/permission-structure"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
 import { PermissionPreviewSimulator } from "./_components/PermissionPreviewSimulator"
 import { useListQuery } from "@/shared/hooks/useListQuery"

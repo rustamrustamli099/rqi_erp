@@ -12,9 +12,9 @@ import { Shield, Building2, AlertTriangle, Users, Lock, Info, CheckCircle2, Eye,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { cn } from "@/shared/lib/utils"
 import type { Role } from "@/domains/system-console/api/system.contract";
-import { permissionsStructure } from "@/domains/settings/_components/permission-data";
+import { permissionsStructure } from "@/app/security/permission-structure";
 import { getLeafSlugs } from "@/domains/settings/_components/permission-utils";
-import type { PermissionNode } from "@/domains/settings/_components/permission-utils";
+import type { PermissionNode } from "@/app/security/permission-structure";
 
 // Helper to determine access level
 const getAccessLevel = (role: Role, moduleNode: PermissionNode): 'full' | 'view' | 'none' => {

@@ -1,4 +1,3 @@
-
 // menu.definitions.ts (FINAL CANONICAL MODEL)
 
 export interface MenuItem {
@@ -16,7 +15,7 @@ export interface MenuItem {
 
 export type AdminMenuItem = MenuItem; // Alias for backward compatibility
 
-// --- SYSTEM ADMIN MENU ---
+// --- SYSTEM ADMIN MENU (FLAT SIDEBAR) ---
 export const PLATFORM_MENU: MenuItem[] = [
     {
         id: 'dashboard',
@@ -25,7 +24,7 @@ export const PLATFORM_MENU: MenuItem[] = [
         icon: 'LayoutDashboard',
         path: '/admin/dashboard',
         route: '/admin/dashboard',
-        requiredPermissions: ['system.dashboard.read'],
+        requiredPermissions: ['system.dashboard.access'],
         permissionPrefixes: ['system.dashboard']
     },
     {
@@ -35,7 +34,7 @@ export const PLATFORM_MENU: MenuItem[] = [
         icon: 'Building2',
         path: '/admin/tenants',
         route: '/admin/tenants',
-        requiredPermissions: ['system.tenants.read'],
+        requiredPermissions: ['system.tenants.access'],
         permissionPrefixes: ['system.tenants']
     },
     {
@@ -44,26 +43,10 @@ export const PLATFORM_MENU: MenuItem[] = [
         title: 'Users',
         icon: 'Users',
         path: '/admin/users',
-        route: '/admin/users', // Base route for sidebar matching
-        tab: 'users_list',
-        children: [
-            {
-                id: 'users_list',
-                label: 'İstifadəçilər',
-                title: 'Users List',
-                path: '/admin/users',
-                route: '/admin/users',
-                requiredPermissions: ['system.users.users.read']
-            },
-            {
-                id: 'curators',
-                label: 'Kuratorlar',
-                title: 'Curators',
-                path: '/admin/curators',
-                route: '/admin/curators',
-                requiredPermissions: ['system.users.curators.read']
-            }
-        ]
+        route: '/admin/users',
+        tab: 'users_list', // Default Tab
+        requiredPermissions: ['system.users.access'],
+        permissionPrefixes: ['system.users']
     },
     {
         id: 'billing',
@@ -72,10 +55,9 @@ export const PLATFORM_MENU: MenuItem[] = [
         icon: 'CreditCard',
         path: '/admin/billing',
         route: '/admin/billing',
-        children: [
-            { id: 'plans', label: 'Planlar', title: 'Plans', path: '/admin/billing/plans', route: '/admin/billing/plans', requiredPermissions: ['system.billing.plans.read'] },
-            { id: 'invoices', label: 'Fakturalar', title: 'Invoices', path: '/admin/billing/invoices', route: '/admin/billing/invoices', requiredPermissions: ['system.billing.invoices.read'] },
-        ]
+        tab: 'plans', // Default Tab
+        requiredPermissions: ['system.billing.access'],
+        permissionPrefixes: ['system.billing']
     },
     {
         id: 'settings',
@@ -84,11 +66,9 @@ export const PLATFORM_MENU: MenuItem[] = [
         icon: 'Settings',
         path: '/admin/settings',
         route: '/admin/settings',
-        children: [
-            { id: 'general', label: 'Ümumi', title: 'General', path: '/admin/settings/general', route: '/admin/settings/general', requiredPermissions: ['system.settings.general.read'] },
-            { id: 'security', label: 'Təhlükəsizlik', title: 'Security', path: '/admin/settings/security', route: '/admin/settings/security', requiredPermissions: ['system.settings.security.read'] },
-            { id: 'smtp', label: 'SMTP & SMS', title: 'Communication', path: '/admin/settings/communication', route: '/admin/settings/communication', requiredPermissions: ['system.settings.communication.smtp_email.read'] },
-        ]
+        tab: 'general', // Default Tab
+        requiredPermissions: ['system.settings.access'],
+        permissionPrefixes: ['system.settings']
     },
     {
         id: 'system_console',
@@ -97,52 +77,47 @@ export const PLATFORM_MENU: MenuItem[] = [
         icon: 'Terminal',
         path: '/admin/system-console',
         route: '/admin/system-console',
-        children: [
-            { id: 'monitoring', label: 'Monitorinq', path: '/admin/system-console/monitoring', route: '/admin/system-console/monitoring', requiredPermissions: ['system.system_console.monitoring.read'] },
-            { id: 'audit', label: 'Audit', path: '/admin/system-console/audit', route: '/admin/system-console/audit', requiredPermissions: ['system.system_console.audit_compliance.read'] },
-            { id: 'jobs', label: 'Job Scheduler', path: '/admin/system-console/jobs', route: '/admin/system-console/jobs', requiredPermissions: ['system.system_console.job_scheduler.read'] },
-            { id: 'feature_flags', label: 'Feature Flags', path: '/admin/system-console/feature-flags', route: '/admin/system-console/feature-flags', requiredPermissions: ['system.system_console.feature_flags.read'] },
-        ]
+        tab: 'monitoring', // Default Tab
+        requiredPermissions: ['system.system_console.access'],
+        permissionPrefixes: ['system.system_console']
     }
 ];
 
 // --- TENANT MENU ---
-export const TENANT_MENU: MenuItem[] = [
-    {
-        id: 'dashboard',
-        label: 'Əsas Səhifə',
-        title: 'Dashboard',
-        icon: 'LayoutDashboard',
-        path: '/dashboard',
-        route: '/dashboard',
-        requiredPermissions: ['tenant.dashboard.read']
-    },
-    {
-        id: 'sales',
-        label: 'Satışlar',
-        title: 'Sales',
-        icon: 'ShoppingCart',
-        path: '/sales',
-        route: '/sales',
-        requiredPermissions: ['tenant.sales.read']
-    },
-    {
-        id: 'warehouse',
-        label: 'Anbar',
-        title: 'Warehouse',
-        icon: 'Package',
-        path: '/warehouse',
-        route: '/warehouse',
-        requiredPermissions: ['tenant.warehouse.read']
-    },
-    {
-        id: 'settings',
-        label: 'Ayarlar',
-        title: 'Settings',
-        icon: 'Settings',
-        path: '/settings',
-        route: '/settings',
-        requiredPermissions: ['tenant.settings.read']
-    }
+export const TENANT_MENU: MenuItem[] = [{
+    id: 'dashboard',
+    label: 'Əsas Səhifə',
+    title: 'Dashboard',
+    icon: 'LayoutDashboard',
+    path: '/dashboard',
+    route: '/dashboard',
+    requiredPermissions: ['tenant.dashboard.access']
+},
+{
+    id: 'sales',
+    label: 'Satışlar',
+    title: 'Sales',
+    icon: 'ShoppingCart',
+    path: '/sales',
+    route: '/sales',
+    requiredPermissions: ['tenant.sales.access']
+},
+{
+    id: 'warehouse',
+    label: 'Anbar',
+    title: 'Warehouse',
+    icon: 'Package',
+    path: '/warehouse',
+    route: '/warehouse',
+    requiredPermissions: ['tenant.warehouse.access']
+},
+{
+    id: 'settings',
+    label: 'Ayarlar',
+    title: 'Settings',
+    icon: 'Settings',
+    path: '/settings',
+    route: '/settings',
+    requiredPermissions: ['tenant.settings.access']
+}
 ];
-
