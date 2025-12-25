@@ -14,7 +14,7 @@ import { AuthModule } from '../../../../platform/auth/auth.module'; // Or path t
 @Module({
     imports: [],
     controllers: [RolesController],
-    providers: [RolesService, RolePermissionsService, PrismaService, PermissionCacheService, AuditService]
+    providers: [RolesService, RolePermissionsService, PrismaService, PermissionCacheService, AuditService],
     exports: [RolesService]
 })
 export class RolesModule { }

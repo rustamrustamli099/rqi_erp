@@ -14,12 +14,15 @@ import { CheckCircle2 } from 'lucide-react';
  */
 
 export const useMenu = () => {
-    const { activeTenantType, isLoading } = useAuth();
+    const { activeTenantType, isLoading, authState } = useAuth();
     const { permissions } = usePermissions(); // Get raw string array
 
     // Approvals Hook (Polling)
     const { data: approvalData } = usePendingApprovals();
     const pendingCount = approvalData?.count || 0;
+
+    // SAP-Grade Rule: Menu is invalid during BOOTSTRAPPING
+    const isStable = authState === 'STABLE';
 
     // 1. Select the correct tree based on context
     const rawMenu = activeTenantType === 'SYSTEM' ? PLATFORM_MENU : TENANT_MENU;
@@ -28,6 +31,9 @@ export const useMenu = () => {
     const filteredMenu = useMemo(() => {
         // Debugging Hook
         // console.log(`[useMenu] ActiveType: ${activeTenantType}, Permissions: ${permissions?.length}, RawMenu: ${rawMenu?.length}`);
+
+        // SAP-Grade Safety Force Empty if not Stable
+        if (!isStable) return [];
 
         // Base Menu
         const base = MenuVisibilityEngine.computeVisibleTree(rawMenu, permissions);

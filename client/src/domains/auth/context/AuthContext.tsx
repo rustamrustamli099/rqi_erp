@@ -33,7 +33,11 @@ interface AuthContextType {
     activeTenantType: 'SYSTEM' | 'TENANT';
 
     // Force refresh of permissions (e.g. after profile update)
+    // Force refresh of permissions (e.g. after profile update)
     refreshSession: () => Promise<void>;
+
+    // SAP-Grade State Machine
+    authState: 'UNINITIALIZED' | 'BOOTSTRAPPING' | 'STABLE';
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const [permissions, setPermissionsState] = useState<string[]>([]);
     const [isLoading, setLoading] = useState(true);
+    const [authState, setAuthState] = useState<'UNINITIALIZED' | 'BOOTSTRAPPING' | 'STABLE'>('UNINITIALIZED');
 
     // Impersonation State
     const [isImpersonating, setIsImpersonating] = useState(false);
@@ -79,6 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loadSessionData = async () => {
         try {
             setLoading(true);
+            setAuthState('BOOTSTRAPPING'); // Start transition
+
             const token = localStorage.getItem('accessToken');
             if (!token) {
                 setLoading(false);
@@ -133,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error("Session load error", e);
         } finally {
             setLoading(false);
+            setAuthState('STABLE'); // End transition
         }
     };
 
@@ -213,6 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('originalAccessToken');
         localStorage.removeItem('originalUser');
         window.location.href = '/login';
+        setAuthState('UNINITIALIZED');
     };
 
     const value = {
@@ -226,7 +235,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         impersonate,
         stopImpersonating,
         logout,
-        refreshSession: loadSessionData
+        refreshSession: loadSessionData,
+        authState
     };
 
     return (

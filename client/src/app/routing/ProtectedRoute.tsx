@@ -19,7 +19,7 @@ export const ProtectedRoute = ({
     mode = 'all',
     children
 }: ProtectedRouteProps) => {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, authState } = useAuth();
     const { hasAll, hasAny } = usePermissions();
     const location = useLocation();
 
@@ -27,7 +27,8 @@ export const ProtectedRoute = ({
     const perms = [...requiredPermissions];
     if (requiredPermission) perms.push(requiredPermission);
 
-    if (isLoading) {
+    // SAP-Grade State Machine: WAIT during BOOTSTRAPPING
+    if (isLoading || authState === 'BOOTSTRAPPING' || authState === 'UNINITIALIZED') {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-background">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
