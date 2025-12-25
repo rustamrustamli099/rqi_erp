@@ -29,18 +29,13 @@ export const previewUser = (
     const visibleMenu = MenuVisibilityEngine.computeVisibleTree(menuDefinitions, permissions);
 
     // 2. Compute Visible Settings Tabs
-    // We check against the frozen registry
+    // We check against the frozen registry which is Grouped
     const visibleTabs: Record<string, boolean> = {};
-    Object.keys(SETTINGS_REGISTRY).forEach(tabId => {
-        const tab = SETTINGS_REGISTRY[tabId as keyof typeof SETTINGS_REGISTRY];
-        // Check if user has the required permission
-        // Logic: permissions.includes(tab.permission)
-        // Note: tab.permission is usually "system.settings.general.read" etc.
-        // We need exact match or normalized match?
-        // Assuming 'permissions' array is already Normalized (contains implicit access).
-        // But tabs require OPERATION permissions (e.g. *.read), not just *.access.
-
-        visibleTabs[tabId] = permissions.includes(tab.permission);
+    const allTabs = SETTINGS_REGISTRY.flatMap(g => g.items);
+    
+    allTabs.forEach(tab => {
+        // logic: user has permission
+        visibleTabs[tab.id] = permissions.includes(tab.permission);
     });
 
     // 3. Determine Landing Route
@@ -51,9 +46,9 @@ export const previewUser = (
         // If first item is Settings, we need to append the first visible tab
         if (first.id === 'settings') {
             // Find first visible tab
-            const firstVisibleTab = Object.keys(SETTINGS_REGISTRY).find(t => visibleTabs[t]);
+            const firstVisibleTab = allTabs.find(t => visibleTabs[t.id]);
             if (firstVisibleTab) {
-                landingRoute += `?tab=${firstVisibleTab}`;
+                landingRoute += `?tab=${firstVisibleTab.id}`;
             }
         } else if (first.tab) {
             landingRoute += `?tab=${first.tab}`; // Use default tab if defined in menu definition

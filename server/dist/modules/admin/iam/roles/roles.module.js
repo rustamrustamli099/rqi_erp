@@ -12,7 +12,6 @@ const roles_service_1 = require("./application/roles.service");
 const role_permissions_service_1 = require("./application/role-permissions.service");
 const roles_controller_1 = require("./api/roles.controller");
 const prisma_service_1 = require("../../../../prisma.service");
-const permission_cache_service_1 = require("../../../../platform/auth/permission-cache.service");
 const audit_service_1 = require("../../../../system/audit/audit.service");
 let RolesModule = class RolesModule {
 };
@@ -21,7 +20,7 @@ exports.RolesModule = RolesModule = __decorate([
     (0, common_1.Module)({
         imports: [],
         controllers: [roles_controller_1.RolesController],
-        providers: [roles_service_1.RolesService, role_permissions_service_1.RolePermissionsService, prisma_service_1.PrismaService, permission_cache_service_1.PermissionCacheService, audit_service_1.AuditService],
+        providers: [roles_service_1.RolesService, role_permissions_service_1.RolePermissionsService, prisma_service_1.PrismaService, audit_service_1.AuditService],
         exports: [roles_service_1.RolesService]
     })
 ], RolesModule);

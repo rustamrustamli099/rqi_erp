@@ -6,20 +6,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PermissionsModule = void 0;
+exports.MenuModule = void 0;
 const common_1 = require("@nestjs/common");
-const permissions_controller_1 = require("./api/permissions.controller");
-const identity_module_1 = require("../../../../platform/identity/identity.module");
-const prisma_service_1 = require("../../../../prisma.service");
-let PermissionsModule = class PermissionsModule {
+const menu_controller_1 = require("./menu.controller");
+const menu_service_1 = require("./menu.service");
+let MenuModule = class MenuModule {
 };
-exports.PermissionsModule = PermissionsModule;
-exports.PermissionsModule = PermissionsModule = __decorate([
+exports.MenuModule = MenuModule;
+exports.MenuModule = MenuModule = __decorate([
+    (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [identity_module_1.IdentityModule],
-        controllers: [permissions_controller_1.PermissionsController],
-        providers: [prisma_service_1.PrismaService],
-        exports: []
+        controllers: [menu_controller_1.MenuController],
+        providers: [menu_service_1.MenuService],
+        exports: [menu_service_1.MenuService],
     })
-], PermissionsModule);
-//# sourceMappingURL=permissions.module.js.map
+], MenuModule);
+//# sourceMappingURL=menu.module.js.map

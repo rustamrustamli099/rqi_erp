@@ -1,4 +1,4 @@
-import { PermissionsService } from '../application/permissions.service';
+import { PermissionsService } from '../../../../../platform/auth/permission.service';
 import { PreviewPermissionsDto } from './dto/preview-permissions.dto';
 export declare class PermissionsController {
     private readonly permissionsService;
@@ -11,7 +11,7 @@ export declare class PermissionsController {
         effectivePermissions: string[];
         summary: {
             totalPermissions: number;
-            byModule: {};
+            byModule: any;
         };
         accessState: string;
     }>;

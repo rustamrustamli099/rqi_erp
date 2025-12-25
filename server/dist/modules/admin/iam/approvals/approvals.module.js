@@ -12,7 +12,6 @@ const approvals_controller_1 = require("./approvals.controller");
 const approvals_service_1 = require("./approvals.service");
 const roles_module_1 = require("../roles/roles.module");
 const prisma_service_1 = require("../../../../prisma.service");
-const permission_cache_service_1 = require("../../../../platform/auth/permission-cache.service");
 const audit_service_1 = require("../../../../system/audit/audit.service");
 let ApprovalsModule = class ApprovalsModule {
 };
@@ -23,7 +22,7 @@ exports.ApprovalsModule = ApprovalsModule = __decorate([
             roles_module_1.RolesModule
         ],
         controllers: [approvals_controller_1.ApprovalsController],
-        providers: [approvals_service_1.ApprovalsService, prisma_service_1.PrismaService, permission_cache_service_1.PermissionCacheService, audit_service_1.AuditService],
+        providers: [approvals_service_1.ApprovalsService, prisma_service_1.PrismaService, audit_service_1.AuditService],
         exports: [approvals_service_1.ApprovalsService]
     })
 ], ApprovalsModule);

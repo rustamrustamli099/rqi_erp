@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermissionsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const permissions_service_1 = require("../application/permissions.service");
+const permission_service_1 = require("../../../../../platform/auth/permission.service");
 const preview_permissions_dto_1 = require("./dto/preview-permissions.dto");
 const jwt_auth_guard_1 = require("../../../../../platform/auth/jwt-auth.guard");
 const permissions_guard_1 = require("../../../../../platform/auth/permissions.guard");
@@ -53,6 +53,6 @@ exports.PermissionsController = PermissionsController = __decorate([
     (0, common_1.Controller)('admin/permissions'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, swagger_1.ApiBearerAuth)(),
-    __metadata("design:paramtypes", [permissions_service_1.PermissionsService])
+    __metadata("design:paramtypes", [permission_service_1.PermissionsService])
 ], PermissionsController);
 //# sourceMappingURL=permissions.controller.js.map

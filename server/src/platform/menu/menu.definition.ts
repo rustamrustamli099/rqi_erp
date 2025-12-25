@@ -1,8 +1,4 @@
 
-import {
-    PERMISSIONS
-} from '../../common/constants/perms';
-
 export interface MenuItem {
     id: string;
     label: string;
@@ -20,7 +16,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         label: 'İdarə etmə paneli',
         icon: 'LayoutDashboard',
         path: '/admin/dashboard',
-        permission: PERMISSIONS.dashboard.view,
+        permission: 'system.dashboard.read',
     },
     // 2. Tenants
     {
@@ -28,7 +24,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         label: 'Tenantlar',
         icon: 'Building2',
         path: '/admin/tenants',
-        permission: PERMISSIONS.tenants.view,
+        permission: 'system.tenants.read',
     },
     // 3. Branches
     {
@@ -36,7 +32,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         label: 'Filiallar',
         icon: 'GitBranch',
         path: '/admin/branches',
-        permission: PERMISSIONS.branches.view,
+        permission: 'system.branches.read',
     },
     // 4. Users (Group)
     {
@@ -47,13 +43,13 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             id: 'users',
             label: 'İstifadəçilər',
             path: '/admin/users?tab=users',
-            permission: PERMISSIONS.users.users.view,
+            permission: 'system.users.users.read',
         },
         {
             id: 'curators',
             label: 'Kuratorlar',
             path: '/admin/users?tab=curators',
-            permission: PERMISSIONS.users.curators.view,
+            permission: 'system.users.curators.read',
         }
         ]
     },
@@ -66,31 +62,31 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             id: 'market_place',
             label: 'Marketplace',
             path: '/admin/billing?tab=market_place',
-            permission: PERMISSIONS.billing.market_place.view,
+            permission: 'system.billing.market_place.read',
         },
         {
             id: 'compact_packages',
             label: 'Kompakt Paketlər',
             path: '/admin/billing?tab=compact_packages',
-            permission: PERMISSIONS.billing.compact_packages.view,
+            permission: 'system.billing.compact_packages.read',
         },
         {
             id: 'plans',
             label: 'Planlar',
             path: '/admin/billing?tab=plans',
-            permission: PERMISSIONS.billing.plans.view,
+            permission: 'system.billing.plans.read',
         },
         {
             id: 'invoices',
             label: 'Fakturalar',
             path: '/admin/billing?tab=invoices',
-            permission: PERMISSIONS.billing.invoices.view,
+            permission: 'system.billing.invoices.read',
         },
         {
             id: 'licenses',
             label: 'Lisenziyalar',
             path: '/admin/billing?tab=licenses',
-            permission: PERMISSIONS.billing.licenses.view,
+            permission: 'system.billing.licenses.read',
         },
         ]
     },
@@ -100,7 +96,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         label: 'Təsdiqləmələr',
         icon: 'CheckSquare',
         path: '/admin/approvals',
-        permission: PERMISSIONS.approvals.view,
+        permission: 'system.approvals.read',
     },
     // 7. File Manager
     {
@@ -108,7 +104,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         label: 'Fayl Meneceri',
         icon: 'Folder',
         path: '/admin/files',
-        permission: PERMISSIONS.file_manager.view,
+        permission: 'system.file_manager.read',
     },
     // 8. System Guide
     {
@@ -116,7 +112,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         label: 'Sistem Bələdçisi',
         icon: 'BookOpen',
         path: '/admin/guide',
-        permission: PERMISSIONS.system_guide.view,
+        permission: 'system.system_guide.read',
     },
     // 9. Settings
     {
@@ -131,13 +127,13 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'company_profile',
                 label: 'Şirkət Profili',
                 path: '/admin/settings?tab=general',
-                permission: PERMISSIONS.settings.general.company_profile.view
+                permission: 'system.settings.general.company_profile.read'
             },
             {
                 id: 'notification_engine',
                 label: 'Bildiriş Mühərriki',
                 path: '/admin/settings?tab=notifications',
-                permission: PERMISSIONS.settings.general.notification_engine.view
+                permission: 'system.settings.general.notification_engine.read'
             },
             ]
         },
@@ -149,13 +145,13 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'smtp_email',
                 label: 'SMTP Email',
                 path: '/admin/settings?tab=smtp',
-                permission: PERMISSIONS.settings.communication.smtp_email.view
+                permission: 'system.settings.communication.smtp_email.read'
             },
             {
                 id: 'smtp_sms',
                 label: 'SMS Gateway',
                 path: '/admin/settings?tab=sms',
-                permission: PERMISSIONS.settings.communication.smtp_sms.view
+                permission: 'system.settings.communication.smtp_sms.read'
             },
             ]
         },
@@ -167,19 +163,19 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'policies',
                 label: 'Siyasətlər (Policies)',
                 path: '/admin/settings?tab=security',
-                permission: PERMISSIONS.settings.security.security_policy.global_policy.view
+                permission: 'system.settings.security.security_policy.global_policy.read'
             },
             {
                 id: 'sso',
                 label: 'SSO & OAuth',
                 path: '/admin/settings?tab=sso',
-                permission: PERMISSIONS.settings.security.sso_OAuth.view
+                permission: 'system.settings.security.sso_OAuth.read'
             },
             {
                 id: 'rights',
                 label: 'İstifadəçi Hüquqları',
                 path: '/admin/settings?tab=roles',
-                permission: PERMISSIONS.settings.security.user_rights.role.view
+                permission: 'system.settings.security.user_rights.role.read'
             },
             ]
         },
@@ -191,7 +187,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'billing_config',
                 label: 'Bilinq Ayarları',
                 path: '/admin/settings?tab=billing_config',
-                permission: PERMISSIONS.settings.system_configurations.billing_configurations.price_rules.view
+                permission: 'system.settings.system_configurations.billing_configurations.price_rules.read'
             }, // Consolidated permission
             {
                 id: 'dictionaries',
@@ -201,25 +197,25 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                     id: 'sectors',
                     label: 'Sektorlar',
                     path: '/admin/settings?tab=dictionaries&entity=sectors',
-                    permission: PERMISSIONS.settings.system_configurations.dictionary.sectors.view
+                    permission: 'system.settings.system_configurations.dictionary.sectors.read'
                 },
                 {
                     id: 'units',
                     label: 'Ölçü Vahidləri',
                     path: '/admin/settings?tab=dictionaries&entity=units',
-                    permission: PERMISSIONS.settings.system_configurations.dictionary.units.view
+                    permission: 'system.settings.system_configurations.dictionary.units.read'
                 },
                 {
                     id: 'currencies',
                     label: 'Valyutalar',
                     path: '/admin/settings?tab=dictionaries&entity=currencies',
-                    permission: PERMISSIONS.settings.system_configurations.dictionary.currencies.view
+                    permission: 'system.settings.system_configurations.dictionary.currencies.read'
                 },
                 {
                     id: 'time_zones',
                     label: 'Saat Qurşaqları',
                     path: '/admin/settings?tab=dictionaries&entity=time_zones',
-                    permission: PERMISSIONS.settings.system_configurations.dictionary.time_zones.view
+                    permission: 'system.settings.system_configurations.dictionary.time_zones.read'
                 },
                 {
                     id: 'addresses',
@@ -228,19 +224,19 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                         id: 'country',
                         label: 'Ölkələr',
                         path: '/admin/settings?tab=dictionaries&entity=country',
-                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.read_country
+                        permission: 'system.settings.system_configurations.dictionary.addresses.read_country'
                     },
                     {
                         id: 'city',
                         label: 'Şəhərlər',
                         path: '/admin/settings?tab=dictionaries&entity=city',
-                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.read_city
+                        permission: 'system.settings.system_configurations.dictionary.addresses.read_city'
                     },
                     {
                         id: 'district',
                         label: 'Rayonlar',
                         path: '/admin/settings?tab=dictionaries&entity=district',
-                        permission: PERMISSIONS.settings.system_configurations.dictionary.addresses.read_district
+                        permission: 'system.settings.system_configurations.dictionary.addresses.read_district'
                     },
                     ]
                 }
@@ -250,13 +246,13 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'templates',
                 label: 'Sənəd Şablonları',
                 path: '/admin/settings?tab=templates',
-                permission: PERMISSIONS.settings.system_configurations.document_templates.view
+                permission: 'system.settings.system_configurations.document_templates.read'
             },
             {
                 id: 'workflow',
                 label: 'Workflow',
                 path: '/admin/settings?tab=workflow',
-                permission: PERMISSIONS.settings.system_configurations.workflow.configuration.view
+                permission: 'system.settings.system_configurations.workflow.configuration.read'
             },
             ]
         }
@@ -271,56 +267,56 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             id: 'console_dash',
             label: 'Dashboard',
             path: '/admin/console?tab=dashboard',
-            permission: PERMISSIONS.system_console.dashboard.view
+            permission: 'system.system_console.dashboard.read'
         },
         {
             id: 'monitoring',
             label: 'Monitoring',
             path: '/admin/console?tab=monitoring',
-            permission: PERMISSIONS.system_console.monitoring.dashboard.view
+            permission: 'system.system_console.monitoring.dashboard.read'
         },
         {
             id: 'audit',
             label: 'Audit & Compliance',
             path: '/admin/console?tab=audit',
-            permission: PERMISSIONS.system_console.audit_compliance.view
+            permission: 'system.system_console.audit_compliance.read'
         },
         {
             id: 'scheduler',
             label: 'Job Scheduler',
             path: '/admin/console?tab=scheduler',
-            permission: PERMISSIONS.system_console.job_scheduler.view
+            permission: 'system.system_console.job_scheduler.read'
         },
         {
             id: 'retention',
             label: 'Data Retention',
             path: '/admin/console?tab=retention',
-            permission: PERMISSIONS.system_console.data_retention.view
+            permission: 'system.system_console.data_retention.read'
         },
         {
             id: 'feature_flags',
             label: 'Feature Flags',
             path: '/admin/console?tab=feature_flags',
-            permission: PERMISSIONS.system_console.feature_flags.view
+            permission: 'system.system_console.feature_flags.read'
         },
         // Added omitted items
         {
             id: 'policy_security',
             label: 'Policy Security',
             path: '/admin/console?tab=policy',
-            permission: PERMISSIONS.system_console.policy_security.view
+            permission: 'system.system_console.policy_security.read'
         },
         {
             id: 'feedback',
             label: 'Feedback',
             path: '/admin/console?tab=feedback',
-            permission: PERMISSIONS.system_console.feedback.view
+            permission: 'system.system_console.feedback.read'
         },
         {
             id: 'tools',
             label: 'Tools',
             path: '/admin/console?tab=tools',
-            permission: PERMISSIONS.system_console.tools.view
+            permission: 'system.system_console.tools.read'
         },
         ]
     },
@@ -333,25 +329,25 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             id: 'api',
             label: 'API Reference',
             path: '/admin/developer?tab=api',
-            permission: PERMISSIONS.developer_hub.api_reference.view
+            permission: 'system.developer_hub.api_reference.read'
         },
         {
             id: 'sdk',
             label: 'SDKs',
             path: '/admin/developer?tab=sdk',
-            permission: PERMISSIONS.developer_hub.sdk.view
+            permission: 'system.developer_hub.sdk.read'
         },
         {
             id: 'webhooks',
             label: 'Webhooks',
             path: '/admin/developer?tab=webhooks',
-            permission: PERMISSIONS.developer_hub.webhooks.view
+            permission: 'system.developer_hub.webhooks.read'
         },
         {
             id: 'perm_map',
             label: 'Permission Map',
             path: '/admin/developer?tab=permissions',
-            permission: PERMISSIONS.developer_hub.permission_map.view
+            permission: 'system.developer_hub.permission_map.read'
         },
         ]
     },

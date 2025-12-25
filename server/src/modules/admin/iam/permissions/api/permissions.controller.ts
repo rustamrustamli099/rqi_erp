@@ -1,6 +1,6 @@
 import { Body, Controller, Post, Get, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PermissionsService } from '../application/permissions.service';
+import { PermissionsService } from '../../../../../platform/auth/permission.service';
 import { PreviewPermissionsDto } from './dto/preview-permissions.dto';
 import { JwtAuthGuard } from '../../../../../platform/auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../../../../platform/auth/permissions.guard';

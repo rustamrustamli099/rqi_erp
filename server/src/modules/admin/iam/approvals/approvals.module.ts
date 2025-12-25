@@ -11,7 +11,7 @@ import { AuditService } from '../../../../system/audit/audit.service';
         RolesModule // Import to access RolesService
     ],
     controllers: [ApprovalsController],
-    providers: [ApprovalsService, PrismaService, PermissionCacheService, AuditService],
+    providers: [ApprovalsService, PrismaService, AuditService],
     exports: [ApprovalsService]
 })
 export class ApprovalsModule { }

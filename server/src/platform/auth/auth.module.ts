@@ -1,4 +1,4 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { IdentityModule } from '../identity/identity.module';
@@ -8,17 +8,20 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { LocalStrategy } from './local.strategy';
 import { MfaService } from './mfa.service';
-import { PermissionService } from './permission.service';
+import { PermissionsService } from './permission.service';
 import { PermissionCacheService } from './permission-cache.service';
 import { RefreshTokenService } from './refresh-token.service';
 
 import { PrismaService } from '../../prisma.service';
+import { MenuService } from '../menu/menu.service';
+import { MenuModule } from '../menu/menu.module';
 
 @Global()
 @Module({
   imports: [
-    IdentityModule,
+    forwardRef(() => IdentityModule),
     PassportModule,
+    MenuModule, // Needed for PermissionsService (circular dependency risk? MenuService needs what? MenuDefinition is static)
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -28,8 +31,8 @@ import { PrismaService } from '../../prisma.service';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionService, PermissionCacheService, RefreshTokenService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, PermissionCacheService, RefreshTokenService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, PermissionService, PermissionCacheService, RefreshTokenService],
+  exports: [AuthService, JwtModule, PermissionsService, PermissionCacheService, RefreshTokenService],
 })
 export class AuthModule { }
