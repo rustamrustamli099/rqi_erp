@@ -1,5 +1,5 @@
 import type { Table } from "@tanstack/react-table"
-import { X, Search, RefreshCcw, Plus, SlidersHorizontal } from "lucide-react"
+import { X, Search, RefreshCcw, Plus, SlidersHorizontal, Download } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +27,9 @@ interface DataTableToolbarProps<TData> {
     // Controlled Mode
     searchValue?: string
     onSearchChange?: (value: string) => void
+    // Export Support
+    onExportClick?: () => void
+    canExport?: boolean
 }
 
 export function DataTableToolbar<TData>({
@@ -41,7 +44,9 @@ export function DataTableToolbar<TData>({
     hideViewOptions,
     onFilterClick,
     searchValue,
-    onSearchChange
+    onSearchChange,
+    onExportClick,
+    canExport
 }: DataTableToolbarProps<TData>) {
     const isFiltered = table.getState().columnFilters.length > 0
     const placeholder = searchPlaceholder || filterPlaceholder || "Filter...";
@@ -119,6 +124,20 @@ export function DataTableToolbar<TData>({
 
                 {/* Filter Drawer Trigger (Passed as Children) */}
                 {children}
+
+                {/* Export Button */}
+                {canExport && onExportClick && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={onExportClick}>
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excel-ə İxrac Et</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
 
                 {/* Column Visibility & Reorder Modal */}
                 {!hideViewOptions && <DataTableColumnReorder table={table} />}

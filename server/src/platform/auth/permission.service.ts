@@ -219,8 +219,63 @@ export class PermissionsService implements OnModuleInit {
         @Inject(IRoleRepository) private readonly roleRepository: IRoleRepository,
     ) { }
 
+    /**
+     * Non-read actions that imply read access (SAP-Grade)
+     */
+    private static readonly NON_READ_ACTIONS = [
+        'create', 'update', 'delete', 'manage', 'approve', 'reject',
+        'export', 'export_to_excel', 'download', 'upload', 'execute',
+        'configure', 'submit', 'forward', 'impersonate', 'invite',
+        'change_status', 'toggle', 'simulate', 'test_connection'
+    ];
+
     onModuleInit() {
-        console.log('Permissions Service Initialized with Single Verification Source');
+        console.log('Permissions Service Initialized with SAP-Grade Normalization');
+    }
+
+    /**
+     * SAP-Grade Permission Normalization (Server-Side)
+     * 
+     * Qaydalar:
+     * 1. Non-read action varsa → həmin module üçün .read avtomatik əlavə olunur
+     * 2. Child permission varsa → parent module .read avtomatik əlavə olunur
+     * 3. Bütün səviyyələrdə .access permission-lar yaradılır (navigation üçün)
+     */
+    private normalizePermissions(rawPermissions: string[]): string[] {
+        const normalized = new Set<string>();
+
+        rawPermissions.forEach(perm => {
+            if (!perm || typeof perm !== 'string') return;
+
+            normalized.add(perm); // Always add original
+
+            const parts = perm.split('.');
+            if (parts.length < 2) return;
+
+            const action = parts[parts.length - 1];
+            const scope = parts[0]; // 'system' or 'tenant'
+
+            // Rule 1: Non-read action implies read
+            if (PermissionsService.NON_READ_ACTIONS.includes(action)) {
+                const readPerm = [...parts.slice(0, -1), 'read'].join('.');
+                normalized.add(readPerm);
+            }
+
+            // Rule 2: Child permission implies parent read
+            for (let i = 2; i < parts.length - 1; i++) {
+                const parentPath = parts.slice(0, i).join('.');
+                normalized.add(`${parentPath}.read`);
+            }
+
+            // Rule 3: Generate .access permissions for navigation
+            let currentPath = scope;
+            for (let i = 1; i < parts.length; i++) {
+                normalized.add(`${currentPath}.access`);
+                currentPath += `.${parts[i]}`;
+            }
+        });
+
+        return Array.from(normalized).sort();
     }
 
     /**
@@ -244,8 +299,6 @@ export class PermissionsService implements OnModuleInit {
         if (dto.roleIds && dto.roleIds.length > 0) {
             for (const roleId of dto.roleIds) {
                 const role = await this.roleRepository.findById(roleId);
-                // [Scope Logic] If context is Tenant, filter out System-only roles if necessary?
-                // For now, assume if you rely on the role, you get the perms.
                 if (role && role.permissions) {
                     effectivePermissions.push(...role.permissions);
                 }
@@ -257,24 +310,24 @@ export class PermissionsService implements OnModuleInit {
             effectivePermissions.push(...dto.permissions);
         }
 
-        // Deduplicate
-        const uniquePerms = Array.from(new Set(effectivePermissions));
+        // SAP-Grade: Normalize permissions
+        const normalizedPerms = this.normalizePermissions(effectivePermissions);
 
         // [Zero-Permission Detection]
-        if (uniquePerms.length === 0) {
+        if (normalizedPerms.length === 0) {
             return {
                 visibleMenus: [],
                 visibleRoutes: [],
-                blockedRoutes: this.getAllRoutes(), // All routes blocked
+                blockedRoutes: this.getAllRoutes(),
                 effectivePermissions: [],
+                normalizedPermissions: [],
                 summary: { totalPermissions: 0, byModule: {} },
                 accessState: 'ZERO_PERMISSION_LOCKOUT'
             };
         }
 
-        // 2. Filter Menu (Visuals)
-        // Ensure ADMIN_MENU_TREE is available and valid
-        const visibleMenus = this.menuService.filterMenu(ADMIN_MENU_TREE, uniquePerms);
+        // 2. Filter Menu with NORMALIZED permissions
+        const visibleMenus = this.menuService.filterMenu(ADMIN_MENU_TREE, normalizedPerms);
 
         // 3. Calculate Routes
         const getRoutes = (items: any[]): string[] => {
@@ -292,14 +345,14 @@ export class PermissionsService implements OnModuleInit {
 
         // 4. Grant Capabilities Summary (by module)
         const summary = {
-            totalPermissions: uniquePerms.length,
+            totalPermissions: normalizedPerms.length,
             byModule: {} as any
         };
 
-        uniquePerms.forEach(slug => {
+        normalizedPerms.forEach(slug => {
             const parts = slug.split('.');
             if (parts.length > 1) {
-                const module = parts[1]; // platform.<module>
+                const module = parts[1];
                 summary.byModule[module] = (summary.byModule[module] || 0) + 1;
             }
         });
@@ -308,7 +361,8 @@ export class PermissionsService implements OnModuleInit {
             visibleMenus,
             visibleRoutes,
             blockedRoutes,
-            effectivePermissions: uniquePerms,
+            effectivePermissions: effectivePermissions, // Original
+            normalizedPermissions: normalizedPerms, // After normalization
             summary,
             accessState: 'GRANTED'
         };
@@ -343,3 +397,4 @@ export class PermissionsService implements OnModuleInit {
         return getRoutes(ADMIN_MENU_TREE);
     }
 }
+

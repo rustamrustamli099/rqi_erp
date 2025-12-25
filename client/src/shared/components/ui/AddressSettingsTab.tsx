@@ -302,7 +302,7 @@ export default function AddressSettingsTab() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <MapPin className="h-5 w-5 text-primary" /> Ünvan Master Data
+                                <MapPin className="h-5 w-5 text-primary" /> Ünvanlar
                             </CardTitle>
                             <CardDescription className="text-xs">
                                 Ölkə, Şəhər və Rayon məlumatlarının idarə olunması.

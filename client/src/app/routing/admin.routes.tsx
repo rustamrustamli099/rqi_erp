@@ -83,7 +83,7 @@ export default function AdminRoutes() {
             } />
 
             {/* System Console */}
-            <Route path="system-console" element={
+            <Route path="console" element={
                 <ProtectedRoute
                     requiredPermissions={[
                         PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ,
@@ -166,7 +166,7 @@ export default function AdminRoutes() {
 
 
 
-            <Route path="*" element={<Navigate to="dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
     );
 }

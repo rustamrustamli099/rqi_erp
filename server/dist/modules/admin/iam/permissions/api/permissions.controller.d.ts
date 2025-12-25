@@ -9,6 +9,7 @@ export declare class PermissionsController {
         visibleRoutes: string[];
         blockedRoutes: string[];
         effectivePermissions: string[];
+        normalizedPermissions: string[];
         summary: {
             totalPermissions: number;
             byModule: any;

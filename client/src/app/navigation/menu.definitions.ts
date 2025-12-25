@@ -1,4 +1,19 @@
-// menu.definitions.ts (FINAL CANONICAL MODEL)
+/**
+ * Menu Definitions
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * Bu fayl RBAC_REGISTRY-dən menu items generasiya edir.
+ * RBAC_REGISTRY = Single Source of Truth
+ * 
+ * Legacy interface-lər saxlanılıb geriyə uyğunluq üçün.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+import { RBAC_REGISTRY, type MenuConfig } from '@/app/security/rbac.registry';
+
+// =============================================================================
+// TYPES (Legacy Compatible)
+// =============================================================================
 
 export interface MenuItem {
     id: string;
@@ -15,109 +30,70 @@ export interface MenuItem {
 
 export type AdminMenuItem = MenuItem; // Alias for backward compatibility
 
-// --- SYSTEM ADMIN MENU (FLAT SIDEBAR) ---
-export const PLATFORM_MENU: MenuItem[] = [
-    {
-        id: 'dashboard',
-        label: 'Dashboard',
-        title: 'Dashboard',
-        icon: 'LayoutDashboard',
-        path: '/admin/dashboard',
-        route: '/admin/dashboard',
-        requiredPermissions: ['system.dashboard.access'],
-        permissionPrefixes: ['system.dashboard']
-    },
-    {
-        id: 'tenants',
-        label: 'Tenantlar',
-        title: 'Tenants',
-        icon: 'Building2',
-        path: '/admin/tenants',
-        route: '/admin/tenants',
-        requiredPermissions: ['system.tenants.access'],
-        permissionPrefixes: ['system.tenants']
-    },
-    {
-        id: 'users',
-        label: 'İstifadəçilər',
-        title: 'Users',
-        icon: 'Users',
-        path: '/admin/users',
-        route: '/admin/users',
-        tab: 'users_list', // Default Tab
-        requiredPermissions: ['system.users.access'],
-        permissionPrefixes: ['system.users']
-    },
-    {
-        id: 'billing',
-        label: 'Bilinq',
-        title: 'Billing',
-        icon: 'CreditCard',
-        path: '/admin/billing',
-        route: '/admin/billing',
-        tab: 'plans', // Default Tab
-        requiredPermissions: ['system.billing.access'],
-        permissionPrefixes: ['system.billing']
-    },
-    {
-        id: 'settings',
-        label: 'Tənzimləmələr',
-        title: 'Settings',
-        icon: 'Settings',
-        path: '/admin/settings',
-        route: '/admin/settings',
-        tab: 'general', // Default Tab
-        requiredPermissions: ['system.settings.access'],
-        permissionPrefixes: ['system.settings']
-    },
-    {
-        id: 'system_console',
-        label: 'Sistem Konsolu',
-        title: 'System Console',
-        icon: 'Terminal',
-        path: '/admin/system-console',
-        route: '/admin/system-console',
-        tab: 'monitoring', // Default Tab
-        requiredPermissions: ['system.system_console.access'],
-        permissionPrefixes: ['system.system_console']
-    }
-];
+// =============================================================================
+// GENERATOR FUNCTION
+// =============================================================================
 
-// --- TENANT MENU ---
-export const TENANT_MENU: MenuItem[] = [{
-    id: 'dashboard',
-    label: 'Əsas Səhifə',
-    title: 'Dashboard',
-    icon: 'LayoutDashboard',
-    path: '/dashboard',
-    route: '/dashboard',
-    requiredPermissions: ['tenant.dashboard.access']
-},
-{
-    id: 'sales',
-    label: 'Satışlar',
-    title: 'Sales',
-    icon: 'ShoppingCart',
-    path: '/sales',
-    route: '/sales',
-    requiredPermissions: ['tenant.sales.access']
-},
-{
-    id: 'warehouse',
-    label: 'Anbar',
-    title: 'Warehouse',
-    icon: 'Package',
-    path: '/warehouse',
-    route: '/warehouse',
-    requiredPermissions: ['tenant.warehouse.access']
-},
-{
-    id: 'settings',
-    label: 'Ayarlar',
-    title: 'Settings',
-    icon: 'Settings',
-    path: '/settings',
-    route: '/settings',
-    requiredPermissions: ['tenant.settings.access']
+/**
+ * RBAC_REGISTRY-dən MenuItem[] generasiya edir
+ * 
+ * @param registry - RBAC registry (admin və ya tenant)
+ * @param permissionScope - 'system' və ya 'tenant'
+ */
+function generateMenuFromRegistry(
+    registry: Record<string, MenuConfig>,
+    permissionScope: 'system' | 'tenant'
+): MenuItem[] {
+    return Object.entries(registry).map(([id, config]) => {
+        // Extract module name from permission for prefix
+        // e.g., 'system.billing.view' → 'system.billing'
+        // e.g., 'system.dashboard.view' → 'system.dashboard'
+        const permissionBase = config.permission.replace(/\.(read|view|access)$/, '');
+
+        return {
+            id,
+            label: config.labelAz || config.label,
+            title: config.label,
+            icon: config.icon,
+            path: config.path,
+            route: config.path,
+            tab: config.defaultTab,
+            requiredPermissions: [`${permissionBase}.access`],
+            permissionPrefixes: [permissionBase]
+        };
+    });
 }
-];
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+/**
+ * SYSTEM ADMIN MENU (FLAT SIDEBAR)
+ * Generated from RBAC_REGISTRY.admin
+ */
+export const PLATFORM_MENU: MenuItem[] = generateMenuFromRegistry(
+    RBAC_REGISTRY.admin,
+    'system'
+);
+
+/**
+ * TENANT MENU
+ * Generated from RBAC_REGISTRY.tenant
+ */
+export const TENANT_MENU: MenuItem[] = generateMenuFromRegistry(
+    RBAC_REGISTRY.tenant,
+    'tenant'
+);
+
+// =============================================================================
+// DEBUG HELPERS
+// =============================================================================
+
+/**
+ * Konsola menu strukturunu yazdırır (development üçün)
+ */
+export function debugPrintMenus(): void {
+    console.log('[MenuDefinitions] PLATFORM_MENU:', PLATFORM_MENU);
+    console.log('[MenuDefinitions] TENANT_MENU:', TENANT_MENU);
+}

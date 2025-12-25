@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var PermissionsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermissionsService = exports.admin_panel_permissions = void 0;
 const common_1 = require("@nestjs/common");
@@ -221,14 +222,48 @@ exports.admin_panel_permissions = {
     },
 };
 let PermissionsService = class PermissionsService {
+    static { PermissionsService_1 = this; }
     menuService;
     roleRepository;
     constructor(menuService, roleRepository) {
         this.menuService = menuService;
         this.roleRepository = roleRepository;
     }
+    static NON_READ_ACTIONS = [
+        'create', 'update', 'delete', 'manage', 'approve', 'reject',
+        'export', 'export_to_excel', 'download', 'upload', 'execute',
+        'configure', 'submit', 'forward', 'impersonate', 'invite',
+        'change_status', 'toggle', 'simulate', 'test_connection'
+    ];
     onModuleInit() {
-        console.log('Permissions Service Initialized with Single Verification Source');
+        console.log('Permissions Service Initialized with SAP-Grade Normalization');
+    }
+    normalizePermissions(rawPermissions) {
+        const normalized = new Set();
+        rawPermissions.forEach(perm => {
+            if (!perm || typeof perm !== 'string')
+                return;
+            normalized.add(perm);
+            const parts = perm.split('.');
+            if (parts.length < 2)
+                return;
+            const action = parts[parts.length - 1];
+            const scope = parts[0];
+            if (PermissionsService_1.NON_READ_ACTIONS.includes(action)) {
+                const readPerm = [...parts.slice(0, -1), 'read'].join('.');
+                normalized.add(readPerm);
+            }
+            for (let i = 2; i < parts.length - 1; i++) {
+                const parentPath = parts.slice(0, i).join('.');
+                normalized.add(`${parentPath}.read`);
+            }
+            let currentPath = scope;
+            for (let i = 1; i < parts.length; i++) {
+                normalized.add(`${currentPath}.access`);
+                currentPath += `.${parts[i]}`;
+            }
+        });
+        return Array.from(normalized).sort();
     }
     async findAll() {
         const systemSlugs = this.flattenPermissionsMap(exports.admin_panel_permissions, 'system');
@@ -251,18 +286,19 @@ let PermissionsService = class PermissionsService {
         if (dto.permissions) {
             effectivePermissions.push(...dto.permissions);
         }
-        const uniquePerms = Array.from(new Set(effectivePermissions));
-        if (uniquePerms.length === 0) {
+        const normalizedPerms = this.normalizePermissions(effectivePermissions);
+        if (normalizedPerms.length === 0) {
             return {
                 visibleMenus: [],
                 visibleRoutes: [],
                 blockedRoutes: this.getAllRoutes(),
                 effectivePermissions: [],
+                normalizedPermissions: [],
                 summary: { totalPermissions: 0, byModule: {} },
                 accessState: 'ZERO_PERMISSION_LOCKOUT'
             };
         }
-        const visibleMenus = this.menuService.filterMenu(menu_definition_1.ADMIN_MENU_TREE, uniquePerms);
+        const visibleMenus = this.menuService.filterMenu(menu_definition_1.ADMIN_MENU_TREE, normalizedPerms);
         const getRoutes = (items) => {
             let routes = [];
             for (const item of items) {
@@ -277,10 +313,10 @@ let PermissionsService = class PermissionsService {
         const allRoutes = this.getAllRoutes();
         const blockedRoutes = allRoutes.filter(r => !visibleRoutes.includes(r));
         const summary = {
-            totalPermissions: uniquePerms.length,
+            totalPermissions: normalizedPerms.length,
             byModule: {}
         };
-        uniquePerms.forEach(slug => {
+        normalizedPerms.forEach(slug => {
             const parts = slug.split('.');
             if (parts.length > 1) {
                 const module = parts[1];
@@ -291,7 +327,8 @@ let PermissionsService = class PermissionsService {
             visibleMenus,
             visibleRoutes,
             blockedRoutes,
-            effectivePermissions: uniquePerms,
+            effectivePermissions: effectivePermissions,
+            normalizedPermissions: normalizedPerms,
             summary,
             accessState: 'GRANTED'
         };
@@ -326,7 +363,7 @@ let PermissionsService = class PermissionsService {
     }
 };
 exports.PermissionsService = PermissionsService;
-exports.PermissionsService = PermissionsService = __decorate([
+exports.PermissionsService = PermissionsService = PermissionsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(menu_service_1.MenuService)),
     __param(1, (0, common_1.Inject)(role_repository_interface_1.IRoleRepository)),

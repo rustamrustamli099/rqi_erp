@@ -170,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 const uniquePerms = Array.from(derivedPerms);
 
-                console.log("[AuthContext] FINAL PERMISSIONS (No Expansion):", uniquePerms);
+                // console.log("[AuthContext] FINAL PERMISSIONS (No Expansion):", uniquePerms);
                 setPermissionsState(uniquePerms);
 
             } else {

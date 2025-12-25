@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { PermissionSlugs } from "@/app/security/permission-slugs"
@@ -61,10 +60,19 @@ import { SETTINGS_REGISTRY } from "@/app/navigation/settings.registry";
 const ALL_SIDEBAR_ITEMS = SETTINGS_REGISTRY;
 
 export default function SettingsPage() {
-    const [searchParams, setSearchParams] = useSearchParams()
     const [timezone, setTimezone] = useState("Asia/Baku")
-    const { can, isLoading, permissions } = usePermissions()
-    console.log("[SettingsPage] Permissions:", permissions);
+    const { can, isLoading } = usePermissions()
+
+    // Read initial tab from URL, then use local state for subsequent changes
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get('tab') || 'general';
+    const [activeTab, setActiveTab] = useState(initialTab);
+
+    // Handler for tab change - just update local state
+    const handleTabChange = (tabId: string) => {
+        console.log('[SettingsPage] Tab changing to:', tabId);
+        setActiveTab(tabId);
+    };
 
     if (isLoading) {
         return (
@@ -96,21 +104,8 @@ export default function SettingsPage() {
         )
     }
 
-    const currentTabId = searchParams.get("tab");
-    const activeTab = (currentTabId && allVisibleItems.some(i => i.id === currentTabId))
-        ? currentTabId
-        : allVisibleItems[0]?.id;
-
-    // SAP-Grade URL Synchronization: Redirect to first allowed tab if current is invalid
-    useEffect(() => {
-        if (currentTabId !== activeTab && activeTab) {
-            setSearchParams(prev => {
-                const newParams = new URLSearchParams(prev);
-                newParams.set('tab', activeTab);
-                return newParams;
-            }, { replace: true });
-        }
-    }, [currentTabId, activeTab, setSearchParams]);
+    // Debug log
+    console.log('[SettingsPage] Tab State:', { activeTab, visibleIds: allVisibleItems.map(i => i.id) });
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">
@@ -136,7 +131,9 @@ export default function SettingsPage() {
                                             "justify-start gap-2 h-9 w-48 overflow-hidden text-left",
                                             activeTab === item.id ? "bg-secondary font-medium text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                         )}
-                                        onClick={() => setSearchParams({ tab: item.id })}
+                                        onClick={() => {
+                                            handleTabChange(item.id);
+                                        }}
                                         title={item.label}
                                     >
                                         <item.icon className="h-4 w-4 shrink-0" />
@@ -297,7 +294,7 @@ export default function SettingsPage() {
 
 
                         {/* --- EXISTING TABS MIGRATED --- */}
-                        {activeTab === 'billing-config' && (
+                        {activeTab === 'billing_config' && (
                             can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.READ) ? (
                                 <BillingConfigTab />
                             ) : <Inline403 />

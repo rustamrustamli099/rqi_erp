@@ -19,7 +19,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     const location = useLocation();
 
     // eslint-disable-next-line no-console
-    console.log('[MainLayout] Location changed:', location.pathname);
+    // console.log('[MainLayout] Location changed:', location.pathname);
 
     return (
         <div className="flex h-screen w-full bg-muted/20 overflow-hidden">

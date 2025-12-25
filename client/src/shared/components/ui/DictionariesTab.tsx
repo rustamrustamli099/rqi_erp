@@ -60,41 +60,21 @@ import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
 
 export function DictionariesTab() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const currentSubTab = searchParams.get('subTab') || 'sectors';
-
-    const handleTabChange = (value: string) => {
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set('subTab', value);
-            return newParams;
-        }, { replace: true });
-    };
+    const [currentSubTab, setCurrentSubTab] = useState('sectors');
 
     return (
         <div className="space-y-4">
-            <Tabs value={currentSubTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full h-auto flex-wrap grid-cols-2 md:grid-cols-5 gap-1">
-                    <TabsTrigger value="currency">Valyutalar</TabsTrigger>
-                    <TabsTrigger value="country">Ölkələr</TabsTrigger>
-                    <TabsTrigger value="city">Şəhərlər</TabsTrigger>
-                    <TabsTrigger value="sectors">Sektorlar</TabsTrigger>
-                    <TabsTrigger value="units">Ölçü Vahidləri</TabsTrigger>
-                    <TabsTrigger value="timezones">Zaman Zonaları</TabsTrigger>
-                    <TabsTrigger value="address">Ünvanlar</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="currency" className="space-y-4 mt-4">
-                    <CurrenciesManager />
-                </TabsContent>
-
-                <TabsContent value="country" className="space-y-4 mt-4">
-                    <AddressSettingsTab />
-                </TabsContent>
-
-                <TabsContent value="city" className="space-y-4 mt-4">
-                    <AddressSettingsTab />
-                </TabsContent>
+            <Tabs value={currentSubTab} onValueChange={setCurrentSubTab} className="w-full">
+                {/* Horizontal scrollable tabs */}
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <TabsList className="inline-flex w-max gap-1 h-10 justify-start">
+                        <TabsTrigger value="sectors" className="whitespace-nowrap">Sektorlar</TabsTrigger>
+                        <TabsTrigger value="units" className="whitespace-nowrap">Ölçü Vahidləri</TabsTrigger>
+                        <TabsTrigger value="currency" className="whitespace-nowrap">Valyutalar</TabsTrigger>
+                        <TabsTrigger value="timezones" className="whitespace-nowrap">Zaman Zonaları</TabsTrigger>
+                        <TabsTrigger value="address" className="whitespace-nowrap">Ünvanlar</TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="sectors" className="space-y-4 mt-4">
                     <SectorsManager />
@@ -104,11 +84,23 @@ export function DictionariesTab() {
                     <UnitsManager />
                 </TabsContent>
 
+                <TabsContent value="currency" className="space-y-4 mt-4">
+                    <CurrenciesManager />
+                </TabsContent>
+
                 <TabsContent value="timezones" className="space-y-4 mt-4">
                     <TimezoneSettingsTab />
                 </TabsContent>
+
+                <TabsContent value="address" className="space-y-4 mt-4">
+                    <div className="space-y-2 mb-4">
+                        <h3 className="text-lg font-medium">Ünvanlar</h3>
+                        <p className="text-sm text-muted-foreground">Ölkə, Şəhər və Rayon məlumatlarının idarə olunması.</p>
+                    </div>
+                    <AddressSettingsTab />
+                </TabsContent>
             </Tabs>
-        </div >
+        </div>
     )
 }
 

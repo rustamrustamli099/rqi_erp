@@ -215,13 +215,16 @@ export declare class PermissionsService implements OnModuleInit {
     private readonly menuService;
     private readonly roleRepository;
     constructor(menuService: MenuService, roleRepository: IRoleRepository);
+    private static readonly NON_READ_ACTIONS;
     onModuleInit(): void;
+    private normalizePermissions;
     findAll(): Promise<any[]>;
     previewPermissions(dto: PreviewPermissionsDto): Promise<{
         visibleMenus: import("../menu/menu.definition").MenuItem[];
         visibleRoutes: string[];
         blockedRoutes: string[];
         effectivePermissions: string[];
+        normalizedPermissions: string[];
         summary: {
             totalPermissions: number;
             byModule: any;

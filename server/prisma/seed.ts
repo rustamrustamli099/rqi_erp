@@ -8,9 +8,10 @@ const prisma = new PrismaClient();
 // DATA DEFINITIONS (Inlined to avoid import issues)
 // =================================================================================================
 
-import { admin_panel_permissions } from '../src/common/constants/perms';
+import { admin_panel_permissions } from '../src/platform/auth/permission.service';
 
 const platform_permissions = admin_panel_permissions;
+
 
 const tenant_permissions = {
     dashboard: { perms: ['view'] },

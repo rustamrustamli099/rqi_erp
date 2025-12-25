@@ -83,7 +83,9 @@ const RoleTable = ({
     // Hook Connections
     searchTerm, setSearch, setPage, setPageSize, pagination,
     // Filter Connections
-    query, setFilter, reset
+    query, setFilter, reset,
+    // Export Support
+    onExportClick
 }: any) => {
     // Local state for "Apply" logic
     const [draftFilters, setDraftFilters] = useState(query.filters || {});
@@ -143,6 +145,8 @@ const RoleTable = ({
                     onAddClick={onAddClick}
                     searchValue={searchTerm}
                     onSearchChange={setSearch}
+                    onExportClick={onExportClick}
+                    canExport={!!onExportClick}
                 >
                     <FilterDrawer
                         resetFilters={reset}
@@ -738,6 +742,32 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                         query={query}
                         setFilter={setFilter}
                         reset={reset}
+                        // Export Support
+                        onExportClick={() => {
+                            // Export roles to CSV
+                            const headers = ['Ad', 'Təsvir', 'Növ', 'Scope', 'İstifadəçi Sayı', 'İcazə Sayı', 'Status'];
+                            const csvRows = [
+                                headers.join(','),
+                                ...roles.map((r: any) => [
+                                    `"${r.name || ''}"`,
+                                    `"${(r.description || '').replace(/"/g, '""')}"`,
+                                    r.type,
+                                    r.scope,
+                                    r.usersCount || 0,
+                                    r.permissionsCount || 0,
+                                    r.status || 'N/A'
+                                ].join(','))
+                            ];
+                            const csvContent = csvRows.join('\n');
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `roles_export_${new Date().toISOString().slice(0, 10)}.csv`;
+                            link.click();
+                            URL.revokeObjectURL(url);
+                            toast.success('Rollar CSV olaraq ixrac edildi');
+                        }}
                     />
                 </TabsContent>
 
