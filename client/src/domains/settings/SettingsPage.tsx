@@ -68,10 +68,13 @@ export default function SettingsPage() {
     const initialTab = urlParams.get('tab') || 'general';
     const [activeTab, setActiveTab] = useState(initialTab);
 
-    // Handler for tab change - just update local state
+    // Handler for tab change - update local state AND URL
     const handleTabChange = (tabId: string) => {
         console.log('[SettingsPage] Tab changing to:', tabId);
         setActiveTab(tabId);
+        // Also update URL for bookmarkability
+        const newUrl = `${window.location.pathname}?tab=${tabId}`;
+        window.history.replaceState(null, '', newUrl);
     };
 
     if (isLoading) {
