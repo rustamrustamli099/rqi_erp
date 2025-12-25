@@ -33,6 +33,7 @@ const menus_module_1 = require("./modules/menus/menus.module");
 const permissions_module_1 = require("./modules/admin/iam/permissions/permissions.module");
 const roles_module_1 = require("./modules/admin/iam/roles/roles.module");
 const role_approvals_module_1 = require("./modules/admin/iam/role-approvals/role-approvals.module");
+const approvals_module_1 = require("./modules/admin/iam/approvals/approvals.module");
 const files_module_1 = require("./modules/files/files.module");
 const prisma_service_1 = require("./prisma.service");
 const addresses_module_1 = require("./modules/addresses/addresses.module");
@@ -88,6 +89,7 @@ exports.AppModule = AppModule = __decorate([
             payment_module_1.PaymentModule,
             compliance_module_1.ComplianceModule,
             role_approvals_module_1.RoleApprovalsModule,
+            approvals_module_1.ApprovalsModule,
             nestjs_pino_1.LoggerModule.forRoot({
                 pinoHttp: {
                     customProps: (req, res) => ({

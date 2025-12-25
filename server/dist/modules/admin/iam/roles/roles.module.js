@@ -21,7 +21,8 @@ exports.RolesModule = RolesModule = __decorate([
     (0, common_1.Module)({
         imports: [],
         controllers: [roles_controller_1.RolesController],
-        providers: [roles_service_1.RolesService, role_permissions_service_1.RolePermissionsService, prisma_service_1.PrismaService, permission_cache_service_1.PermissionCacheService, audit_service_1.AuditService]
+        providers: [roles_service_1.RolesService, role_permissions_service_1.RolePermissionsService, prisma_service_1.PrismaService, permission_cache_service_1.PermissionCacheService, audit_service_1.AuditService],
+        exports: [roles_service_1.RolesService]
     })
 ], RolesModule);
 //# sourceMappingURL=roles.module.js.map
