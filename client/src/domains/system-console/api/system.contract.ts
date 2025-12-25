@@ -28,7 +28,7 @@ export interface Role {
     approvalNote?: string;
     permissions?: SystemPermission[];
     _count?: {
-        users: number;
+        userRoles: number;
     };
 }
 

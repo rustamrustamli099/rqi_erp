@@ -26,7 +26,7 @@ import {
     PopoverTrigger,
 } from "@/shared/components/ui/popover"
 import { Badge } from "@/shared/components/ui/badge"
-import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List, History, CheckCircle2, XCircle, FileText, Download, Building2, Terminal, Loader2, Info } from "lucide-react"
+import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List, History, CheckCircle2, XCircle, FileText, Download, Building2, Terminal, Loader2, Info, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/shared/components/ui/button"
@@ -489,7 +489,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 description: r.description,
                 type: (r.isSystem || r.scope === 'SYSTEM') ? 'system' : 'custom',
                 scope: r.scope || 'TENANT',
-                usersCount: r._count?.users || r.usersCount || 0,
+                usersCount: r._count?.userRoles || r.usersCount || 0,
                 permissionsCount: r._count?.permissions || (r.permissions || []).length || 0,
                 permissions: r.permissions || [],
                 status: r.status || 'ACTIVE'
@@ -681,7 +681,16 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
 
             {/* TABS ARCHITECTURE */}
             {/* TABS ARCHITECTURE */}
-            <Tabs value={currentTab} onValueChange={setCurrentTab} className="h-full space-y-6">
+            <Tabs defaultValue="list" value={currentTab} onValueChange={(val) => {
+                setCurrentTab(val);
+                // When switching to Matrix, fetch ALL roles (or a large page) to show complete picture
+                if (val === 'matrix') {
+                    setPageSize(100); // 100 roles should cover most cases for a matrix view for now.
+                    // Ideally we'd have a separate "getAll" query, but this works for MVP.
+                } else {
+                    setPageSize(10); // Reset for list view
+                }
+            }} className="h-full space-y-6">
                 <div className="flex items-center justify-between">
                     <TabsList className="bg-muted/50 p-1">
                         <TabsTrigger value="list" className="gap-2">
@@ -793,10 +802,6 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                                             <span>Dəyişikliklər avtomatik yadda saxlanılır.</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button size="sm" variant="secondary" onClick={() => setIsPreviewOpen(true)}>
-                                                <Eye className="mr-2 h-4 w-4" />
-                                                Simulyasiya (Preview)
-                                            </Button>
                                         </div>
                                     </div>
 
@@ -833,8 +838,8 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                                             * Qırmızı (Təhlükəli) icazələr xüsusi təsdiq tələb edə bilər.
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button variant="ghost" onClick={() => setSelectedPermissions(originalPermissions)}>
-                                                Ləğv et
+                                            <Button variant="outline" onClick={() => setIsPreviewOpen(true)} className="gap-2">
+                                                <Play className="w-4 h-4" /> Simulyasiya
                                             </Button>
                                             <Button onClick={() => setIsDiffOpen(true)} disabled={isSaving}>
                                                 {isSaving ? "Yadda saxlanılır..." : "Yadda Saxla"}

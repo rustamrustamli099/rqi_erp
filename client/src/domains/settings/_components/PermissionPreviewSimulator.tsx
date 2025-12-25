@@ -4,7 +4,22 @@ import { cn } from "@/shared/lib/utils"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import { Lock, CheckCircle2, XCircle, LayoutDashboard, ChevronRight, ChevronDown, ShieldAlert, Search } from "lucide-react"
+import {
+    Lock, CheckCircle2, XCircle, LayoutDashboard, ChevronRight, ChevronDown, ShieldAlert,
+    Building2, Users, CreditCard, Settings, Terminal, ShoppingCart, Package, Search
+} from "lucide-react"
+
+// Icon Mapping for String Data
+const ICON_MAP: Record<string, any> = {
+    "LayoutDashboard": LayoutDashboard,
+    "Building2": Building2,
+    "Users": Users,
+    "CreditCard": CreditCard,
+    "Settings": Settings,
+    "Terminal": Terminal,
+    "ShoppingCart": ShoppingCart,
+    "Package": Package
+};
 
 interface PermissionPreviewSimulatorProps {
     permissions: string[]
@@ -46,7 +61,7 @@ export function PermissionPreviewSimulator({ permissions, context = 'admin', cla
     }
 
     return (
-        <div className={cn("grid grid-cols-1 md:grid-cols-[280px_1fr] border border-border rounded-lg overflow-hidden h-[500px] bg-background", className)}>
+        <div className={cn("grid grid-cols-1 md:grid-cols-[280px_1fr] border border-border rounded-lg overflow-hidden h-[600px] bg-background", className)}>
 
             {/* LEFT: Menu Preview */}
             <div className="border-r border-border bg-card flex flex-col overflow-hidden h-full">
@@ -66,32 +81,32 @@ export function PermissionPreviewSimulator({ permissions, context = 'admin', cla
                             {/* Recursive Render Helper */}
                             {(() => {
                                 const renderMenuItem = (item: any, depth = 0) => {
+                                    // Resolve Icon
+                                    const IconComponent = typeof item.icon === 'string' ? ICON_MAP[item.icon] : item.icon;
+
                                     return (
-                                        <div key={item.id} className={cn("space-y-1", depth > 0 && "ml-3 border-l border-border pl-2")}>
+                                        <div key={item.id} className={cn("space-y-1 relative", depth > 0 && "ml-4 border-l border-border/50 pl-2")}>
                                             <div
                                                 className={cn(
-                                                    "flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground rounded-md hover:bg-accent/50 transition-colors select-none",
+                                                    "flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground rounded-md hover:bg-accent/50 transition-colors select-none group",
                                                     depth > 0 && "text-xs text-muted-foreground"
                                                 )}
+                                                title={item.label}
                                             >
-                                                {item.icon ? (
-                                                    typeof item.icon === 'string' ? (
-                                                        <span className="w-4 h-4 opacity-70">{item.icon}</span>
-                                                    ) : (
-                                                        <item.icon className="w-4 h-4 opacity-70" />
-                                                    )
+                                                {IconComponent ? (
+                                                    <IconComponent className="w-4 h-4 opacity-70 shrink-0" />
                                                 ) : depth === 0 ? (
-                                                    <LayoutDashboard className="w-4 h-4 opacity-70" />
+                                                    <LayoutDashboard className="w-4 h-4 opacity-70 shrink-0" />
                                                 ) : (
                                                     // Dot for sub-items
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-border" />
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-border shrink-0" />
                                                 )}
-                                                <span>{item.label}</span>
+                                                <span className="truncate">{item.label}</span>
                                             </div>
 
                                             {/* Children */}
                                             {item.children && item.children.length > 0 && (
-                                                <div className="space-y-0.5 mt-0.5">
+                                                <div className="space-y-1 mt-1">
                                                     {item.children.map((child: any) => renderMenuItem(child, depth + 1))}
                                                 </div>
                                             )}
@@ -99,7 +114,7 @@ export function PermissionPreviewSimulator({ permissions, context = 'admin', cla
                                     );
                                 };
 
-                                return simulation.menuTree.map(item => renderMenuItem(item));
+                                return simulation.menuTree.map((item: any) => renderMenuItem(item));
                             })()}
                         </div>
                     )}
