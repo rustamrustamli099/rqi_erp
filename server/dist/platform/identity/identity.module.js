@@ -9,8 +9,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.IdentityModule = void 0;
 const common_1 = require("@nestjs/common");
 const identity_usecase_1 = require("./application/identity.usecase");
+const governance_service_1 = require("./application/governance.service");
 const identity_controller_1 = require("./api/identity.controller");
 const users_controller_1 = require("./api/users.controller");
+const governance_controller_1 = require("./api/governance.controller");
 const auth_module_1 = require("../auth/auth.module");
 const prisma_service_1 = require("../../prisma.service");
 const prisma_user_repository_1 = require("./infrastructure/prisma-user.repository");
@@ -23,9 +25,10 @@ exports.IdentityModule = IdentityModule;
 exports.IdentityModule = IdentityModule = __decorate([
     (0, common_1.Module)({
         imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
-        controllers: [identity_controller_1.IdentityController, users_controller_1.UsersController],
+        controllers: [identity_controller_1.IdentityController, users_controller_1.UsersController, governance_controller_1.GovernanceController],
         providers: [
             identity_usecase_1.IdentityUseCase,
+            governance_service_1.GovernanceService,
             prisma_service_1.PrismaService,
             {
                 provide: user_repository_interface_1.IUserRepository,
@@ -36,7 +39,7 @@ exports.IdentityModule = IdentityModule = __decorate([
                 useClass: prisma_role_repository_1.PrismaRoleRepository
             }
         ],
-        exports: [identity_usecase_1.IdentityUseCase, user_repository_interface_1.IUserRepository, role_repository_interface_1.IRoleRepository]
+        exports: [identity_usecase_1.IdentityUseCase, governance_service_1.GovernanceService, user_repository_interface_1.IUserRepository, role_repository_interface_1.IRoleRepository]
     })
 ], IdentityModule);
 //# sourceMappingURL=identity.module.js.map

@@ -15,8 +15,8 @@ export declare class EvidenceService {
                     tenant_sample: {
                         type: import(".prisma/client").$Enums.TenantType;
                         id: string;
-                        name: string;
                         status: string;
+                        name: string;
                     }[];
                     roles_defined: {
                         name: string;

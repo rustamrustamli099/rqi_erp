@@ -143,5 +143,70 @@ export const systemApi = {
     rejectRole: async (id: string, reason: string): Promise<Role> => {
         const response = await api.post<any>(`/admin/roles/${id}/reject`, { reason });
         return response.data.data || response.data;
+    },
+
+    // === GOVERNANCE API ===
+
+    /** Validate permissions for SoD conflicts and risk score */
+    governance: {
+        validate: async (permissions: string[]): Promise<{
+            sodResult: {
+                isValid: boolean;
+                conflicts: any[];
+                criticalCount: number;
+                highCount: number;
+                mediumCount: number;
+            };
+            riskScore: {
+                score: number;
+                level: 'LOW' | 'MEDIUM' | 'HIGH';
+                reasons: any[];
+            };
+            requiresApproval: boolean;
+            canProceed: boolean;
+            blockedReason?: string;
+        }> => {
+            const response = await api.post<any>('/governance/validate', { permissions });
+            return response.data.data || response.data;
+        },
+
+        /** Get pending approvals for current user */
+        getPendingApprovals: async (): Promise<any[]> => {
+            const response = await api.get<any>('/governance/pending-approvals');
+            return Array.isArray(response.data) ? response.data : (response.data.data || []);
+        },
+
+        /** Create approval request */
+        createApprovalRequest: async (data: {
+            entityType: 'ROLE' | 'USER' | 'EXPORT' | 'BILLING';
+            entityId: string;
+            entityName: string;
+            action: 'CREATE' | 'UPDATE' | 'DELETE' | 'EXPORT';
+            changes?: { before: any; after: any };
+            riskScore?: number;
+            riskLevel?: string;
+            sodConflicts?: number;
+        }): Promise<any> => {
+            const response = await api.post<any>('/governance/approval-requests', data);
+            return response.data.data || response.data;
+        },
+
+        /** Approve a request (4-eyes principle) */
+        approve: async (requestId: string, comment?: string): Promise<any> => {
+            const response = await api.post<any>(`/governance/approval-requests/${requestId}/approve`, { comment });
+            return response.data.data || response.data;
+        },
+
+        /** Reject a request (reason required) */
+        reject: async (requestId: string, reason: string): Promise<any> => {
+            const response = await api.post<any>(`/governance/approval-requests/${requestId}/reject`, { reason });
+            return response.data.data || response.data;
+        },
+
+        /** Get SoD rules */
+        getSodRules: async (): Promise<any[]> => {
+            const response = await api.get<any>('/governance/sod-rules');
+            return Array.isArray(response.data) ? response.data : (response.data.data || []);
+        }
     }
 };

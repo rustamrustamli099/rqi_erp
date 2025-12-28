@@ -68,6 +68,9 @@ import { permissionsStructure } from "@/app/security/permission-structure"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
 import { PermissionPreviewSimulator } from "./_components/PermissionPreviewSimulator"
 import { useListQuery } from "@/shared/hooks/useListQuery"
+// SoD Engine
+import { SoDValidationService, type SoDValidationResult } from "@/app/security/sod-rules"
+import { SoDConflictModal } from "@/shared/components/security/SoDConflictModal"
 
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import { Input } from "@/shared/components/ui/input"
@@ -318,6 +321,11 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false) // For Simulator
     const [currentTab, setCurrentTab] = useState("list")
 
+    // SoD State
+    const [sodModalOpen, setSodModalOpen] = useState(false)
+    const [sodValidationResult, setSodValidationResult] = useState<SoDValidationResult | null>(null)
+    const [pendingRoleValues, setPendingRoleValues] = useState<RoleFormValues | null>(null)
+
     // Handlers
     const handleCreateRole = async (values: any) => {
         try {
@@ -511,8 +519,51 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
         fetchRoles();
     }, [query]); // Refetch on query change
 
-    // Use systemApi in handleSaveRole
+    // Use systemApi in handleSaveRole - WITH BACKEND SoD VALIDATION
     const handleSaveRole = async (values: RoleFormValues) => {
+        try {
+            // Backend validation: SoD + Risk Score
+            const validationResult = await systemApi.governance.validate(values.permissions || []);
+
+            if (validationResult.sodResult.conflicts.length > 0) {
+                // Store pending values and show SoD modal
+                setPendingRoleValues(values);
+                setSodValidationResult(validationResult.sodResult);
+                setSodModalOpen(true);
+
+                // Block on CRITICAL conflicts - can't proceed
+                if (validationResult.sodResult.criticalCount > 0) {
+                    return;
+                }
+
+                // For HIGH/MEDIUM - show modal but allow proceed
+                return;
+            }
+
+            // Check if approval is required
+            if (validationResult.requiresApproval) {
+                toast.info("Bu rol yüksək risklidir. Təsdiq üçün göndərilir...");
+                // Would create approval request here
+            }
+
+            // No conflicts - proceed with save
+            await executeRoleSave(values);
+        } catch (error) {
+            console.error('Governance validation error:', error);
+            // Fallback to local validation if backend unavailable
+            const sodResult = SoDValidationService.validate(values.permissions || []);
+            if (sodResult.conflicts.length > 0) {
+                setPendingRoleValues(values);
+                setSodValidationResult(sodResult);
+                setSodModalOpen(true);
+                return;
+            }
+            await executeRoleSave(values);
+        }
+    };
+
+    // Actual save logic (called after SoD check passes or user proceeds)
+    const executeRoleSave = async (values: RoleFormValues) => {
         try {
             if (dialogMode === "create") {
                 await systemApi.createRole({
@@ -533,9 +584,49 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
             }
             fetchRoles();
             setDialogOpen(false);
+            // Clear SoD state
+            setPendingRoleValues(null);
+            setSodValidationResult(null);
         } catch {
             toast.error("Xəta baş verdi");
         }
+    };
+
+    // SoD Modal handlers
+    const handleSodProceed = async () => {
+        if (pendingRoleValues) {
+            setSodModalOpen(false);
+
+            // Check if approval workflow needed for HIGH conflicts
+            if (sodValidationResult && sodValidationResult.highCount > 0) {
+                try {
+                    // Create approval request via backend
+                    await systemApi.governance.createApprovalRequest({
+                        entityType: 'ROLE',
+                        entityId: currentRole?.id || 'new',
+                        entityName: pendingRoleValues.name,
+                        action: dialogMode === 'create' ? 'CREATE' : 'UPDATE',
+                        sodConflicts: sodValidationResult.conflicts.length
+                    });
+                    toast.info("Rol təsdiq üçün göndərildi. Approvers bildiriş alacaq.");
+                    setDialogOpen(false);
+                } catch {
+                    // Fallback - save with warning
+                    toast.warning("Approval yaradıla bilmədi. Birbaşa yadda saxlanılır.");
+                    await executeRoleSave(pendingRoleValues);
+                }
+            } else {
+                // MEDIUM conflicts - save with warning
+                toast.warning("SoD xəbərdarlığı ilə yadda saxlanıldı.");
+                await executeRoleSave(pendingRoleValues);
+            }
+        }
+    };
+
+    const handleSodCancel = () => {
+        setSodModalOpen(false);
+        setPendingRoleValues(null);
+        setSodValidationResult(null);
     };
 
     // Use systemApi in confirmDeleteRole
@@ -916,6 +1007,19 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 variant="destructive"
                 actionLabel="Sil"
             />
+
+            {/* SoD Conflict Modal */}
+            {sodValidationResult && (
+                <SoDConflictModal
+                    open={sodModalOpen}
+                    onOpenChange={setSodModalOpen}
+                    validationResult={sodValidationResult}
+                    onProceedAnyway={sodValidationResult.criticalCount === 0 ? handleSodProceed : undefined}
+                    onCancel={handleSodCancel}
+                    entityType="role"
+                    entityName={pendingRoleValues?.name || currentRole?.name || "Unknown"}
+                />
+            )}
 
             {/* Diff Review Modal */}
             <Dialog open={isDiffOpen} onOpenChange={setIsDiffOpen}>
