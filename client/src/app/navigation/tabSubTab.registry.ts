@@ -82,7 +82,8 @@ const ADMIN_PAGES: PageConfig[] = [
         label: 'Dashboard',
         labelAz: 'İdarə Paneli',
         tabs: [
-            { key: 'overview', label: 'Overview', requiredAnyOf: ['system.dashboard.read'] }
+            // Dashboard: DB has system.dashboard.read + fallback to common permissions
+            { key: 'overview', label: 'Overview', requiredAnyOf: ['system.dashboard.read', 'system.tenants.read', 'system.users.users.read', 'system.users.curators.read'] }
         ]
     },
     {
@@ -131,7 +132,7 @@ const ADMIN_PAGES: PageConfig[] = [
         label: 'Billing',
         labelAz: 'Bilinq',
         tabs: [
-            { key: 'marketplace', label: 'Marketplace', requiredAnyOf: ['system.billing.marketplace.read'] },
+            { key: 'marketplace', label: 'Marketplace', requiredAnyOf: ['system.billing.market_place.read'] },
             { key: 'packages', label: 'Kompakt Paketlər', requiredAnyOf: ['system.billing.compact_packages.read'] },
             { key: 'subscriptions', label: 'Abunəlik Planları', requiredAnyOf: ['system.billing.plans.read'] },
             { key: 'invoices', label: 'Fakturalar', requiredAnyOf: ['system.billing.invoices.read'] },
