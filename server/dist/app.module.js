@@ -47,6 +47,7 @@ const payment_module_1 = require("./modules/payment/payment.module");
 const compliance_module_1 = require("./modules/compliance/compliance.module");
 const workflow_module_1 = require("./platform/workflow/workflow.module");
 const notifications_module_1 = require("./platform/notifications/notifications.module");
+const export_module_1 = require("./modules/export/export.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -94,6 +95,7 @@ exports.AppModule = AppModule = __decorate([
             approvals_module_1.ApprovalsModule,
             workflow_module_1.WorkflowModule,
             notifications_module_1.NotificationsModule,
+            export_module_1.ExportModule,
             nestjs_pino_1.LoggerModule.forRoot({
                 pinoHttp: {
                     customProps: (req, res) => ({

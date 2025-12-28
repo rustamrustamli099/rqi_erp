@@ -54,6 +54,19 @@ export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
     // Approvals
     'approvals.view': 'platform.approvals.view',
     'approvals.approve': 'platform.approvals.approve',
+    'approvals.reject': 'platform.approvals.reject',
+    'approvals.delegate': 'platform.approvals.delegate',
+    'approvals.escalate': 'platform.approvals.escalate',
+    'approvals.inbox.view': 'platform.approvals.inbox.view',
+
+    // Notifications
+    'notifications.view': 'platform.notifications.view',
+    'notifications.manage': 'platform.notifications.manage',
+
+    // Export
+    'exports.request': 'platform.exports.request',
+    'exports.download': 'platform.exports.download',
+    'exports.approve_high_risk': 'platform.exports.approve_high_risk',
 
     // Files
     'file_manager.view': 'platform.files.read',

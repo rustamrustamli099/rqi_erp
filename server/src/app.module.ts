@@ -39,6 +39,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { WorkflowModule } from './platform/workflow/workflow.module';
 import { NotificationsModule } from './platform/notifications/notifications.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { NotificationsModule } from './platform/notifications/notifications.modu
     ApprovalsModule,
     WorkflowModule,
     NotificationsModule,
+    ExportModule,
     LoggerModule.forRoot({
       pinoHttp: {
         customProps: (req, res) => ({

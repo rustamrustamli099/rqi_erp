@@ -10,6 +10,14 @@ export const usePendingApprovals = () => {
     });
 };
 
+export const useApprovalHistory = () => {
+    return useQuery({
+        queryKey: ['approvals', 'history'],
+        queryFn: approvalsApi.getHistory,
+        retry: false
+    });
+};
+
 export const useApproveMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -28,6 +36,39 @@ export const useRejectMutation = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['approvals'] });
             queryClient.invalidateQueries({ queryKey: ['roles'] });
+        }
+    });
+};
+
+export const useDelegateMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, targetUserId, comment }: { id: string; targetUserId: string; comment?: string }) =>
+            approvalsApi.delegate(id, targetUserId, comment),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['approvals'] });
+        }
+    });
+};
+
+export const useEscalateMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
+            approvalsApi.escalate(id, comment),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['approvals'] });
+        }
+    });
+};
+
+export const useCancelMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+            approvalsApi.cancel(id, reason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['approvals'] });
         }
     });
 };

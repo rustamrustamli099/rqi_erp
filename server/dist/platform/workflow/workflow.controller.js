@@ -51,6 +51,36 @@ let WorkflowController = class WorkflowController {
             comment
         });
     }
+    async delegateRequest(id, body, req) {
+        return this.workflowService.delegateApproval({
+            requestId: id,
+            actorId: req.user.id,
+            actorName: req.user.fullName || req.user.email,
+            targetUserId: body.targetUserId,
+            comment: body.comment
+        });
+    }
+    async escalateRequest(id, comment, req) {
+        return this.workflowService.escalateApproval({
+            requestId: id,
+            actorId: req.user.id,
+            actorName: req.user.fullName || req.user.email,
+            comment
+        });
+    }
+    async cancelRequest(id, reason, req) {
+        return this.workflowService.cancelApprovalRequest({
+            requestId: id,
+            requesterId: req.user.id,
+            reason
+        });
+    }
+    async getApprovalHistory(req) {
+        return this.workflowService.getApprovalHistory(req.user.id);
+    }
+    async getApprovalRequest(id) {
+        return this.workflowService.getApprovalRequestDetails(id);
+    }
     async upsertWorkflowDefinition(config) {
         return this.workflowService.upsertWorkflowDefinition(config);
     }
@@ -94,6 +124,52 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], WorkflowController.prototype, "rejectRequest", null);
+__decorate([
+    (0, common_1.Post)('approval-requests/:id/delegate'),
+    (0, swagger_1.ApiOperation)({ summary: 'Delegate approval to another user' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], WorkflowController.prototype, "delegateRequest", null);
+__decorate([
+    (0, common_1.Post)('approval-requests/:id/escalate'),
+    (0, swagger_1.ApiOperation)({ summary: 'Escalate approval to next stage or higher authority' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('comment')),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], WorkflowController.prototype, "escalateRequest", null);
+__decorate([
+    (0, common_1.Post)('approval-requests/:id/cancel'),
+    (0, swagger_1.ApiOperation)({ summary: 'Cancel own approval request' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('reason')),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], WorkflowController.prototype, "cancelRequest", null);
+__decorate([
+    (0, common_1.Get)('history'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get approval history' }),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], WorkflowController.prototype, "getApprovalHistory", null);
+__decorate([
+    (0, common_1.Get)('approval-requests/:id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get approval request details' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], WorkflowController.prototype, "getApprovalRequest", null);
 __decorate([
     (0, common_1.Post)('definitions'),
     (0, swagger_1.ApiOperation)({ summary: 'Create or update workflow definition' }),

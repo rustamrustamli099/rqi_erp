@@ -323,6 +323,66 @@ model ApprovalStageExecution {
   @@map("approval_stage_executions")
 }
 
+// Approval Decision - Individual approver vote
+model ApprovalDecision {
+  id                String   @id @default(uuid())
+  
+  approvalRequestId String
+  stageIndex        Int
+  
+  decidedByUserId   String
+  decidedByName     String?
+  
+  decision          String   // APPROVE, REJECT, DELEGATE, ESCALATE
+  comment           String?
+  
+  delegatedToUserId String?
+  escalatedToStage  Int?
+  
+  createdAt         DateTime @default(now())
+  
+  @@unique([approvalRequestId, stageIndex, decidedByUserId])
+  @@index([approvalRequestId])
+  @@map("approval_decisions")
+}
+
+// Export Job - Enterprise grade export tracking
+model ExportJob {
+  id                String   @id @default(uuid())
+  
+  scope             String   @default("SYSTEM") // SYSTEM or TENANT
+  datasetKey        String   // ROLES, USERS, APPROVALS, AUDIT, TENANTS, etc.
+  
+  status            String   @default("QUEUED") // QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED
+  
+  requestedByUserId String
+  requestedByName   String?
+  
+  // Filter/Sort snapshot
+  filterSnapshot    Json?    // { search, filters, sort, columns }
+  
+  // Output
+  outputFileKey     String?  // S3 key or local path
+  fileName          String?
+  mimeType          String   @default("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  rowCount          Int?
+  
+  // Approval gating for high-risk exports
+  requiresApproval  Boolean  @default(false)
+  riskLevel         String   @default("LOW") // LOW, MEDIUM, HIGH
+  approvalRequestId String?  @unique
+  
+  // Error handling
+  errorMessage      String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  completedAt       DateTime?
+  
+  @@index([requestedByUserId])
+  @@index([status])
+  @@map("export_jobs")
+}
 
 
 model UserRole {

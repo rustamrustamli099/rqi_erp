@@ -303,6 +303,143 @@ let WorkflowService = class WorkflowService {
             });
         }
     }
+    async delegateApproval(dto) {
+        const request = await this.prisma.approvalRequest.findUnique({
+            where: { id: dto.requestId }
+        });
+        if (!request)
+            throw new common_1.NotFoundException('Approval request not found');
+        if (request.status !== 'PENDING' && request.status !== 'IN_PROGRESS') {
+            throw new common_1.BadRequestException('Request is not pending');
+        }
+        await this.prisma.approvalDecision.create({
+            data: {
+                approvalRequestId: dto.requestId,
+                stageIndex: request.currentStage,
+                decidedByUserId: dto.actorId,
+                decidedByName: dto.actorName,
+                decision: 'DELEGATE',
+                comment: dto.comment,
+                delegatedToUserId: dto.targetUserId
+            }
+        });
+        const notification = await this.prisma.notification.create({
+            data: {
+                subject: 'Yeni təsdiqləmə tapşırığı',
+                body: `${dto.actorName} sizə təsdiqləmə göndərdi. Request ID: ${dto.requestId}`,
+                type: 'APPROVAL_DELEGATED',
+                priority: 'HIGH'
+            }
+        });
+        await this.prisma.notificationDelivery.create({
+            data: {
+                notificationId: notification.id,
+                userId: dto.targetUserId,
+                status: 'PENDING'
+            }
+        });
+        return { success: true, message: 'Approval delegated successfully' };
+    }
+    async escalateApproval(dto) {
+        const request = await this.prisma.approvalRequest.findUnique({
+            where: { id: dto.requestId },
+            include: {
+                workflow: { include: { stages: { orderBy: { order: 'asc' } } } }
+            }
+        });
+        if (!request)
+            throw new common_1.NotFoundException('Approval request not found');
+        if (!request.workflow)
+            throw new common_1.BadRequestException('No workflow defined');
+        const currentStage = request.workflow.stages.find(s => s.order === request.currentStage);
+        const escalationTarget = currentStage?.escalateToStage || request.currentStage + 1;
+        const targetStage = request.workflow.stages.find(s => s.order === escalationTarget);
+        if (!targetStage) {
+            throw new common_1.BadRequestException('No escalation stage available');
+        }
+        await this.prisma.approvalDecision.create({
+            data: {
+                approvalRequestId: dto.requestId,
+                stageIndex: request.currentStage,
+                decidedByUserId: dto.actorId,
+                decidedByName: dto.actorName,
+                decision: 'ESCALATE',
+                comment: dto.comment,
+                escalatedToStage: escalationTarget
+            }
+        });
+        await this.prisma.approvalRequest.update({
+            where: { id: dto.requestId },
+            data: { currentStage: escalationTarget }
+        });
+        await this.notifyApprovers(dto.requestId, escalationTarget);
+        return { success: true, message: `Escalated to stage ${escalationTarget}` };
+    }
+    async cancelApprovalRequest(dto) {
+        const request = await this.prisma.approvalRequest.findUnique({
+            where: { id: dto.requestId }
+        });
+        if (!request)
+            throw new common_1.NotFoundException('Approval request not found');
+        if (request.requestedById !== dto.requesterId) {
+            throw new common_1.ForbiddenException('Only requester can cancel');
+        }
+        if (request.status !== 'PENDING' && request.status !== 'IN_PROGRESS') {
+            throw new common_1.BadRequestException('Request cannot be cancelled');
+        }
+        await this.prisma.approvalRequest.update({
+            where: { id: dto.requestId },
+            data: {
+                status: 'CANCELLED',
+                resolutionNote: dto.reason,
+                resolvedAt: new Date()
+            }
+        });
+        return { success: true, message: 'Request cancelled' };
+    }
+    async getApprovalHistory(userId) {
+        return this.prisma.approvalRequest.findMany({
+            where: {
+                OR: [
+                    { requestedById: userId },
+                    { resolvedById: userId }
+                ],
+                status: { in: ['APPROVED', 'REJECTED', 'CANCELLED'] }
+            },
+            include: {
+                stageExecutions: true
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 50
+        });
+    }
+    async getApprovalRequestDetails(requestId) {
+        const request = await this.prisma.approvalRequest.findUnique({
+            where: { id: requestId },
+            include: {
+                workflow: { include: { stages: { orderBy: { order: 'asc' } } } },
+                stageExecutions: { orderBy: { stageOrder: 'asc' } }
+            }
+        });
+        if (!request)
+            throw new common_1.NotFoundException('Approval request not found');
+        const decisions = await this.prisma.approvalDecision.findMany({
+            where: { approvalRequestId: requestId },
+            orderBy: { createdAt: 'asc' }
+        });
+        const auditTrail = await this.prisma.auditLog.findMany({
+            where: {
+                resource: requestId,
+                module: 'APPROVAL'
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+        return {
+            ...request,
+            decisions,
+            auditTrail
+        };
+    }
 };
 exports.WorkflowService = WorkflowService;
 exports.WorkflowService = WorkflowService = __decorate([

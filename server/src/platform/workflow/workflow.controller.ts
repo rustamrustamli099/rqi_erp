@@ -67,9 +67,67 @@ export class WorkflowController {
         });
     }
 
+    @Post('approval-requests/:id/delegate')
+    @ApiOperation({ summary: 'Delegate approval to another user' })
+    async delegateRequest(
+        @Param('id') id: string,
+        @Body() body: { targetUserId: string; comment?: string },
+        @Request() req
+    ) {
+        return this.workflowService.delegateApproval({
+            requestId: id,
+            actorId: req.user.id,
+            actorName: req.user.fullName || req.user.email,
+            targetUserId: body.targetUserId,
+            comment: body.comment
+        });
+    }
+
+    @Post('approval-requests/:id/escalate')
+    @ApiOperation({ summary: 'Escalate approval to next stage or higher authority' })
+    async escalateRequest(
+        @Param('id') id: string,
+        @Body('comment') comment: string,
+        @Request() req
+    ) {
+        return this.workflowService.escalateApproval({
+            requestId: id,
+            actorId: req.user.id,
+            actorName: req.user.fullName || req.user.email,
+            comment
+        });
+    }
+
+    @Post('approval-requests/:id/cancel')
+    @ApiOperation({ summary: 'Cancel own approval request' })
+    async cancelRequest(
+        @Param('id') id: string,
+        @Body('reason') reason: string,
+        @Request() req
+    ) {
+        return this.workflowService.cancelApprovalRequest({
+            requestId: id,
+            requesterId: req.user.id,
+            reason
+        });
+    }
+
+    @Get('history')
+    @ApiOperation({ summary: 'Get approval history' })
+    async getApprovalHistory(@Request() req) {
+        return this.workflowService.getApprovalHistory(req.user.id);
+    }
+
+    @Get('approval-requests/:id')
+    @ApiOperation({ summary: 'Get approval request details' })
+    async getApprovalRequest(@Param('id') id: string) {
+        return this.workflowService.getApprovalRequestDetails(id);
+    }
+
     @Post('definitions')
     @ApiOperation({ summary: 'Create or update workflow definition' })
     async upsertWorkflowDefinition(@Body() config: any) {
         return this.workflowService.upsertWorkflowDefinition(config);
     }
 }
+
