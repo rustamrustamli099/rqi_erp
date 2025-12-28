@@ -328,6 +328,7 @@ export const TAB_SUBTAB_REGISTRY: TabSubTabRegistry = {
 
 /**
  * Check if user can access ANY tab of a page
+ * EXACT base match only - NO startsWith
  */
 export function canAccessPage(
     pageKey: string,
@@ -341,14 +342,13 @@ export function canAccessPage(
     if (!page) return false;
 
     return page.tabs.some(tab =>
-        tab.requiredAnyOf.some(req =>
-            normalized.some(perm => perm.startsWith(req.replace('.read', '')) || req.startsWith(perm.replace('.read', '')))
-        )
+        hasExactPermission(tab.requiredAnyOf, normalized)
     );
 }
 
 /**
  * Get first allowed tab for a page
+ * EXACT base match only - NO startsWith
  */
 export function getFirstAllowedTab(
     pageKey: string,
@@ -362,24 +362,11 @@ export function getFirstAllowedTab(
     if (!page) return null;
 
     for (const tab of page.tabs) {
-        const hasTabAccess = tab.requiredAnyOf.some(req =>
-            normalized.some(perm =>
-                perm.startsWith(req.replace('.read', '')) ||
-                req.startsWith(perm.replace('.read', ''))
-            )
-        );
-
-        if (hasTabAccess) {
+        if (hasExactPermission(tab.requiredAnyOf, normalized)) {
             // Check subTabs if exist
             if (tab.subTabs && tab.subTabs.length > 0) {
                 for (const subTab of tab.subTabs) {
-                    const hasSubTabAccess = subTab.requiredAnyOf.some(req =>
-                        normalized.some(perm =>
-                            perm.startsWith(req.replace('.read', '')) ||
-                            req.startsWith(perm.replace('.read', ''))
-                        )
-                    );
-                    if (hasSubTabAccess) {
+                    if (hasExactPermission(subTab.requiredAnyOf, normalized)) {
                         return { tab: tab.key, subTab: subTab.key };
                     }
                 }
@@ -391,6 +378,19 @@ export function getFirstAllowedTab(
     }
 
     return null;
+}
+
+/**
+ * EXACT permission check helper - NO startsWith
+ */
+function hasExactPermission(requiredAnyOf: string[], normalizedPerms: string[]): boolean {
+    return requiredAnyOf.some(required => {
+        const reqBase = required.replace(/\.(read|create|update|delete|approve|export)$/, '');
+        return normalizedPerms.some(perm => {
+            const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
+            return permBase === reqBase;
+        });
+    });
 }
 
 /**

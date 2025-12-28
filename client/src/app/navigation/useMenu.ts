@@ -4,7 +4,7 @@ import { useAuth } from '@/domains/auth/context/AuthContext';
 import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { PLATFORM_MENU, TENANT_MENU, type AdminMenuItem } from '@/app/navigation/menu.definitions';
 import { MenuVisibilityEngine } from '@/domains/auth/utils/menu-visibility';
-import { RBAC_REGISTRY, getFirstAllowedTab } from '@/app/security/rbac.registry';
+import { TAB_SUBTAB_REGISTRY, getFirstAllowedTab, buildLandingPath, getPageByKey } from '@/app/navigation/tabSubTab.registry';
 
 import { usePendingApprovals } from '@/domains/approvals/hooks/useApprovals';
 import { CheckCircle2 } from 'lucide-react';
@@ -28,7 +28,7 @@ export const useMenu = () => {
     // 1. Select the correct tree based on context
     const rawMenu = activeTenantType === 'SYSTEM' ? PLATFORM_MENU : TENANT_MENU;
     const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
-    const registry = context === 'admin' ? RBAC_REGISTRY.admin : RBAC_REGISTRY.tenant;
+    const registry = context === 'admin' ? TAB_SUBTAB_REGISTRY.admin : TAB_SUBTAB_REGISTRY.tenant;
 
     // 2. Compute Visibility (Flat Prefix Match)
     const filteredMenu = useMemo(() => {
@@ -42,11 +42,12 @@ export const useMenu = () => {
         const base = MenuVisibilityEngine.computeVisibleTree(rawMenu, permissions);
 
         // --- APPROVALS INJECTION (Permission + Count Check) ---
-        // SAP-GRADE FIX: pendingCount alone is NOT enough
-        // User MUST have system.approvals.read permission
-        const hasApprovalsPermission = permissions.some(p =>
-            p.startsWith('system.approvals') || p === 'system.approvals.read'
-        );
+        // SAP-GRADE: pendingCount alone is NOT enough
+        // User MUST have EXACT system.approvals.read permission
+        const hasApprovalsPermission = permissions.some(p => {
+            const base = p.replace(/\.(read|create|update|delete|approve|export)$/, '');
+            return base === 'system.approvals';
+        });
 
         if (pendingCount > 0 && hasApprovalsPermission) {
             const approvalsItem: AdminMenuItem = {
@@ -56,7 +57,7 @@ export const useMenu = () => {
                 icon: 'CheckCircle2',
                 path: '/admin/approvals',
                 route: '/admin/approvals',
-                permissionPrefixes: ['system.approvals'],
+                pageKey: 'admin.approvals',
             };
 
             // Insert after Dashboard (index 0 usually)
@@ -73,12 +74,7 @@ export const useMenu = () => {
 
     /**
      * SAP-GRADE: Get first allowed route with proper tab handling
-     * 
-     * Rules:
-     * 1. Find first visible menu item
-     * 2. If menu has tabs, find FIRST ALLOWED TAB (not default)
-     * 3. Append ?tab=X to route
-     * 4. Never return dashboard if user only has sub-tab permissions
+     * Uses TAB_SUBTAB_REGISTRY + buildLandingPath
      */
     const getFirstAllowedRoute = () => {
         if (filteredMenu.length === 0) {
@@ -86,23 +82,17 @@ export const useMenu = () => {
         }
 
         const first = filteredMenu[0];
-        let route = first.route || first.path || '/access-denied';
+        const basePath = first.route || first.path || '/access-denied';
 
-        // SAP-GRADE: Check if this menu has tabs and find first allowed tab
-        if (first.id && registry[first.id]?.tabs) {
-            const allowedTab = getFirstAllowedTab(first.id, permissions, context);
+        // SAP-GRADE: Use pageKey to find first allowed tab
+        if (first.pageKey) {
+            const allowedTab = getFirstAllowedTab(first.pageKey, permissions, context);
             if (allowedTab) {
-                route += `?tab=${allowedTab}`;
-            } else if (first.tab) {
-                // Fallback to default tab if defined
-                route += `?tab=${first.tab}`;
+                return buildLandingPath(basePath, allowedTab);
             }
-        } else if (first.tab) {
-            // Legacy support: append default tab if exists
-            route += `?tab=${first.tab}`;
         }
 
-        return route;
+        return basePath;
     };
 
     return {

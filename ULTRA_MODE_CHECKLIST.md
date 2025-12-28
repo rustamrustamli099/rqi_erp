@@ -1,71 +1,61 @@
-# ULTRA MODE — SAP-Grade ERP Implementation ✅
+# ULTRA MODE — SAP-Grade RBAC Navigation ✅
 
-## SESSION: RBAC SAP-Grade Fix
+## SESSION: 10-Step Navigation Fix
 
-### A) CLIENT FIXES ✅
+### Core Fixes Applied
 
-#### 1. menu.definitions.ts
-- Generated from TAB_SUBTAB_REGISTRY
-- NO embedded permissions
-- Clean 80 lines
-
-#### 2. MenuVisibilityEngine
-- NO prefix/startsWith matching
-- Exact permission checks only
-
-#### 3. ProtectedRoute
-- Terminal /access-denied (NO dashboard fallback)
-- Tab validation against registry
-- First allowed tab redirect
-
-#### 4. Sidebar
-- Canonical navigation with item.tab
+| Step | File | Fix |
+|------|------|-----|
+| 1 | `tabSubTab.registry.ts` | EXACT base match, hasExactPermission helper |
+| 2 | `menu.definitions.ts` | Generated from registry |
+| 3 | `useMenu.ts` | TAB_SUBTAB_REGISTRY + buildLandingPath |
+| 4 | `Sidebar.tsx` | item.tab navigation |
+| 5 | `ProtectedRoute.tsx` | Unknown tab → terminal 403 |
+| 6 | `menu-visibility.ts` | EXACT match only |
 
 ---
 
-### C) FROZEN DOCS ✅
-- `tab-subtab-registry.frozen.md`
-- `rbac-navigation-invariants.md`
+## KEY INVARIANTS
 
----
-
-### D) E2E TESTS ✅
-- `rbac-scenarios.spec.ts`
-  - Curators-only user scenario
-  - Console monitoring-only scenario
-  - Wrong tab key scenario
-  - Terminal access denied scenario
-
----
-
-## SCENARIOS BEHAVIOR
-
-### Before Fix
 ```
-Curators-only user:
-→ Sees Users menu (optimistic)
-→ Clicks → Dashboard fallback
-→ Confusing UX
-```
-
-### After Fix
-```
-Curators-only user:
-→ Sees Users menu (if any tab allowed)
-→ Clicks → /admin/users?tab=curators
-→ No fallback, deterministic
+✅ Visible ⇒ Actionable
+✅ EXACT permission match (NO startsWith)
+✅ Unknown tab → /access-denied
+✅ NO dashboard fallback
+✅ Single Source of Truth: TAB_SUBTAB_REGISTRY
 ```
 
 ---
 
-## KEY FILES
-| File | Purpose |
-|------|---------|
-| `menu.definitions.ts` | Generated menu |
-| `menu-visibility.ts` | No prefix matching |
-| `tabSubTab.registry.ts` | Single source of truth |
-| `ProtectedRoute.tsx` | Terminal /access-denied |
-| `rbac-scenarios.spec.ts` | E2E tests |
+## TEST SCENARIOS
+
+### Curators-Only User
+```
+Permission: system.users.curators.read
+Landing: /admin/users?tab=curators ✅
+Hidden: users tab ✅
+```
+
+### Console Monitoring-Only
+```
+Permission: system.system_console.monitoring.dashboard.read
+Landing: /admin/console?tab=monitoring ✅
+```
+
+### Unknown Tab
+```
+URL: /admin/users?tab=invalidXYZ
+Result: /access-denied (terminal) ✅
+```
+
+---
+
+## Files Modified
+- tabSubTab.registry.ts (EXACT match)
+- menu.definitions.ts (from registry)
+- menu-visibility.ts (no prefix)
+- useMenu.ts (TAB_SUBTAB_REGISTRY)
+- ProtectedRoute.tsx (terminal 403)
 
 ---
 

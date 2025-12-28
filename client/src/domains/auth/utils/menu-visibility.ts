@@ -78,11 +78,11 @@ export class MenuVisibilityEngine {
     }
 
     /**
-     * EXACT permission check - no startsWith, no prefix guessing.
+     * EXACT permission check - NO hierarchical prefix matching.
      * 
      * Match rules:
-     * 1. Exact base match: permission bases are equal
-     * 2. Hierarchical match: user has parent permission covering the required one
+     * 1. EXACT base match ONLY: permission bases must be equal
+     * 2. NO startsWith - this prevents sibling pollution
      */
     private static hasExactPermission(
         requiredAnyOf: string[],
@@ -94,14 +94,8 @@ export class MenuVisibilityEngine {
             return normalizedPerms.some(perm => {
                 const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
 
-                // Exact match
-                if (permBase === reqBase) return true;
-
-                // User has broader permission (hierarchical)
-                // e.g., system.users covers system.users.curators
-                if (reqBase.startsWith(permBase + '.')) return true;
-
-                return false;
+                // EXACT base match ONLY - no hierarchical expansion
+                return permBase === reqBase;
             });
         });
     }

@@ -27,6 +27,8 @@ export interface MenuItem {
     path: string;
     route?: string;
     pageKey: string;  // Used to lookup in registry
+    tab?: string;     // Legacy compat for default tab
+    permissionPrefixes?: string[];  // Legacy compat
 }
 
 export type AdminMenuItem = MenuItem;

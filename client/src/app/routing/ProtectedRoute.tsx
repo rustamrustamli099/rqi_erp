@@ -75,11 +75,24 @@ export const ProtectedRoute = ({
             // User has NO tab access at all
             hasRouteAccess = false;
         } else if (currentTab) {
-            // User is trying to access a specific tab - validate it
+            // Check if tab exists in registry first
+            const tabExists = menuConfig?.tabs && currentTab in menuConfig.tabs;
+
+            if (!tabExists) {
+                // UNKNOWN TAB - terminal 403 (SAP-grade: no guessing)
+                console.warn('[ProtectedRoute] UNKNOWN tab:', currentTab);
+                return <Navigate to="/access-denied" state={{
+                    error: 'unknown_tab',
+                    attempted: `${location.pathname}?tab=${currentTab}`,
+                    menuId
+                }} replace />;
+            }
+
+            // User is trying to access a specific tab - validate permission
             const canAccess = canAccessTab(menuId, currentTab, permissions, context);
 
             if (!canAccess) {
-                // Redirect to first allowed tab instead of access-denied
+                // UNAUTHORIZED tab - redirect to first allowed (one chance only)
                 console.warn('[ProtectedRoute] Tab DENIED:', currentTab, '→ Redirecting to:', firstAllowedTab);
                 const newPath = `${location.pathname}?tab=${firstAllowedTab}`;
                 return <Navigate to={newPath} replace />;
