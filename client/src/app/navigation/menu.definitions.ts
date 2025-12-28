@@ -67,6 +67,20 @@ function generateMenuFromRegistry(
             });
         }
 
+        // SAP-GRADE FIX: requiredPermissions uses first tab permission OR parent .read
+        // NO MORE .access requirement - .read is sufficient
+        // If menu has tabs, first tab permission is used
+        // Otherwise, parent permission is used
+        let requiredPerm: string;
+        if (config.tabs) {
+            // Get first tab permission as the requirement
+            const firstTabConfig = Object.values(config.tabs)[0];
+            const firstTabBase = firstTabConfig.permission.replace(/\.(read|view|access)$/, '');
+            requiredPerm = `${firstTabBase}.read`;
+        } else {
+            requiredPerm = `${permissionBase}.read`;
+        }
+
         return {
             id,
             label: config.labelAz || config.label,
@@ -75,7 +89,8 @@ function generateMenuFromRegistry(
             path: config.path,
             route: config.path,
             tab: config.defaultTab,
-            requiredPermissions: [`${permissionBase}.access`],
+            // SAP-GRADE: READ is sufficient - NO .access required
+            requiredPermissions: [requiredPerm],
             // SAP-GRADE: Parent visible if ANY tab permission matches
             permissionPrefixes: allPrefixes
         };
