@@ -465,11 +465,53 @@ async function main() {
                 name: ownerRoleName,
                 description: 'System Owner (Full Access)',
                 isSystem: true,
+                scope: 'SYSTEM',
+                status: 'ACTIVE',
                 tenantId: null
             }
         });
     }
     console.log(`✅ Owner Role ID: ${ownerRole.id}`);
+
+    // 3.5 Create Owner User if not exists
+    console.log('👤 Seeding Owner User...');
+    const ownerEmail = 'admin@system.local';
+    const ownerPassword = await bcrypt.hash('Admin123!', 10);
+
+    let ownerUser = await prisma.user.findUnique({ where: { email: ownerEmail } });
+
+    if (!ownerUser) {
+        ownerUser = await prisma.user.create({
+            data: {
+                email: ownerEmail,
+                password: ownerPassword,
+                fullName: 'System Administrator',
+                name: 'Admin',
+                isOwner: true,
+                scope: 'SYSTEM',
+                tenantId: null
+            }
+        });
+        console.log(`✅ Created Owner User: ${ownerEmail}`);
+    } else {
+        console.log(`ℹ️ Owner User already exists: ${ownerEmail}`);
+    }
+
+    // Assign Owner Role to Owner User
+    const existingOwnerAssignment = await prisma.userRole.findFirst({
+        where: { userId: ownerUser.id, roleId: ownerRole.id }
+    });
+
+    if (!existingOwnerAssignment) {
+        await prisma.userRole.create({
+            data: {
+                userId: ownerUser.id,
+                roleId: ownerRole.id,
+                tenantId: null
+            }
+        });
+        console.log(`✅ Assigned Owner Role to ${ownerEmail}`);
+    }
 
     // 4. Assign All Permissions to Owner
     console.log('🔗 Assigning permissions to Owner...');

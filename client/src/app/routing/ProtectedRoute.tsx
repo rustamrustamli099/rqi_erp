@@ -4,7 +4,7 @@ import { useAuth } from '@/domains/auth/context/AuthContext';
 import { useMenu } from '@/app/navigation/useMenu';
 import { findFirstPathFromMenu } from '@/app/security/route-utils';
 import { PermissionPreviewEngine } from '@/app/security/permission-preview.engine';
-import { RBAC_REGISTRY } from '@/app/security/rbac.registry';
+import { RBAC_REGISTRY, getFirstAllowedTab, canAccessTab } from '@/app/security/rbac.registry';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 
@@ -34,6 +34,11 @@ export const ProtectedRoute = ({
     const perms = [...requiredPermissions];
     if (requiredPermission) perms.push(requiredPermission);
 
+    // Context and Menu ID extraction
+    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+    const menuId = getMenuIdFromPath(location.pathname);
+    const currentTab = searchParams.get('tab');
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONDITIONAL RETURNS (after all hooks)
     // ═══════════════════════════════════════════════════════════════════════
@@ -51,41 +56,49 @@ export const ProtectedRoute = ({
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Route-Level Permission Check
-    const hasRouteAccess = perms.length === 0
-        ? true
-        : mode === 'all' ? hasAll(perms) : hasAny(perms);
+    // ═══════════════════════════════════════════════════════════════════════
+    // SAP-GRADE RBAC: Tab-based permission check (NOT parent permission)
+    // ═══════════════════════════════════════════════════════════════════════
 
-    // SAP-Grade: Tab-Level Permission Check
-    const currentTab = searchParams.get('tab');
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+    // Check if this menu has tabs
+    const registry = context === 'admin' ? RBAC_REGISTRY.admin : RBAC_REGISTRY.tenant;
+    const menuConfig = registry[menuId];
+    const hasTabs = menuConfig?.tabs && Object.keys(menuConfig.tabs).length > 0;
 
-    if (currentTab) {
-        const allowedTab = PermissionPreviewEngine.getFirstAllowedTabForPath(
-            location.pathname,
-            permissions,
-            context
-        );
+    let hasRouteAccess = true;
 
-        // If current tab is not allowed, redirect to first allowed tab
-        if (allowedTab !== null) {
-            const visibleTabs = PermissionPreviewEngine.getVisibleTabs(
-                getMenuIdFromPath(location.pathname),
-                permissions,
-                context
-            ).filter(t => t.hasAccess).map(t => t.tabId);
+    if (hasTabs) {
+        // SAP-GRADE: For tab-based menus, check if user can access ANY tab
+        const firstAllowedTab = getFirstAllowedTab(menuId, permissions, context);
 
-            if (!visibleTabs.includes(currentTab)) {
-                console.warn('[ProtectedRoute] Tab DENIED:', currentTab, '→ Redirecting to:', allowedTab);
-                const newPath = `${location.pathname}?tab=${allowedTab}`;
+        if (!firstAllowedTab) {
+            // User has NO tab access at all
+            hasRouteAccess = false;
+        } else if (currentTab) {
+            // User is trying to access a specific tab - validate it
+            const canAccess = canAccessTab(menuId, currentTab, permissions, context);
+
+            if (!canAccess) {
+                // Redirect to first allowed tab instead of access-denied
+                console.warn('[ProtectedRoute] Tab DENIED:', currentTab, '→ Redirecting to:', firstAllowedTab);
+                const newPath = `${location.pathname}?tab=${firstAllowedTab}`;
                 return <Navigate to={newPath} replace />;
             }
+        } else {
+            // No tab specified - redirect to first allowed tab
+            const newPath = `${location.pathname}?tab=${firstAllowedTab}`;
+            return <Navigate to={newPath} replace />;
         }
+    } else {
+        // Non-tab menu: use traditional permission check
+        hasRouteAccess = perms.length === 0
+            ? true
+            : mode === 'all' ? hasAll(perms) : hasAny(perms);
     }
 
     // Diagnostic Log
     if (!hasRouteAccess) {
-        console.warn("[ProtectedRoute] Route DENIED:", location.pathname, "Req:", perms);
+        console.warn("[ProtectedRoute] Route DENIED:", location.pathname, "Req:", perms, "MenuId:", menuId);
     }
 
     // SAP-Grade Friendly Redirect

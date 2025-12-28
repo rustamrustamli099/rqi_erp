@@ -37,6 +37,11 @@ export type AdminMenuItem = MenuItem; // Alias for backward compatibility
 /**
  * RBAC_REGISTRY-dən MenuItem[] generasiya edir
  * 
+ * SAP-GRADE RULES:
+ * 1. Parent menu permission-suz olmalıdır (container only)
+ * 2. permissionPrefixes YAlNIZ parent deyil, BÜTÜN tab permission-larını içərir
+ * 3. Əgər HƏR HANSI bir tab permission-u user-də varsa → parent görünür
+ * 
  * @param registry - RBAC registry (admin və ya tenant)
  * @param permissionScope - 'system' və ya 'tenant'
  */
@@ -46,9 +51,21 @@ function generateMenuFromRegistry(
 ): MenuItem[] {
     return Object.entries(registry).map(([id, config]) => {
         // Extract module name from permission for prefix
-        // e.g., 'system.billing.view' → 'system.billing'
-        // e.g., 'system.dashboard.view' → 'system.dashboard'
         const permissionBase = config.permission.replace(/\.(read|view|access)$/, '');
+
+        // SAP-GRADE: Collect ALL tab permission prefixes
+        // This ensures parent menu is visible if ANY tab is permitted
+        const allPrefixes: string[] = [permissionBase];
+
+        if (config.tabs) {
+            Object.values(config.tabs).forEach(tabConfig => {
+                // Extract base from tab permission (remove .read/.view suffix)
+                const tabBase = tabConfig.permission.replace(/\.(read|view|access)$/, '');
+                if (!allPrefixes.includes(tabBase)) {
+                    allPrefixes.push(tabBase);
+                }
+            });
+        }
 
         return {
             id,
@@ -59,7 +76,8 @@ function generateMenuFromRegistry(
             route: config.path,
             tab: config.defaultTab,
             requiredPermissions: [`${permissionBase}.access`],
-            permissionPrefixes: [permissionBase]
+            // SAP-GRADE: Parent visible if ANY tab permission matches
+            permissionPrefixes: allPrefixes
         };
     });
 }

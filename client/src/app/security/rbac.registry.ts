@@ -262,3 +262,67 @@ export function getTabIds(menuId: string, context: 'admin' | 'tenant' = 'admin')
     const menu = registry[menuId];
     return menu?.tabs ? Object.keys(menu.tabs) : [];
 }
+
+/**
+ * SAP-GRADE: Get the FIRST allowed tab for a menu based on user permissions
+ * 
+ * Rules:
+ * 1. Check each tab in order
+ * 2. Return first tab where user has ANY matching permission
+ * 3. Use prefix matching (user permission starts with tab base OR vice versa)
+ * 4. If no tab matches but defaultTab exists and user has parent permission, return defaultTab
+ * 5. Return undefined if no tabs are allowed
+ */
+export function getFirstAllowedTab(
+    menuId: string,
+    userPermissions: string[],
+    context: 'admin' | 'tenant' = 'admin'
+): string | undefined {
+    const registry = context === 'admin' ? ADMIN_REGISTRY : TENANT_REGISTRY;
+    const menu = registry[menuId];
+
+    if (!menu?.tabs) return undefined;
+
+    // Check each tab in order
+    for (const [tabId, tabConfig] of Object.entries(menu.tabs)) {
+        const tabBase = tabConfig.permission.replace(/\.(read|view|access)$/, '');
+
+        const hasPermission = userPermissions.some(uPerm => {
+            // User has specific permission matching tab
+            if (uPerm.startsWith(tabBase)) return true;
+            // User has broad permission covering tab
+            if (tabBase.startsWith(uPerm)) return true;
+            return false;
+        });
+
+        if (hasPermission) {
+            return tabId;
+        }
+    }
+
+    return undefined;
+}
+
+/**
+ * SAP-GRADE: Check if user can access a specific tab
+ */
+export function canAccessTab(
+    menuId: string,
+    tabId: string,
+    userPermissions: string[],
+    context: 'admin' | 'tenant' = 'admin'
+): boolean {
+    const registry = context === 'admin' ? ADMIN_REGISTRY : TENANT_REGISTRY;
+    const menu = registry[menuId];
+    const tabConfig = menu?.tabs?.[tabId];
+
+    if (!tabConfig) return false;
+
+    const tabBase = tabConfig.permission.replace(/\.(read|view|access)$/, '');
+
+    return userPermissions.some(uPerm => {
+        if (uPerm.startsWith(tabBase)) return true;
+        if (tabBase.startsWith(uPerm)) return true;
+        return false;
+    });
+}

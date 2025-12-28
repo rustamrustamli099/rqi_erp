@@ -4,6 +4,7 @@ import { useAuth } from '@/domains/auth/context/AuthContext';
 import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { PLATFORM_MENU, TENANT_MENU, type AdminMenuItem } from '@/app/navigation/menu.definitions';
 import { MenuVisibilityEngine } from '@/domains/auth/utils/menu-visibility';
+import { RBAC_REGISTRY, getFirstAllowedTab } from '@/app/security/rbac.registry';
 
 import { usePendingApprovals } from '@/domains/approvals/hooks/useApprovals';
 import { CheckCircle2 } from 'lucide-react';
@@ -26,6 +27,8 @@ export const useMenu = () => {
 
     // 1. Select the correct tree based on context
     const rawMenu = activeTenantType === 'SYSTEM' ? PLATFORM_MENU : TENANT_MENU;
+    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+    const registry = context === 'admin' ? RBAC_REGISTRY.admin : RBAC_REGISTRY.tenant;
 
     // 2. Compute Visibility (Flat Prefix Match)
     const filteredMenu = useMemo(() => {
@@ -66,18 +69,38 @@ export const useMenu = () => {
         return base;
     }, [rawMenu, permissions, activeTenantType, pendingCount]);
 
+    /**
+     * SAP-GRADE: Get first allowed route with proper tab handling
+     * 
+     * Rules:
+     * 1. Find first visible menu item
+     * 2. If menu has tabs, find FIRST ALLOWED TAB (not default)
+     * 3. Append ?tab=X to route
+     * 4. Never return dashboard if user only has sub-tab permissions
+     */
     const getFirstAllowedRoute = () => {
-        // For flat menu, first visible item is the landing page
-        if (filteredMenu.length > 0) {
-            const first = filteredMenu[0];
-            let route = first.route;
-            // Append default tab if exists
-            if (first.tab) {
+        if (filteredMenu.length === 0) {
+            return '/access-denied';
+        }
+
+        const first = filteredMenu[0];
+        let route = first.route || first.path || '/access-denied';
+
+        // SAP-GRADE: Check if this menu has tabs and find first allowed tab
+        if (first.id && registry[first.id]?.tabs) {
+            const allowedTab = getFirstAllowedTab(first.id, permissions, context);
+            if (allowedTab) {
+                route += `?tab=${allowedTab}`;
+            } else if (first.tab) {
+                // Fallback to default tab if defined
                 route += `?tab=${first.tab}`;
             }
-            return route;
+        } else if (first.tab) {
+            // Legacy support: append default tab if exists
+            route += `?tab=${first.tab}`;
         }
-        return '/access-denied';
+
+        return route;
     };
 
     return {

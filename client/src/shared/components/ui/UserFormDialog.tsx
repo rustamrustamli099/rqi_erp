@@ -188,7 +188,10 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
                                             <Button
                                                 type="button"
                                                 variant={field.value === 'TENANT' ? 'default' : 'outline'}
-                                                onClick={() => handleScopeChange('TENANT')}
+                                                onClick={() => {
+                                                    field.onChange('TENANT');
+                                                    handleScopeChange('TENANT');
+                                                }}
                                                 className="flex-1"
                                             >
                                                 Tenant (Biznes)
@@ -196,7 +199,10 @@ export function UserFormDialog({ open, onOpenChange, initialData, onSubmit, mode
                                             <Button
                                                 type="button"
                                                 variant={field.value === 'SYSTEM' ? 'destructive' : 'outline'}
-                                                onClick={() => handleScopeChange('SYSTEM')}
+                                                onClick={() => {
+                                                    field.onChange('SYSTEM');
+                                                    handleScopeChange('SYSTEM');
+                                                }}
                                                 className="flex-1"
                                             >
                                                 System (Admin)
