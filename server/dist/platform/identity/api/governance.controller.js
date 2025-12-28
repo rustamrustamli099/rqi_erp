@@ -21,6 +21,13 @@ const sod_rules_1 = require("../domain/sod-rules");
 class ValidatePermissionsDto {
     permissions;
 }
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: ['system.roles.create', 'system.roles.approve'],
+        description: 'List of permission slugs to validate'
+    }),
+    __metadata("design:type", Array)
+], ValidatePermissionsDto.prototype, "permissions", void 0);
 class CreateApprovalRequestDto {
     entityType;
     entityId;
@@ -31,12 +38,52 @@ class CreateApprovalRequestDto {
     riskLevel;
     sodConflicts;
 }
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: ['ROLE', 'USER', 'EXPORT', 'BILLING'] }),
+    __metadata("design:type", String)
+], CreateApprovalRequestDto.prototype, "entityType", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'role-123' }),
+    __metadata("design:type", String)
+], CreateApprovalRequestDto.prototype, "entityId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Finance Admin' }),
+    __metadata("design:type", String)
+], CreateApprovalRequestDto.prototype, "entityName", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: ['CREATE', 'UPDATE', 'DELETE', 'EXPORT'] }),
+    __metadata("design:type", String)
+], CreateApprovalRequestDto.prototype, "action", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false }),
+    __metadata("design:type", Object)
+], CreateApprovalRequestDto.prototype, "changes", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, example: 75 }),
+    __metadata("design:type", Number)
+], CreateApprovalRequestDto.prototype, "riskScore", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, example: 'HIGH' }),
+    __metadata("design:type", String)
+], CreateApprovalRequestDto.prototype, "riskLevel", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, example: 2 }),
+    __metadata("design:type", Number)
+], CreateApprovalRequestDto.prototype, "sodConflicts", void 0);
 class ApproveRequestDto {
     comment;
 }
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, example: 'Approved after review' }),
+    __metadata("design:type", String)
+], ApproveRequestDto.prototype, "comment", void 0);
 class RejectRequestDto {
     reason;
 }
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Too risky, please remove export permission' }),
+    __metadata("design:type", String)
+], RejectRequestDto.prototype, "reason", void 0);
 let GovernanceController = class GovernanceController {
     governanceService;
     constructor(governanceService) {

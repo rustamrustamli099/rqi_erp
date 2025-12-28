@@ -62,7 +62,8 @@ import { RoleCreationWizard } from "./_components/RoleCreationWizard"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
 import { systemApi, type Role, type SystemPermission } from "@/domains/system-console/api/system.contract";
 import { PermissionMatrix } from "@/domains/system-console/feature-flags/PermissionMatrix";
-import { PermissionTreeEditor, type PermissionNode } from "./_components/PermissionTreeEditor"
+import { PermissionTreeEditor } from "./_components/PermissionTreeEditor"
+import type { PermissionNode } from "./_components/permission-utils"
 import { PermissionSlugs } from "@/app/security/permission-slugs"
 import { permissionsStructure } from "@/app/security/permission-structure"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
@@ -325,6 +326,22 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const [sodModalOpen, setSodModalOpen] = useState(false)
     const [sodValidationResult, setSodValidationResult] = useState<SoDValidationResult | null>(null)
     const [pendingRoleValues, setPendingRoleValues] = useState<RoleFormValues | null>(null)
+
+    // Reject Dialog State
+    const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
+    const [rejectReason, setRejectReason] = useState("")
+    const [roleToReject, setRoleToReject] = useState<string | null>(null)
+    const [isRejectLoading, setIsRejectLoading] = useState(false)
+
+    // Approve Dialog State
+    const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
+    const [roleToApprove, setRoleToApprove] = useState<string | null>(null)
+    const [isApproveLoading, setIsApproveLoading] = useState(false)
+
+    // Submit Dialog State
+    const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
+    const [roleToSubmit, setRoleToSubmit] = useState<string | null>(null)
+    const [isSubmitLoading, setIsSubmitLoading] = useState(false)
 
     // Handlers
     const handleCreateRole = async (values: any) => {
@@ -642,49 +659,76 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
         }
     };
 
-    // WORKFLOW HANDLERS
-    const handleSubmitRole = async (id: string) => {
+    // WORKFLOW HANDLERS - Now open confirmation modals instead of direct API calls
+    const handleSubmitRole = (id: string) => {
+        setRoleToSubmit(id);
+        setIsSubmitDialogOpen(true);
+    }
+
+    const confirmSubmitRole = async () => {
+        if (!roleToSubmit) return;
+        setIsSubmitLoading(true);
         try {
-            await systemApi.submitRole(id);
+            await systemApi.submitRole(roleToSubmit);
             toast.success("Rol təsdiqə göndərildi");
+            setIsSubmitDialogOpen(false);
+            setRoleToSubmit(null);
             fetchRoles();
         } catch (e) {
             toast.error("Xəta baş verdi");
+        } finally {
+            setIsSubmitLoading(false);
         }
     }
 
-    const handleApproveRole = async (id: string) => {
+    const handleApproveRole = (id: string) => {
+        setRoleToApprove(id);
+        setIsApproveDialogOpen(true);
+    }
+
+    const confirmApproveRole = async () => {
+        if (!roleToApprove) return;
+        setIsApproveLoading(true);
         try {
-            await systemApi.approveRole(id);
+            await systemApi.approveRole(roleToApprove);
             toast.success("Rol təsdiqləndi və aktiv edildi");
+            setIsApproveDialogOpen(false);
+            setRoleToApprove(null);
             fetchRoles();
         } catch (e: any) {
-            // Handle 403 Forbidden (Own Role)
             if (e.response && e.response.status === 403) {
                 toast.error("Siz öz təsdiqə göndərdiyiniz rolu təsdiqləyə bilməzsiniz (4-Eyes Principle).");
             } else {
                 toast.error("Təsdiqləmə xətası");
             }
+        } finally {
+            setIsApproveLoading(false);
         }
     }
 
-    const handleRejectRole = async (id: string) => {
-        // TODO: Open Dialog to ask for reason. For now hardcode reason.
-        // Or use prompt() for MVP speed as user requested "Real React implementation" but implied "Component". 
-        // Actually user asked for mandatory approval comment? No "Mandatory approval comment" was listed in UI section of task.
-        // "Mandatory approval comment" is listed in "UI: Approval timeline ... Mandatory approval comment"? 
-        // Ah, wait. "Approval requires different user... Mandatory approval comment".
-        // I should implement a dialog for rejection reason.
-        // For now, I'll use a prompt to move fast, or just hardcode "Rejection via UI".
-        const reason = prompt("İmtina səbəbini qeyd edin:");
-        if (!reason) return;
+    const handleRejectRole = (id: string) => {
+        setRoleToReject(id);
+        setRejectReason("");
+        setIsRejectDialogOpen(true);
+    }
 
+    const confirmRejectRole = async () => {
+        if (!roleToReject || !rejectReason.trim()) {
+            toast.error("İmtina səbəbi yazılmalıdır");
+            return;
+        }
+        setIsRejectLoading(true);
         try {
-            await systemApi.rejectRole(id, reason);
+            await systemApi.rejectRole(roleToReject, rejectReason);
             toast.info("Rol imtina edildi");
+            setIsRejectDialogOpen(false);
+            setRoleToReject(null);
+            setRejectReason("");
             fetchRoles();
         } catch (e) {
             toast.error("Xəta baş verdi");
+        } finally {
+            setIsRejectLoading(false);
         }
     }
 
@@ -1062,6 +1106,75 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                             context={context}
                         />
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reject Role Dialog */}
+            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rolu İmtina Et</DialogTitle>
+                        <DialogDescription>
+                            Bu rolu imtina etmək üçün səbəb qeyd edin. Bu məlumat sorğuçuya göndəriləcək.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <textarea
+                            className="w-full min-h-[100px] p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
+                            placeholder="İmtina səbəbi..."
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            disabled={isRejectLoading}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)} disabled={isRejectLoading}>Ləğv et</Button>
+                        <Button variant="destructive" onClick={confirmRejectRole} disabled={isRejectLoading}>
+                            {isRejectLoading ? (
+                                <><span className="animate-spin mr-2">⏳</span>Gözləyin...</>
+                            ) : "İmtina Et"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Approve Role Dialog */}
+            <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rolu Təsdiqlə</DialogTitle>
+                        <DialogDescription>
+                            Bu rolu təsdiqləmək istədiyinizə əminsiniz? Rol aktivləşdiriləcək.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)} disabled={isApproveLoading}>Ləğv et</Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApproveRole} disabled={isApproveLoading}>
+                            {isApproveLoading ? (
+                                <><span className="animate-spin mr-2">⏳</span>Gözləyin...</>
+                            ) : "Təsdiqlə"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Submit Role Dialog */}
+            <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Təsdiqə Göndər</DialogTitle>
+                        <DialogDescription>
+                            Bu rolu təsdiqə göndərmək istədiyinizə əminsiniz? Rolun statusu "Təsdiq Gözləyir" olacaq.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)} disabled={isSubmitLoading}>Ləğv et</Button>
+                        <Button onClick={confirmSubmitRole} disabled={isSubmitLoading}>
+                            {isSubmitLoading ? (
+                                <><span className="animate-spin mr-2">⏳</span>Gözləyin...</>
+                            ) : "Göndər"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

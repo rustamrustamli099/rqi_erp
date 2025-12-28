@@ -35,7 +35,7 @@ const ApprovalSimulation = ({ approvalId }: { approvalId: string }) => {
         const fetchRole = async () => {
             try {
                 // We assume Approval ID is Role ID (as per Service implementation)
-                const res = await api.get(\`/admin/roles/\${approvalId}\`);
+                const res = await api.get(`/admin/roles/${approvalId}`);
                 setRole(res.data);
             } catch (e) {
                 console.error("Failed to fetch role", e);
@@ -61,22 +61,22 @@ const ApprovalSimulation = ({ approvalId }: { approvalId: string }) => {
     return (
         <div className="space-y-4">
             <div className="p-4 bg-muted/30 rounded-lg border">
-                 <div className="grid grid-cols-2 gap-4 text-sm">
-                     <div>
-                         <span className="text-muted-foreground">Rol Adı:</span>
-                         <span className="ml-2 font-medium">{role.name}</span>
-                     </div>
-                     <div>
-                         <span className="text-muted-foreground">Scope:</span>
-                         <span className="ml-2 font-medium">{role.scope}</span>
-                     </div>
-                 </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span className="text-muted-foreground">Rol Adı:</span>
+                        <span className="ml-2 font-medium">{role.name}</span>
+                    </div>
+                    <div>
+                        <span className="text-muted-foreground">Scope:</span>
+                        <span className="ml-2 font-medium">{role.scope}</span>
+                    </div>
+                </div>
             </div>
-            
+
             <h4 className="text-sm font-semibold mb-2">İcazələr (Nəticə)</h4>
-            <PermissionDiffViewer 
+            <PermissionDiffViewer
                 original={[]} // Empty implies everything is "New" or "Active"
-                modified={modifiedSlugs} 
+                modified={modifiedSlugs}
             />
         </div>
     );
@@ -90,7 +90,9 @@ export default function ApprovalsPage() {
     const [selectedItem, setSelectedItem] = useState<any>(null); // Item being viewed/acted upon
     const [isDiffOpen, setIsDiffOpen] = useState(false);
     const [isRejectOpen, setIsRejectOpen] = useState(false);
+    const [isApproveOpen, setIsApproveOpen] = useState(false); // NEW: Approve confirmation
     const [rejectReason, setRejectReason] = useState("");
+    const [approveComment, setApproveComment] = useState(""); // NEW: Approve comment
 
     // For Diff Viewer, we usually need the full Role object or ID.
     // PermissionDiffViewer props: { roleId?, originalRole?, modifiedRole? } -> Need to check props from ViewFile result.
@@ -108,6 +110,9 @@ export default function ApprovalsPage() {
         try {
             await approveMutation.mutateAsync({ id, type });
             toast.success("Təsdiqləndi");
+            setIsApproveOpen(false);
+            setApproveComment("");
+            setSelectedItem(null);
         } catch (e) {
             toast.error("Xəta baş verdi");
         }
@@ -205,7 +210,11 @@ export default function ApprovalsPage() {
                                             <Button
                                                 size="sm"
                                                 className="h-8 bg-green-600 hover:bg-green-700 text-white gap-1.5"
-                                                onClick={() => handleApprove(item.id, item.type)}
+                                                onClick={() => {
+                                                    console.log('[DEBUG] Approve clicked, opening modal');
+                                                    setSelectedItem(item);
+                                                    setIsApproveOpen(true);
+                                                }}
                                             >
                                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                                 Təsdiq
@@ -216,6 +225,7 @@ export default function ApprovalsPage() {
                                                 variant="destructive"
                                                 className="h-8 gap-1.5"
                                                 onClick={() => {
+                                                    console.log('[DEBUG] Reject clicked, opening modal');
                                                     setSelectedItem(item);
                                                     setIsRejectOpen(true);
                                                 }}
@@ -251,6 +261,36 @@ export default function ApprovalsPage() {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsRejectOpen(false)}>Ləğv et</Button>
                         <Button variant="destructive" onClick={handleReject}>Təsdiqlə (İmtina)</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Approve Confirmation Dialog */}
+            <Dialog open={isApproveOpen} onOpenChange={setIsApproveOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Təsdiqləmək istəyirsiniz?</DialogTitle>
+                        <DialogDescription>
+                            "{selectedItem?.title}" sorğusunu təsdiqləmək üzrəsiniz.
+                            Bu əməliyyat geri qaytarıla bilməz.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            placeholder="Şərh (ixtiyari)..."
+                            value={approveComment}
+                            onChange={(e) => setApproveComment(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsApproveOpen(false)}>Ləğv et</Button>
+                        <Button
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => selectedItem && handleApprove(selectedItem.id, selectedItem.type)}
+                        >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Təsdiqlə
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -17,34 +17,55 @@ import {
     HttpCode,
     HttpStatus
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { GovernanceService } from '../application/governance.service';
 import { SOD_RULES } from '../domain/sod-rules';
 
 class ValidatePermissionsDto {
+    @ApiProperty({
+        example: ['system.roles.create', 'system.roles.approve'],
+        description: 'List of permission slugs to validate'
+    })
     permissions: string[];
 }
 
 class CreateApprovalRequestDto {
+    @ApiProperty({ enum: ['ROLE', 'USER', 'EXPORT', 'BILLING'] })
     entityType: 'ROLE' | 'USER' | 'EXPORT' | 'BILLING';
+
+    @ApiProperty({ example: 'role-123' })
     entityId: string;
+
+    @ApiProperty({ example: 'Finance Admin' })
     entityName: string;
+
+    @ApiProperty({ enum: ['CREATE', 'UPDATE', 'DELETE', 'EXPORT'] })
     action: 'CREATE' | 'UPDATE' | 'DELETE' | 'EXPORT';
+
+    @ApiProperty({ required: false })
     changes?: {
         before: Record<string, any>;
         after: Record<string, any>;
     };
+
+    @ApiProperty({ required: false, example: 75 })
     riskScore?: number;
+
+    @ApiProperty({ required: false, example: 'HIGH' })
     riskLevel?: string;
+
+    @ApiProperty({ required: false, example: 2 })
     sodConflicts?: number;
 }
 
 class ApproveRequestDto {
+    @ApiProperty({ required: false, example: 'Approved after review' })
     comment?: string;
 }
 
 class RejectRequestDto {
+    @ApiProperty({ example: 'Too risky, please remove export permission' })
     reason: string;
 }
 
