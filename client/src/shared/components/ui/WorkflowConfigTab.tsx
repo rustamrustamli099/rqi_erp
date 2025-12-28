@@ -544,7 +544,7 @@ export function WorkflowConfigTab() {
                 <TabsContent value="monitor">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Müraciət Tarixçəsi (SAP Console)</CardTitle>
+                            <CardTitle>Müraciət Tarixçəsi</CardTitle>
                             <CardDescription>Bütün aktiv və tamamlanmış workflow proseslərinə nəzarət.</CardDescription>
                         </CardHeader>
                         <CardContent>

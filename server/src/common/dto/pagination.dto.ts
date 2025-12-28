@@ -1,6 +1,11 @@
 import { IsNumber, IsOptional, IsString, IsIn, Min, Max, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
+// SAP-Grade: Fixed page sizes, no user-controlled large exports
+const ALLOWED_PAGE_SIZES = [10, 15, 25, 50] as const;
+const DEFAULT_PAGE_SIZE = 15;
+const MAX_PAGE_SIZE = 50;
+
 export class ListQueryDto {
     @IsOptional()
     @Type(() => Number)
@@ -11,8 +16,9 @@ export class ListQueryDto {
     @IsOptional()
     @Type(() => Number)
     @IsNumber()
-    @IsIn([10, 25, 50, 100], { message: 'Page size must be one of [10, 25, 50, 100]' })
-    pageSize?: number = 25;
+    @Max(MAX_PAGE_SIZE)
+    @IsIn([...ALLOWED_PAGE_SIZES], { message: `Page size must be one of [${ALLOWED_PAGE_SIZES.join(', ')}]` })
+    pageSize?: number = DEFAULT_PAGE_SIZE;
 
     @IsOptional()
     @IsString()
@@ -29,6 +35,7 @@ export class ListQueryDto {
     @IsOptional()
     filters?: any; // Parsed manually in QueryParser. Relaxes validation to avoid 400.
 }
+
 
 export interface PaginatedResult<T> {
     items: T[];

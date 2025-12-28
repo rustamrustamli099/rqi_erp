@@ -12,9 +12,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ListQueryDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+const ALLOWED_PAGE_SIZES = [10, 15, 25, 50];
+const DEFAULT_PAGE_SIZE = 15;
+const MAX_PAGE_SIZE = 50;
 class ListQueryDto {
     page = 1;
-    pageSize = 25;
+    pageSize = DEFAULT_PAGE_SIZE;
     search;
     sortBy;
     sortDir = 'desc';
@@ -32,7 +35,8 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsIn)([10, 25, 50, 100], { message: 'Page size must be one of [10, 25, 50, 100]' }),
+    (0, class_validator_1.Max)(MAX_PAGE_SIZE),
+    (0, class_validator_1.IsIn)([...ALLOWED_PAGE_SIZES], { message: `Page size must be one of [${ALLOWED_PAGE_SIZES.join(', ')}]` }),
     __metadata("design:type", Number)
 ], ListQueryDto.prototype, "pageSize", void 0);
 __decorate([
