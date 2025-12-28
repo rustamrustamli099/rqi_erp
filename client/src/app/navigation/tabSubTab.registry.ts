@@ -131,7 +131,7 @@ const ADMIN_PAGES: PageConfig[] = [
         label: 'Billing',
         labelAz: 'Bilinq',
         tabs: [
-            { key: 'marketplace', label: 'Marketplace', requiredAnyOf: ['system.billing.market_place.read'] },
+            { key: 'marketplace', label: 'Marketplace', requiredAnyOf: ['system.billing.marketplace.read'] },
             { key: 'packages', label: 'Kompakt Paketlər', requiredAnyOf: ['system.billing.compact_packages.read'] },
             { key: 'subscriptions', label: 'Abunəlik Planları', requiredAnyOf: ['system.billing.plans.read'] },
             { key: 'invoices', label: 'Fakturalar', requiredAnyOf: ['system.billing.invoices.read'] },

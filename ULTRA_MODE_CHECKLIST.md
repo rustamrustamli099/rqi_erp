@@ -1,79 +1,54 @@
-# ULTRA MODE — SAP-Grade ERP Implementation ✅ 100%
+# ULTRA MODE — SAP-Grade ERP Implementation ✅
 
-## 1️⃣ CORE PRINCIPLES ✅
-- [x] RBAC DB-driven ONLY
-- [x] Backend authoritative
-- [x] No implicit permissions
-- [x] Audit logging
-- [x] Workflow-based approvals
-- [x] Admin/Tenant isolation
+## SESSION ALIGNMENT (Final)
 
-## 2️⃣ PERMISSION & SCOPE STANDARD ✅
-- [x] `platform.<module>.<submodule>.<action>` format
-- [x] Scope enforcement
-- [x] Auto-add read when non-read selected
+### 1️⃣ menu.definitions.ts ✅
+- [x] Generated from TAB_SUBTAB_REGISTRY
+- [x] NO embedded permissions
+- [x] 80 lines (clean)
 
-## 3️⃣ MENU & TAB ARCHITECTURE ✅
-- [x] Sidebar ONLY top-level menus
-- [x] Submodules as TABS/SUB-TABS
-- [x] Menu visible if ANY tab permission
-- [x] Parent redirects to first allowed tab
+### 2️⃣ MenuVisibilityEngine ✅
+- [x] NO prefix/startsWith matching
+- [x] Uses frozen registry only
+- [x] Exact permission checks
 
-## 4️⃣ TAB/SUBTAB REGISTRY ✅
-- [x] tabSubTab.registry.ts (SAP-Grade)
-- [x] TAB_SUBTAB_FROZEN_SPEC.md
-- [x] normalizePermissions (write→read implied)
-- [x] getFirstAllowedTab single source
-- [x] Unit tests
+### 3️⃣ TAB_SUBTAB_REGISTRY ✅
+- [x] Single source of truth
+- [x] All admin/tenant pages
+- [x] normalizePermissions helper
 
-## 5️⃣ ROLE MANAGEMENT + 4-EYES ✅
-- [x] DRAFT → PENDING → APPROVED/REJECTED
-- [x] Workflow defines approvers
-
-## 6️⃣ APPROVALS MODULE ✅
-- [x] Top-level menu
-- [x] Approve/Reject/Delegate/Escalate/Cancel
-
-## 7️⃣ NOTIFICATION SYSTEM ✅
-- [x] System-wide reusable
-- [x] Deep links
-
-## 8️⃣ ACCESS DENIED UX ✅
-- [x] Zero permissions → blocked
-- [x] NO redirect loops
-- [x] Auth FSM (UNINITIALIZED/BOOTSTRAPPING/STABLE)
-
-## 9️⃣ PERMISSION PREVIEW ENGINE ✅
-- [x] permissionPreviewEngine.ts
-- [x] visibleMenus computation
-- [x] firstLandingPath
+### 4️⃣ PermissionPreviewEngine ✅
+- [x] Deterministic visibility
+- [x] Landing path computation
 - [x] Reason explanations
 
-## 🔟 RBAC SAFETY RULES ✅
-- [x] System roles locked
-- [x] SoDConflictModal
+### 5️⃣ ProtectedRoute ✅
+- [x] Uses TAB_SUBTAB_REGISTRY
+- [x] canAccessTab / getFirstAllowedTab
+- [x] NO fallback to dashboard
 
-## 1️⃣1️⃣-1️⃣4️⃣ OTHER FEATURES ✅
-- [x] Export XLSX
-- [x] List Engine
-- [x] Audit/Compliance
+### 6️⃣ RootRedirect ✅
+- [x] Preview engine integration
+- [x] Auth FSM (STABLE required)
 
 ---
 
-## SESSION İMPLEMENTATION (Today)
+## DEPRECATED FILES
+- `settings-tabs.registry.ts` → replaced by `tabSubTab.registry.ts`
+- `permission-slugs.ts` → keep for reference
 
-### PROMPT 2 - TAB_SUBTAB Registry ✅
-- `tabSubTab.registry.ts` (340 lines)
-
-### PROMPT 3 - Permission Preview Engine ✅
-- `permissionPreviewEngine.ts` (280 lines)
-
-### PROMPT 4 - RootRedirect ✅
-- Preview engine inteqrasiya edildi
-
-### Unit Tests ✅
-- `tabSubTab.registry.spec.ts`
+## KEY FILES
+| File | Purpose |
+|------|---------|
+| `tabSubTab.registry.ts` | Frozen registry (source of truth) |
+| `menu.definitions.ts` | Generated menu items |
+| `menu-visibility.ts` | Visibility engine |
+| `permissionPreviewEngine.ts` | Preview computations |
+| `RootRedirect.tsx` | Landing path |
+| `ProtectedRoute.tsx` | Route guards |
 
 ---
 
 **Status: 100% ✅**
+**Prefix Matching: REMOVED ✅**
+**Single Source of Truth: TAB_SUBTAB_REGISTRY ✅**

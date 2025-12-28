@@ -41,20 +41,22 @@ export const useMenu = () => {
         // Base Menu
         const base = MenuVisibilityEngine.computeVisibleTree(rawMenu, permissions);
 
-        // --- APPROVALS INJECTION (Strict Visibility) ---
-        if (pendingCount > 0) {
-            // Inject at top positions (e.g. after Dashboard)
-            // or as first item if critical? SAP usually puts Worklist/Inbox at top.
-            // Let's put it as index 1 (after Dashboard).
+        // --- APPROVALS INJECTION (Permission + Count Check) ---
+        // SAP-GRADE FIX: pendingCount alone is NOT enough
+        // User MUST have system.approvals.read permission
+        const hasApprovalsPermission = permissions.some(p =>
+            p.startsWith('system.approvals') || p === 'system.approvals.read'
+        );
 
+        if (pendingCount > 0 && hasApprovalsPermission) {
             const approvalsItem: AdminMenuItem = {
                 id: 'approvals',
-                label: `Təsdiqləmələr`, // Label for tooltip
-                title: `Təsdiqləmələr (${pendingCount})`, // Title with Count for Sidebar
-                icon: 'CheckCircle2', // Lucide icon name
+                label: `Təsdiqləmələr`,
+                title: `Təsdiqləmələr (${pendingCount})`,
+                icon: 'CheckCircle2',
                 path: '/admin/approvals',
                 route: '/admin/approvals',
-                // No explicit permissions required here because 'pendingCount > 0' IMPLIES eligibility via backend
+                permissionPrefixes: ['system.approvals'],
             };
 
             // Insert after Dashboard (index 0 usually)

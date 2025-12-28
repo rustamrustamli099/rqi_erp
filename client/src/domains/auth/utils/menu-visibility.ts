@@ -1,64 +1,108 @@
-
-import type { AdminMenuItem } from "@/app/navigation/menu.definitions";
-
 /**
- * SAP-Grade Menu Visibility Engine (Flat & Prefix-Based)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SAP-Grade Menu Visibility Engine
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * SINGLE SOURCE OF TRUTH: TAB_SUBTAB_REGISTRY
  * 
  * Rules:
- * 1. Flat List: No recursion.
- * 2. Prefix Matching: Item is visible if ANY user permission starts with ANY of the item's permissionPrefixes.
- * 3. Zero Permission User: Handled by AuthGate, but here we simply return empty array if no matches.
+ * 1. Menu is visible ONLY if user has at least ONE allowed tab
+ * 2. NO prefix matching
+ * 3. NO permission guessing
+ * 4. Visibility == Actionability (SAP principle)
+ * ═══════════════════════════════════════════════════════════════════════════
  */
+
+import type { MenuItem } from "@/app/navigation/menu.definitions";
+import {
+    TAB_SUBTAB_REGISTRY,
+    normalizePermissions,
+    type PageConfig
+} from "@/app/navigation/tabSubTab.registry";
 
 export class MenuVisibilityEngine {
 
     /**
-     * Computes the visible menu items based on Prefix Matching.
-     * @param menu The flat list of AdminMenuItems
-     * @param userPermissions The user's full permission list (strings)
+     * SAP-GRADE: Compute visible menu using frozen registry.
+     * 
+     * A page is visible if user has ANY allowed tab under it.
+     * NO prefix matching - exact permission check only.
      */
-    static computeVisibleTree(menu: AdminMenuItem[], userPermissions: string[]): AdminMenuItem[] {
-        if (!menu || !userPermissions) return [];
+    static computeVisibleTree(menu: MenuItem[], userPermissions: string[]): MenuItem[] {
+        if (!menu || !userPermissions || userPermissions.length === 0) {
+            return [];
+        }
+
+        const normalizedPerms = normalizePermissions(userPermissions);
+        const context = menu.some(m => m.path?.startsWith('/admin')) ? 'admin' : 'tenant';
+        const registry = context === 'admin'
+            ? TAB_SUBTAB_REGISTRY.admin
+            : TAB_SUBTAB_REGISTRY.tenant;
 
         return menu.filter(item => {
-            // Public items (no prefixes defined) are visible? 
-            // SAP rule: "Zero permission users NEVER enter". Implies strictness.
-            // But if prefixes is empty array, treated as Public? 
-            // Creating a safe semantic: If prefixes is undefined/empty, assume VISIBLE (e.g. Dashboard if public).
-            // However, our definition has ['system.dashboard'].
+            // Find page in registry using pageKey or path
+            const pageConfig = this.findPageConfig(item, registry);
 
-            if (!item.permissionPrefixes || item.permissionPrefixes.length === 0) {
-                return true;
+            if (!pageConfig) {
+                // No registry entry = hidden (strict mode)
+                return false;
             }
 
-            // Check if ANY user permission starts with ANY prefix
-            // Optimization: userPermissions might be large.
-            // O(M * P * U) where M=Menu, P=Prefixes, U=UserPerms. 
-            // P is small (1-4). M is small (10). U is ~50-100.
-            // 10 * 4 * 100 = 4000 ops. Negligible.
+            // SAP-GRADE: visible if ANY tab is accessible
+            return this.hasAnyAllowedTab(pageConfig, normalizedPerms);
+        });
+    }
 
-            const visible = item.permissionPrefixes.some(prefix =>
-                userPermissions.some(uPerm => {
-                    // Check 1: User has SPECIFIC permission (e.g. system.settings.read) -> Matches Menu (system.settings)
-                    if (uPerm.startsWith(prefix)) return true;
+    /**
+     * Find page config by pageKey or path
+     */
+    private static findPageConfig(item: MenuItem, registry: PageConfig[]): PageConfig | undefined {
+        // First try pageKey
+        if ('pageKey' in item && item.pageKey) {
+            return registry.find(p => p.pageKey === item.pageKey);
+        }
 
-                    // Check 2: User has BROAD permission (e.g. system.settings) -> Matches Menu (system.settings.general)
-                    if (prefix.startsWith(uPerm)) return true;
+        // Fallback to path match
+        const basePath = item.path?.split('?')[0];
+        return registry.find(p => p.basePath === basePath);
+    }
 
-                    return false;
-                })
-            );
+    /**
+     * SAP-GRADE: Check if user has ANY allowed tab under this page.
+     * NO prefix matching - explicit permission check.
+     */
+    private static hasAnyAllowedTab(page: PageConfig, normalizedPerms: string[]): boolean {
+        return page.tabs.some(tab =>
+            this.hasExactPermission(tab.requiredAnyOf, normalizedPerms)
+        );
+    }
 
-            // Debug Logging (Enabled for troubleshooting)
-            if (!visible) {
-                // Only log if it's suspicious (e.g. user has many permissions but sees nothing)
-                if (userPermissions.length > 0) {
-                    console.log(`[MenuVisibility] Hidden: ${item.id}`, { itemPrefixes: item.permissionPrefixes, userSample: userPermissions.slice(0, 3) });
-                } else {
-                    console.log(`[MenuVisibility] Hidden: ${item.id} (No User Permissions)`);
-                }
-            }
-            return visible;
+    /**
+     * EXACT permission check - no startsWith, no prefix guessing.
+     * 
+     * Match rules:
+     * 1. Exact base match: permission bases are equal
+     * 2. Hierarchical match: user has parent permission covering the required one
+     */
+    private static hasExactPermission(
+        requiredAnyOf: string[],
+        normalizedPerms: string[]
+    ): boolean {
+        return requiredAnyOf.some(required => {
+            const reqBase = required.replace(/\.(read|create|update|delete|approve|export)$/, '');
+
+            return normalizedPerms.some(perm => {
+                const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
+
+                // Exact match
+                if (permBase === reqBase) return true;
+
+                // User has broader permission (hierarchical)
+                // e.g., system.users covers system.users.curators
+                if (reqBase.startsWith(permBase + '.')) return true;
+
+                return false;
+            });
         });
     }
 }
