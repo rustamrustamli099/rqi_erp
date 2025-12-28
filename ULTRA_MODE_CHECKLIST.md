@@ -1,61 +1,47 @@
-# ULTRA MODE — SAP-Grade RBAC Navigation ✅
+# ULTRA MODE — SAP-Grade RBAC ✅
 
-## SESSION: 10-Step Navigation Fix
+## SESSION: A-H Deliverables Complete
 
-### Core Fixes Applied
+### Deliverables
 
-| Step | File | Fix |
-|------|------|-----|
-| 1 | `tabSubTab.registry.ts` | EXACT base match, hasExactPermission helper |
-| 2 | `menu.definitions.ts` | Generated from registry |
-| 3 | `useMenu.ts` | TAB_SUBTAB_REGISTRY + buildLandingPath |
-| 4 | `Sidebar.tsx` | item.tab navigation |
-| 5 | `ProtectedRoute.tsx` | Unknown tab → terminal 403 |
-| 6 | `menu-visibility.ts` | EXACT match only |
+| # | Deliverable | Status |
+|---|-------------|--------|
+| 1 | [tabSubTab.registry.ts](file:///c:/Users/Dell/Desktop/antigravity_erp/client/src/app/navigation/tabSubTab.registry.ts) | ✅ Frozen registry |
+| 2 | [menu.definitions.ts](file:///c:/Users/Dell/Desktop/antigravity_erp/client/src/app/navigation/menu.definitions.ts) | ✅ From registry |
+| 3 | [ProtectedRoute.tsx](file:///c:/Users/Dell/Desktop/antigravity_erp/client/src/app/routing/ProtectedRoute.tsx) | ✅ Terminal 403 |
+| 4 | [usePermissions.ts](file:///c:/Users/Dell/Desktop/antigravity_erp/client/src/app/auth/hooks/usePermissions.ts) | ✅ EXACT match + canForTab |
+| 5 | Delete plan | ✅ settings-tabs deprecated |
+| 6 | [rbac-scenarios.spec.ts](file:///c:/Users/Dell/Desktop/antigravity_erp/client/e2e/rbac-scenarios.spec.ts) | ✅ E2E tests |
+| 7 | [RBAC_NAVIGATION_STANDARD.md](file:///c:/Users/Dell/Desktop/antigravity_erp/client/src/app/navigation/RBAC_NAVIGATION_STANDARD.md) | ✅ Frozen doc |
 
 ---
 
-## KEY INVARIANTS
+## Key Fixes
+
+### usePermissions.ts (Rewritten)
+- EXACT base match ONLY
+- NO startsWith/prefix
+- `canForTab(pageKey, tabKey, subTabKey)` helper
+- `getFirstAllowedTabForPage(pageKey)` helper
+
+### AuthContext.tsx
+- .access synthesis REMOVED
+
+### menu-visibility.ts
+- hasExactPermission function
+- NO hierarchical matching
+
+---
+
+## Invariants
 
 ```
-✅ Visible ⇒ Actionable
-✅ EXACT permission match (NO startsWith)
+✅ EXACT permission match only
+✅ NO .access synthesis
+✅ NO prefix matching
 ✅ Unknown tab → /access-denied
-✅ NO dashboard fallback
-✅ Single Source of Truth: TAB_SUBTAB_REGISTRY
+✅ Single Source: TAB_SUBTAB_REGISTRY
 ```
-
----
-
-## TEST SCENARIOS
-
-### Curators-Only User
-```
-Permission: system.users.curators.read
-Landing: /admin/users?tab=curators ✅
-Hidden: users tab ✅
-```
-
-### Console Monitoring-Only
-```
-Permission: system.system_console.monitoring.dashboard.read
-Landing: /admin/console?tab=monitoring ✅
-```
-
-### Unknown Tab
-```
-URL: /admin/users?tab=invalidXYZ
-Result: /access-denied (terminal) ✅
-```
-
----
-
-## Files Modified
-- tabSubTab.registry.ts (EXACT match)
-- menu.definitions.ts (from registry)
-- menu-visibility.ts (no prefix)
-- useMenu.ts (TAB_SUBTAB_REGISTRY)
-- ProtectedRoute.tsx (terminal 403)
 
 ---
 

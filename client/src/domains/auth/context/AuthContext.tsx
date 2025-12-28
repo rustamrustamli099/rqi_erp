@@ -129,46 +129,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // We do NOT expand permissions. We do NOT infer parents.
                 // We only deduplicate to be safe.
 
-                // --- SAP-GRADE IMPLICIT ACCESS RESOLUTION ---
-                // If user has 'system.billing.plans.read', they NEED 'system.billing.plans.access' AND 'system.billing.access'.
-                // We generate these *.access permissions dynamically.
+                // SAP-GRADE: NO .access synthesis
+                // Backend canonical slugs are the ONLY source of truth
+                // .access permissions are NOT generated - use EXACT permission matching
 
-                const derivedPerms = new Set<string>();
-
-                mappedPerms.forEach(p => {
-                    derivedPerms.add(p); // Add original
-
-                    // Logic: Split by dot, find parents, append .access
-                    const parts = p.split('.');
-                    // e.g. system.settings.general.read
-                    // parts -> [system, settings, general, read]
-
-                    // We iterate and build paths.
-                    // Important: The last part is usually the Operation (read, create, etc.)
-                    // But sometimes permission is just 'system.dashboard' (legacy).
-                    // We assume standard structure: scope.module.submodule.operation
-
-                    // We want to generate access for:
-                    // system.settings.general.access
-                    // system.settings.access
-                    // system.access (maybe not needed but harmless)
-
-                    let currentPath = parts[0];
-                    for (let i = 1; i < parts.length; i++) {
-                        // Add .access to CURRENT level
-                        // e.g. system.settings.access
-                        derivedPerms.add(`${currentPath}.access`);
-
-                        currentPath += `.${parts[i]}`;
-                    }
-                    // Also add access to the full path minus the last segment (if it looks like an operation)
-                    // if p is 'system.settings.read', currentPath became 'system.settings.read'.
-                    // we added 'system.settings.access' in the loop.
-
-                    // Edge case: if permission itself is `system.settings.access`, we duplicate, Set handles it.
-                });
-
-                const uniquePerms = Array.from(derivedPerms);
+                const uniquePerms = Array.from(new Set(mappedPerms));
 
                 // console.log("[AuthContext] FINAL PERMISSIONS (No Expansion):", uniquePerms);
                 setPermissionsState(uniquePerms);

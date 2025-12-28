@@ -1,53 +1,136 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SAP-Grade Permission Hook
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * RULES:
+ * 1. EXACT base match ONLY - NO prefix/startsWith
+ * 2. NO child implies parent
+ * 3. Uses TAB_SUBTAB_REGISTRY for tab checks
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 import { useCallback } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
+import {
+    getFirstAllowedTab,
+    canAccessPage,
+    TAB_SUBTAB_REGISTRY,
+    normalizePermissions
+} from '@/app/navigation/tabSubTab.registry';
 
 export const usePermissions = () => {
-    const { permissions, user, isImpersonating, isLoading } = useAuth(); // permissions are already canonicalized in AuthContext
+    const { permissions, user, isImpersonating, isLoading, activeTenantType } = useAuth();
+    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
-    const hasPermission = useCallback((requiredPermission: string) => {
-        // Guard against undefined/null permission requests
+    /**
+     * SAP-GRADE: Check if user has EXACT permission
+     * NO prefix matching, NO child implies parent
+     */
+    const can = useCallback((requiredPermission: string): boolean => {
         if (!requiredPermission) return false;
 
-        // Extract base (without action suffix) for matching
-        const reqBase = requiredPermission.replace(/\.(read|create|update|delete|view|access|manage)$/, '');
+        const normalized = normalizePermissions(permissions);
+        const reqBase = requiredPermission.replace(/\.(read|create|update|delete|view|access|manage|approve|export)$/, '');
 
-        // SAP-Grade Permission Matching:
-        const result = permissions.some(userPerm => {
-            // 1. Exact match
-            if (userPerm === requiredPermission) return true;
-
-            // 2. User has broader permission (prefix match)
-            if (requiredPermission.startsWith(userPerm + '.')) return true;
-
-            // 3. User permission base without action for matching
-            const userBase = userPerm.replace(/\.(read|create|update|delete|view|access|manage)$/, '');
-
-            // 4. Base match (same module, different actions)
-            if (userBase === reqBase) return true;
-
-            // 5. Child implies parent (SAP-Grade Rule)
-            if (userBase.startsWith(reqBase + '.')) return true;
-
-            return false;
+        return normalized.some(userPerm => {
+            const userBase = userPerm.replace(/\.(read|create|update|delete|view|access|manage|approve|export)$/, '');
+            // EXACT base match ONLY
+            return userBase === reqBase;
         });
-
-        // Debug log for dictionaries
-        if (requiredPermission.includes('dictionary')) {
-            console.log('[hasPermission] Dictionary check:', { requiredPermission, reqBase, result, samplePerms: permissions.filter(p => p.includes('dictionary')).slice(0, 3) });
-        }
-
-        return result;
     }, [permissions]);
 
-    const hasAll = useCallback((requiredPermissions: string[]) => {
-        if (!requiredPermissions || requiredPermissions.length === 0) return true;
-        return requiredPermissions.every(req => hasPermission(req));
-    }, [hasPermission]);
+    /**
+     * SAP-GRADE: Check if user can access ANY of the permissions
+     */
+    const canAny = useCallback((slugs: string[]): boolean => {
+        if (!slugs || slugs.length === 0) return true;
+        return slugs.some(slug => can(slug));
+    }, [can]);
 
-    const hasAny = useCallback((requiredPermissions: string[]) => {
-        if (!requiredPermissions || requiredPermissions.length === 0) return true;
-        return requiredPermissions.some(req => hasPermission(req));
-    }, [hasPermission]);
+    /**
+     * SAP-GRADE: Check if user can access ALL of the permissions
+     */
+    const canAll = useCallback((slugs: string[]): boolean => {
+        if (!slugs || slugs.length === 0) return true;
+        return slugs.every(slug => can(slug));
+    }, [can]);
 
-    return { hasPermission, can: hasPermission, hasAll, hasAny, permissions, user, isImpersonating, isLoading };
+    /**
+     * SAP-GRADE: Check if user can access a specific tab/subTab
+     * Uses frozen TAB_SUBTAB_REGISTRY
+     */
+    const canForTab = useCallback((
+        pageKey: string,
+        tabKey?: string,
+        subTabKey?: string
+    ): boolean => {
+        const pages = context === 'admin' ? TAB_SUBTAB_REGISTRY.admin : TAB_SUBTAB_REGISTRY.tenant;
+        const page = pages.find(p => p.pageKey === pageKey);
+        if (!page) return false;
+
+        const normalized = normalizePermissions(permissions);
+
+        if (!tabKey) {
+            // Check if user can access ANY tab of the page
+            return canAccessPage(pageKey, permissions, context);
+        }
+
+        const tab = page.tabs.find(t => t.key === tabKey);
+        if (!tab) return false;
+
+        // Check tab permission
+        const hasTabAccess = tab.requiredAnyOf.some(req => {
+            const reqBase = req.replace(/\.(read|create|update|delete|approve|export)$/, '');
+            return normalized.some(perm => {
+                const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
+                return permBase === reqBase;
+            });
+        });
+
+        if (!hasTabAccess) return false;
+
+        if (subTabKey && tab.subTabs) {
+            const subTab = tab.subTabs.find(st => st.key === subTabKey);
+            if (!subTab) return false;
+
+            return subTab.requiredAnyOf.some(req => {
+                const reqBase = req.replace(/\.(read|create|update|delete|approve|export)$/, '');
+                return normalized.some(perm => {
+                    const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
+                    return permBase === reqBase;
+                });
+            });
+        }
+
+        return true;
+    }, [permissions, context]);
+
+    /**
+     * SAP-GRADE: Get first allowed tab for a page
+     */
+    const getFirstAllowedTabForPage = useCallback((pageKey: string) => {
+        return getFirstAllowedTab(pageKey, permissions, context);
+    }, [permissions, context]);
+
+    // Legacy aliases for backward compatibility
+    const hasPermission = can;
+    const hasAll = canAll;
+    const hasAny = canAny;
+
+    return {
+        can,
+        canAny,
+        canAll,
+        canForTab,
+        getFirstAllowedTabForPage,
+        // Legacy aliases
+        hasPermission,
+        hasAll,
+        hasAny,
+        permissions,
+        user,
+        isImpersonating,
+        isLoading
+    };
 };
