@@ -452,28 +452,28 @@ export function getSettingsTabsForUI(): Array<{
     const settingsPage = ADMIN_PAGES.find(p => p.pageKey === 'admin.settings');
     if (!settingsPage) return [];
 
-    // Group tabs by category
+    // Group tabs by category - original SETTINGS_REGISTRY titles
     const groups = [
         {
-            groupLabel: 'Ümumi',
+            groupLabel: 'Ümumi Tənzimləmələr',
             items: settingsPage.tabs.filter(t =>
                 ['general', 'notifications'].includes(t.key)
             )
         },
         {
-            groupLabel: 'Əlaqə',
+            groupLabel: 'Kommunikasiya',
             items: settingsPage.tabs.filter(t =>
                 ['smtp', 'sms'].includes(t.key)
             )
         },
         {
-            groupLabel: 'Təhlükəsizlik',
+            groupLabel: 'Təhlükəsizlik & Giriş',
             items: settingsPage.tabs.filter(t =>
                 ['security', 'sso', 'roles'].includes(t.key)
             )
         },
         {
-            groupLabel: 'Sistem',
+            groupLabel: 'Sistem Konfiqurasiyası',
             items: settingsPage.tabs.filter(t =>
                 ['dictionaries', 'templates', 'workflow'].includes(t.key)
             )

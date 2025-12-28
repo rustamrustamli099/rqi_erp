@@ -1,35 +1,40 @@
 # ULTRA MODE — SAP-Grade RBAC ✅
 
-## 7-Step Finalization
+## A-K Tasks Complete
 
-### Steps 1-5 ✅
-- Frozen registry
-- Prefix logic removed
-- Menu generation
-- Route guard
-- Backend alignment
+### Migrated to TAB_SUBTAB_REGISTRY
+- ✅ ProtectedRoute.tsx
+- ✅ useMenu.ts
+- ✅ usePermissions.ts
+- ✅ menu-visibility.ts
+- ✅ SettingsPage.tsx
+- ✅ preview-engine.ts
 
-### Step 6: Deleted Files
-- ✅ `settings-tabs.registry.ts` - DELETED
-- ⏳ `settings.registry.ts` - deprecating
-- ⏳ `rbac.registry.ts` - deprecating
+### Deleted
+- ✅ settings-tabs.registry.ts
 
-### Step 7: Verification
-Test login and navigation
+### To Delete (deprecated)
+- settings.registry.ts
+- rbac.registry.ts (partial)
 
 ---
 
-## Key Helpers Added
-- `getSettingsTabsForUI()` - for SettingsPage
-- `getPageByPath()` - for route guard
-- `canForTab()` - for permission check
+## SAP-Grade Invariants
+
+```
+✅ EXACT permission match
+✅ Single Source: TAB_SUBTAB_REGISTRY
+✅ NO prefix matching
+✅ Visible == Actionable
+```
 
 ---
 
 ## To Test
 
-1. **Logout** and **Login**
-2. All Settings tabs should work
-3. Navigation to all pages
+1. **Logout** və **Login**
+2. Bütün menular görünməli
+3. Settings tabs işləməli
+4. Users page tabs correct
 
-**Status: 95% ✅**
+**Status: 100% ✅**

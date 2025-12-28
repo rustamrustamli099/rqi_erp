@@ -53,11 +53,11 @@ const timezones = [
     { value: "Asia/Dubai", label: "Asia/Dubai (GMT+4)" },
 ]
 
-import { SETTINGS_REGISTRY } from "@/app/navigation/settings.registry";
+import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
 
 // --- Sidebar Navigation Items ---
-// Single Source of Truth from Registry
-const ALL_SIDEBAR_ITEMS = SETTINGS_REGISTRY;
+// Single Source of Truth from TAB_SUBTAB_REGISTRY
+const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI();
 
 export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
@@ -155,7 +155,7 @@ export default function SettingsPage() {
                 <aside className="md:w-64 flex-shrink-0 space-y-8 overflow-y-auto pr-2">
                     {visibleSidebarGroups.map((group, idx) => (
                         <div key={idx} className="space-y-2">
-                            <h4 className="text-sm font-semibold text-muted-foreground tracking-tight px-2 uppercase text-xs">{group.title}</h4>
+                            <h4 className="text-sm font-semibold text-muted-foreground tracking-tight px-2 uppercase text-xs">{group.groupLabel}</h4>
                             <div className="grid gap-1">
                                 {group.items.map((item) => (
                                     <Button
@@ -170,7 +170,6 @@ export default function SettingsPage() {
                                         }}
                                         title={item.label}
                                     >
-                                        <item.icon className="h-4 w-4 shrink-0" />
                                         <span className="truncate">{item.label}</span>
                                     </Button>
                                 ))}

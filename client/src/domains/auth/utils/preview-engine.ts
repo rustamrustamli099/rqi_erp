@@ -1,6 +1,6 @@
 
 import { type AdminMenuItem } from "@/app/navigation/menu.definitions";
-import { SETTINGS_REGISTRY, type SettingsTabRegistry } from "@/app/navigation/settings.registry";
+import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
 import { MenuVisibilityEngine } from "@/domains/auth/utils/menu-visibility";
 
 /**
@@ -31,8 +31,8 @@ export const previewUser = (
     // 2. Compute Visible Settings Tabs
     // We check against the frozen registry which is Grouped
     const visibleTabs: Record<string, boolean> = {};
-    const allTabs = SETTINGS_REGISTRY.flatMap(g => g.items);
-    
+    const allTabs = getSettingsTabsForUI().flatMap(g => g.items);
+
     allTabs.forEach(tab => {
         // logic: user has permission
         visibleTabs[tab.id] = permissions.includes(tab.permission);
