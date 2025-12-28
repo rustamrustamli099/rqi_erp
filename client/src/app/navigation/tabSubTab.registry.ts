@@ -431,3 +431,66 @@ export function getPageByKey(
     const pages = context === 'admin' ? ADMIN_PAGES : TENANT_PAGES;
     return pages.find(p => p.pageKey === pageKey);
 }
+
+/**
+ * Get Settings tabs formatted for SettingsPage UI
+ * Returns tabs grouped by category for left sidebar
+ */
+export function getSettingsTabsForUI(): Array<{
+    groupLabel: string;
+    items: Array<{
+        id: string;
+        label: string;
+        permission: string;
+        subItems?: Array<{
+            id: string;
+            label: string;
+            permission: string;
+        }>;
+    }>;
+}> {
+    const settingsPage = ADMIN_PAGES.find(p => p.pageKey === 'admin.settings');
+    if (!settingsPage) return [];
+
+    // Group tabs by category
+    const groups = [
+        {
+            groupLabel: 'Ümumi',
+            items: settingsPage.tabs.filter(t =>
+                ['general', 'notifications'].includes(t.key)
+            )
+        },
+        {
+            groupLabel: 'Əlaqə',
+            items: settingsPage.tabs.filter(t =>
+                ['smtp', 'sms'].includes(t.key)
+            )
+        },
+        {
+            groupLabel: 'Təhlükəsizlik',
+            items: settingsPage.tabs.filter(t =>
+                ['security', 'sso', 'roles'].includes(t.key)
+            )
+        },
+        {
+            groupLabel: 'Sistem',
+            items: settingsPage.tabs.filter(t =>
+                ['dictionaries', 'templates', 'workflow'].includes(t.key)
+            )
+        }
+    ];
+
+    return groups.map(g => ({
+        groupLabel: g.groupLabel,
+        items: g.items.map(tab => ({
+            id: tab.key,
+            label: tab.label,
+            permission: tab.requiredAnyOf[0],
+            subItems: tab.subTabs?.map(st => ({
+                id: st.key,
+                label: st.label,
+                permission: st.requiredAnyOf[0]
+            }))
+        }))
+    }));
+}

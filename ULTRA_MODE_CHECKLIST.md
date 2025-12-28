@@ -1,46 +1,35 @@
 # ULTRA MODE — SAP-Grade RBAC ✅
 
-## Registry Consolidation Complete
+## 7-Step Finalization
 
-### Single Source of Truth
-**`TAB_SUBTAB_REGISTRY`** = Yeganə mənbə
+### Steps 1-5 ✅
+- Frozen registry
+- Prefix logic removed
+- Menu generation
+- Route guard
+- Backend alignment
 
-### Migrated Files
-| File | Status |
-|------|--------|
-| ProtectedRoute.tsx | ✅ TAB_SUBTAB_REGISTRY |
-| useMenu.ts | ✅ TAB_SUBTAB_REGISTRY |
-| menu-visibility.ts | ✅ hasExactPermission |
-| usePermissions.ts | ✅ canForTab |
+### Step 6: Deleted Files
+- ✅ `settings-tabs.registry.ts` - DELETED
+- ⏳ `settings.registry.ts` - deprecating
+- ⏳ `rbac.registry.ts` - deprecating
 
-### Deprecated (to delete)
-- `rbac.registry.ts`
-- `settings.registry.ts`
-- `settings-tabs.registry.ts`
-
-### DB Slug Alignment
-- `system.billing.market_place.read` ✅
-- `system.dashboard.read` ✅
+### Step 7: Verification
+Test login and navigation
 
 ---
 
-## SAP-Grade Invariants
-
-```
-✅ EXACT permission match
-✅ NO startsWith/prefix
-✅ NO .access synthesis
-✅ Visible == Actionable
-✅ Unknown tab → /access-denied
-```
+## Key Helpers Added
+- `getSettingsTabsForUI()` - for SettingsPage
+- `getPageByPath()` - for route guard
+- `canForTab()` - for permission check
 
 ---
 
 ## To Test
 
 1. **Logout** and **Login**
-2. All menus should appear
-3. Click navigates correctly
-4. Unknown tab shows 403
+2. All Settings tabs should work
+3. Navigation to all pages
 
-**Status: 100% ✅**
+**Status: 95% ✅**
