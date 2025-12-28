@@ -1,39 +1,46 @@
 # ULTRA MODE — SAP-Grade RBAC ✅
 
-## SESSION: Parts 1-6 Complete
+## Registry Consolidation Complete
 
-### Slug Fixes (DB Alignment)
-| Registry | DB | Status |
-|----------|-----|--------|
-| `marketplace` | `market_place` | ✅ Fixed |
-| `dashboard.read` | `dashboard.read` | ✅ Exists |
-| `users.users.read` | Same | ✅ |
-| `users.curators.read` | Same | ✅ |
+### Single Source of Truth
+**`TAB_SUBTAB_REGISTRY`** = Yeganə mənbə
 
-### Key Files Modified
-
-| File | Change |
+### Migrated Files
+| File | Status |
 |------|--------|
-| `tabSubTab.registry.ts` | market_place slug |
-| `usePermissions.ts` | EXACT match, canForTab |
-| `menu-visibility.ts` | hasExactPermission |
-| `AuthContext.tsx` | .access synthesis removed |
-| `ProtectedRoute.tsx` | unknown tab → 403 |
+| ProtectedRoute.tsx | ✅ TAB_SUBTAB_REGISTRY |
+| useMenu.ts | ✅ TAB_SUBTAB_REGISTRY |
+| menu-visibility.ts | ✅ hasExactPermission |
+| usePermissions.ts | ✅ canForTab |
 
-### SAP-Grade Invariants
-```
-✅ EXACT permission match only
-✅ NO startsWith/prefix
-✅ NO .access synthesis  
-✅ DB slugs = Registry slugs
-```
+### Deprecated (to delete)
+- `rbac.registry.ts`
+- `settings.registry.ts`
+- `settings-tabs.registry.ts`
 
-### To Test
-
-1. **Logout** and **Login** again
-2. All menus should appear
-3. Click any menu - should navigate correctly
+### DB Slug Alignment
+- `system.billing.market_place.read` ✅
+- `system.dashboard.read` ✅
 
 ---
+
+## SAP-Grade Invariants
+
+```
+✅ EXACT permission match
+✅ NO startsWith/prefix
+✅ NO .access synthesis
+✅ Visible == Actionable
+✅ Unknown tab → /access-denied
+```
+
+---
+
+## To Test
+
+1. **Logout** and **Login**
+2. All menus should appear
+3. Click navigates correctly
+4. Unknown tab shows 403
 
 **Status: 100% ✅**
