@@ -1,54 +1,72 @@
 # ULTRA MODE — SAP-Grade ERP Implementation ✅
 
-## SESSION ALIGNMENT (Final)
+## SESSION: RBAC SAP-Grade Fix
 
-### 1️⃣ menu.definitions.ts ✅
-- [x] Generated from TAB_SUBTAB_REGISTRY
-- [x] NO embedded permissions
-- [x] 80 lines (clean)
+### A) CLIENT FIXES ✅
 
-### 2️⃣ MenuVisibilityEngine ✅
-- [x] NO prefix/startsWith matching
-- [x] Uses frozen registry only
-- [x] Exact permission checks
+#### 1. menu.definitions.ts
+- Generated from TAB_SUBTAB_REGISTRY
+- NO embedded permissions
+- Clean 80 lines
 
-### 3️⃣ TAB_SUBTAB_REGISTRY ✅
-- [x] Single source of truth
-- [x] All admin/tenant pages
-- [x] normalizePermissions helper
+#### 2. MenuVisibilityEngine
+- NO prefix/startsWith matching
+- Exact permission checks only
 
-### 4️⃣ PermissionPreviewEngine ✅
-- [x] Deterministic visibility
-- [x] Landing path computation
-- [x] Reason explanations
+#### 3. ProtectedRoute
+- Terminal /access-denied (NO dashboard fallback)
+- Tab validation against registry
+- First allowed tab redirect
 
-### 5️⃣ ProtectedRoute ✅
-- [x] Uses TAB_SUBTAB_REGISTRY
-- [x] canAccessTab / getFirstAllowedTab
-- [x] NO fallback to dashboard
-
-### 6️⃣ RootRedirect ✅
-- [x] Preview engine integration
-- [x] Auth FSM (STABLE required)
+#### 4. Sidebar
+- Canonical navigation with item.tab
 
 ---
 
-## DEPRECATED FILES
-- `settings-tabs.registry.ts` → replaced by `tabSubTab.registry.ts`
-- `permission-slugs.ts` → keep for reference
+### C) FROZEN DOCS ✅
+- `tab-subtab-registry.frozen.md`
+- `rbac-navigation-invariants.md`
+
+---
+
+### D) E2E TESTS ✅
+- `rbac-scenarios.spec.ts`
+  - Curators-only user scenario
+  - Console monitoring-only scenario
+  - Wrong tab key scenario
+  - Terminal access denied scenario
+
+---
+
+## SCENARIOS BEHAVIOR
+
+### Before Fix
+```
+Curators-only user:
+→ Sees Users menu (optimistic)
+→ Clicks → Dashboard fallback
+→ Confusing UX
+```
+
+### After Fix
+```
+Curators-only user:
+→ Sees Users menu (if any tab allowed)
+→ Clicks → /admin/users?tab=curators
+→ No fallback, deterministic
+```
+
+---
 
 ## KEY FILES
 | File | Purpose |
 |------|---------|
-| `tabSubTab.registry.ts` | Frozen registry (source of truth) |
-| `menu.definitions.ts` | Generated menu items |
-| `menu-visibility.ts` | Visibility engine |
-| `permissionPreviewEngine.ts` | Preview computations |
-| `RootRedirect.tsx` | Landing path |
-| `ProtectedRoute.tsx` | Route guards |
+| `menu.definitions.ts` | Generated menu |
+| `menu-visibility.ts` | No prefix matching |
+| `tabSubTab.registry.ts` | Single source of truth |
+| `ProtectedRoute.tsx` | Terminal /access-denied |
+| `rbac-scenarios.spec.ts` | E2E tests |
 
 ---
 
 **Status: 100% ✅**
-**Prefix Matching: REMOVED ✅**
-**Single Source of Truth: TAB_SUBTAB_REGISTRY ✅**

@@ -101,17 +101,15 @@ export const ProtectedRoute = ({
         console.warn("[ProtectedRoute] Route DENIED:", location.pathname, "Req:", perms, "MenuId:", menuId);
     }
 
-    // SAP-Grade Friendly Redirect
+    // SAP-GRADE: Terminal /access-denied - NO dashboard fallback
     if (!hasRouteAccess) {
-        const target = findFirstPathFromMenu(menu);
-
-        // Prevent Loop: If target is same as current (unlikely due to perm check) or null
-        // Also check if we are ALREADY at /access-denied
-        if (target && target !== location.pathname + location.search) {
-            return <Navigate to={target} replace />;
-        }
-
-        return <Navigate to="/access-denied" state={{ error: 'access_denied_redirect' }} replace />;
+        // INVARIANT: No silent redirect to dashboard
+        // If user has no access, they see /access-denied (terminal state)
+        return <Navigate to="/access-denied" state={{
+            error: 'access_denied_terminal',
+            attempted: location.pathname + location.search,
+            menuId
+        }} replace />;
     }
 
     return children ? <>{children}</> : <Outlet />;
