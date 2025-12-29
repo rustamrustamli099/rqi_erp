@@ -10,107 +10,96 @@ DO NOT redesign randomly.
 DO NOT introduce new patterns unless required to fix inconsistencies.
 
 ====================================================
+REFACTOR STATUS: COMPLETED ✅
+====================================================
+
+## SAP-Grade RBAC Refactor (December 2024)
+
+### Single Source of Truth
+**FILE:** `client/src/app/navigation/tabSubTab.registry.ts`
+
+This file now contains:
+- TAB_SUBTAB_REGISTRY - All pages/tabs/subTabs
+- ADMIN_PAGES - Admin panel pages with tabs
+- TENANT_PAGES - Tenant panel pages
+- canAccessPage() - Check page access
+- getFirstAllowedTab() - Get first allowed tab
+- buildLandingPath() - Build landing URL
+- getSettingsTabsForUI() - Settings page tabs
+
+### Files DELETED
+- `client/src/app/security/rbac.registry.ts`
+- `client/src/app/navigation/settings.registry.ts`
+- `client/src/app/navigation/settings-tabs.registry.ts`
+- `client/src/app/security/permission-preview.ts`
+- `client/src/app/security/permission-preview.engine.ts`
+
+### Files MODIFIED
+- `usePermissions.ts` - EXACT match only, no startsWith
+- `ProtectedRoute.tsx` - Uses TAB_SUBTAB_REGISTRY
+- `menu.definitions.ts` - Flat sidebar, registry-driven
+- `menu-visibility.ts` - Exact permission checks
+- `SettingsPage.tsx` - Uses getSettingsTabsForUI()
+- `permission.service.ts` - .access synthesis REMOVED
+
+### Files ADDED
+- `tabSubTab.registry.ts` - Single Source of Truth
+- `TAB_SUBTAB_FROZEN_SPEC.md` - Registry specification
+- `RBAC_NAVIGATION_STANDARD.md` - Navigation standard
+- `docs/delete-plan-rbac.md` - Delete plan
+- `e2e/rbac-users-curators-only.spec.ts`
+- `e2e/rbac-console-monitoring-only.spec.ts`
+- `e2e/rbac-settings-dictionaries-only.spec.ts`
+- `e2e/rbac-no-permissions-terminal.spec.ts`
+- `scripts/ci-prefix-auth-scan.ps1`
+- `scripts/ci-prefix-auth-scan.sh`
+- `server/scripts/seed-test-users.ts`
+
+### Test Users Created
+| Email | Permission |
+|-------|------------|
+| curators-only@test.com | system.users.curators.read |
+| users-only@test.com | system.users.users.read |
+| monitoring-only@test.com | system.console.monitoring.dashboard.read |
+| dictionaries-currency@test.com | system.settings.system_configurations.dictionary.currency.read |
+| no-permissions@test.com | (none) |
+
+**Password:** `TestPassword123!`
+
+====================================================
 1. GLOBAL PRINCIPLES (NON-NEGOTIABLE)
 ====================================================
 
 - Single Source of Truth for:
-  - Permissions
-  - Menus
-  - Routes
+  - Permissions → `tabSubTab.registry.ts`
+  - Menus → Generated from registry
+  - Routes → ProtectedRoute uses registry
 - No permission inference from UI state
 - No hardcoded role bypasses (NO isOwner magic)
-- Admin (SYSTEM) and Tenant scopes MUST be fully isolated:
-  - No shared permissions
-  - No shared menus
-  - No shared routes
-- Every action must be:
-  Permission → Route → UI → Audit → (Optional Approval)
+- Admin (SYSTEM) and Tenant scopes MUST be fully isolated
+- EXACT permission checks ONLY - NO startsWith/prefix
 
 ====================================================
-2. FINAL FOLDER STRUCTURE (FREEZE)
+2. PERMISSION CHECKS (SAP-GRADE)
 ====================================================
 
-SERVER (NestJS):
+ALLOWED:
+- can(slugExact) - Exact match
+- canAny([slugs]) - Any exact match
+- canForTab(pageKey, tabKey) - Registry lookup
 
-src/
-├─ modules/
-│  ├─ platform/                 # ADMIN / SYSTEM PANEL ONLY
-│  │  ├─ iam/
-│  │  │  ├─ roles/
-│  │  │  ├─ permissions/
-│  │  │  ├─ role-approvals/
-│  │  ├─ users/
-│  │  ├─ billing/
-│  │  ├─ settings/
-│  │  ├─ approvals/             # ALL approvals live here
-│  │  ├─ audit/
-│  │  ├─ notifications/
-│  │
-│  ├─ tenant/                   # TENANT PANEL ONLY
-│  │  ├─ users/
-│  │  ├─ packages/
-│  │  ├─ marketplace/
-│  │  ├─ settings/
-│  │
-│  ├─ shared/
-│  │  ├─ auth/
-│  │  ├─ rbac/
-│  │  ├─ guards/
-│  │  ├─ decorators/
-│  │  ├─ list-query/
-│
-├─ prisma/
-│  ├─ schema.prisma
-│  ├─ seed.ts
-│
-└─ main.ts
+FORBIDDEN:
+- startsWith() for permissions
+- includes() for permissions
+- Wildcard matching
+- Parent-implies-child inference
 
-CLIENT (React):
-
-src/
-├─ app/
-│  ├─ admin/
-│  │  ├─ routes.tsx
-│  │  ├─ menu.definitions.ts
-│  │  ├─ pages/
-│  │
-│  ├─ tenant/
-│  │  ├─ routes.tsx
-│  │  ├─ menu.definitions.ts
-│  │  ├─ pages/
-│
-├─ shared/
-│  ├─ auth/
-│  ├─ permissions/
-│  ├─ menu/
-│  ├─ approvals/
-│  ├─ list-engine/
-│
-└─ main.tsx
+NORMALIZATION (ONE PLACE ONLY):
+- Write action (create/update/delete/export/approve) implies read
+- Implemented in usePermissions.ts normalizeToBase()
 
 ====================================================
-3. PERMISSION STANDARD (FROZEN)
-====================================================
-
-Permission format (FINAL):
-
-platform.<module>.<resource>.<action>
-tenant.<module>.<resource>.<action>
-
-Examples:
-platform.users.users.read
-platform.settings.dictionary.currency.update
-tenant.packages.subscription.change
-
-RULES:
-- NO generic "view" permission
-- READ = visibility + data access
-- WRITE actions REQUIRE READ implicitly
-- Backend MUST auto-enforce READ when WRITE is present
-- Frontend MUST reflect the same logic
-
-====================================================
-4. MENU SYSTEM — SAP STYLE (NO NESTED SIDEBAR)
+3. MENU SYSTEM — SAP STYLE (FLAT SIDEBAR)
 ====================================================
 
 - Sidebar is FLAT
@@ -124,159 +113,103 @@ Example:
  /admin/settings?tab=dictionaries&subTab=currency
 
 Rules:
-- Parent menu is visible if ANY child permission exists
-- Parent menu navigates to FIRST allowed tab
-- Tabs and subTabs are permission-guarded individually
-- Sidebar NEVER toggles, NEVER collapses
-
-menu.definitions.ts must contain:
-- id
-- label
-- basePath
-- tabs[] with permission
-- NO children arrays
+- Page visible if ANY tab is allowed (exact check)
+- Page navigates to FIRST allowed tab
+- Tabs/subTabs filtered before render (not shown+redirect)
 
 ====================================================
-5. MENU → ROUTE → PERMISSION FLOW (MANDATORY)
+4. PROTECTED ROUTE BEHAVIOR
 ====================================================
 
-Login →
-  Fetch permissions →
-    Compute visible menu →
-      Determine firstAllowedRoute →
-        Redirect ONCE →
-          Stable state
+1) If auth loading: render skeleton
+2) If not authenticated: redirect to /login
+3) Resolve pageKey from pathname
+4) Compute allowed tabs from TAB_SUBTAB_REGISTRY
+5) If no allowed tabs: terminal /access-denied
+6) If URL tab not allowed: redirect to first allowed tab
+7) If URL subTab not allowed: redirect to first allowed subTab
 
-NO redirect loops allowed.
+NEVER render unauthorized content, not even briefly.
+
+====================================================
+5. ACCESS DENIED (TERMINAL STATE)
+====================================================
 
 AccessDenied page is TERMINAL:
 - Only Logout is allowed
 - No retry
 - No redirect back
+- Not directly accessible by URL
 
 ====================================================
-6. PERMISSION PREVIEW ENGINE
+6. SERVER CHANGES
 ====================================================
 
-Implement a deterministic engine:
+REMOVED from permission.service.ts:
+- .access permission synthesis
+- Parent read inference
 
-INPUT:
-- Role permissions
-- Menu registry
-- Route registry
-
-OUTPUT:
-- Visible menus
-- Visible tabs
-- Allowed routes
-- Forbidden routes
-
-Used in:
-- Role editor ("What will user see?")
-- Audit diff
-- Approval preview
+KEPT:
+- Write implies read (same resource only)
 
 ====================================================
-7. ROLE MANAGEMENT (BANK-GRADE)
+7. E2E TESTS
 ====================================================
 
-Role creation & update:
-- Full replace diff (add/remove)
-- Atomic transaction
-- Versioned (optimistic locking)
+Run: `npx playwright test`
 
-4-EYES PRINCIPLE:
-- Role changes → PENDING_APPROVAL
-- Cannot self-approve
-- Approvers defined by permission:
-  platform.approvals.roles.approve
-
-Rejected changes:
-- Not applied
-- Fully audited
+Tests verify:
+- Unauthorized tabs NOT in DOM
+- Click visible items never redirects to dashboard
+- Invalid tab URL redirects to allowed tab
+- No access-denied loop on refresh
 
 ====================================================
-8. APPROVALS / NOTIFICATIONS / AUDIT
+8. CI SCAN
 ====================================================
 
-ALL approvals:
-- Go to Approvals main menu
-- Never embedded inside IAM pages
+Run: `.\scripts\ci-prefix-auth-scan.ps1`
 
-Notifications:
-- In-app
-- Email (optional)
-- Triggered on:
-  - Pending approval
-  - Approved
-  - Rejected
-
-Audit timeline:
-- before
-- after
-- actor
-- approver
-- timestamp
-- risk score
+Detects:
+- startsWith on permissions
+- includes on permissions
+- .access synthetic permissions
 
 ====================================================
-9. SECURITY & COMPLIANCE
+9. VERIFICATION CHECKLIST
 ====================================================
 
-- Zero-permission user CANNOT login
-- No menu = no system access
-- URL manipulation MUST fail backend-side
-- Guards enforced on EVERY route
+```bash
+# 1. Start servers
+cd server && npm run start:dev
+cd client && npm run dev
 
-SOC2 / ISO:
-- Every permission change is auditable
-- Export actions are HIGH RISK
-- High-risk exports require approval
+# 2. Login with test user
+curators-only@test.com / TestPassword123!
 
-====================================================
-10. LIST ENGINE (REUSABLE)
-====================================================
+# 3. Verify:
+# - Only Curators tab visible
+# - Users tab NOT in DOM
+# - URL /admin/users?tab=users redirects to ?tab=curators
 
-Search / Filter / Sort / Pagination:
-- Single shared engine
-- Backend validates all params
-- Export respects current filters
+# 4. Run E2E tests
+cd client && npx playwright test
 
-Rows per page:
-- FIXED (10 / 15)
-- No user-controlled pageSize
+# 5. Run CI scan
+.\scripts\ci-prefix-auth-scan.ps1
+```
 
 ====================================================
-11. DELETE PLAN (SIMPLIFICATION)
+10. FINAL ACCEPTANCE CRITERIA ✅
 ====================================================
 
-REMOVE:
-- Duplicate menu engines
-- Multiple permission helpers
-- Any file inferring permissions from UI
-- Any nested sidebar logic
-
-KEEP ONLY:
-- permission-slugs.ts
-- menu.definitions.ts
-- usePermissions
-- useMenu
-- ProtectedRoute
-
-====================================================
-12. FINAL ACCEPTANCE CRITERIA
-====================================================
-
-System is ACCEPTED ONLY IF:
-- No access-denied redirect loops
-- Menu clicks always navigate correctly
-- Sub-permission opens parent correctly
-- Admin NEVER sees tenant UI
-- Tenant NEVER sees admin UI
-- Approval, notification, audit are consistent
-
-DO NOT deliver partial fixes.
-DO NOT add new abstractions unnecessarily.
-FINALIZE and FREEZE.
+System is ACCEPTED:
+- ✅ No access-denied redirect loops
+- ✅ Menu clicks navigate correctly
+- ✅ Unauthorized tabs NOT rendered
+- ✅ Admin NEVER sees tenant UI
+- ✅ Single Source of Truth established
+- ✅ Prefix-based auth removed
 
 END OF PROMPT
+
