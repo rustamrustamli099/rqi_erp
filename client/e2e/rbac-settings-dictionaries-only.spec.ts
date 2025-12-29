@@ -1,8 +1,8 @@
 /**
- * SAP-Grade E2E Test: Settings Dictionaries Currency-Only (NO FLICKER)
+ * SAP-Grade E2E Test: Settings Dictionaries Currency-Only (FAIL-CLOSED)
  * 
- * Tests no-flicker behavior for unauthorized tabs/subtabs
- * /admin/settings?tab=smtp → immediate replace to ?tab=dictionaries&subTab=currency
+ * Tests terminal 403 for unauthorized tabs/subtabs
+ * /admin/settings?tab=smtp → 403 terminal
  */
 
 import { test, expect } from '@playwright/test';
@@ -12,7 +12,7 @@ const DICTIONARIES_ONLY_USER = {
     password: 'TestPassword123!'
 };
 
-test.describe('RBAC: Settings Dictionaries Currency-Only - No Flicker', () => {
+test.describe('RBAC: Settings Dictionaries Currency-Only - Fail Closed', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
@@ -49,41 +49,30 @@ test.describe('RBAC: Settings Dictionaries Currency-Only - No Flicker', () => {
         await expect(taxSubTab).toHaveCount(0);
     });
 
-    // NO-FLICKER tests
-    test('/admin/settings?tab=smtp redirects to dictionaries (NO /access-denied)', async ({ page }) => {
-        const navigations: string[] = [];
-        page.on('framenavigated', (frame) => {
-            if (frame === page.mainFrame()) {
-                navigations.push(frame.url());
-            }
-        });
-
+    // FAIL-CLOSED tests
+    test('/admin/settings?tab=smtp shows terminal 403', async ({ page }) => {
         await page.goto('/admin/settings?tab=smtp');
         await page.waitForLoadState('networkidle');
 
-        // Should end up at dictionaries
-        await expect(page).toHaveURL(/tab=dictionaries/);
-
-        // Should NOT have visited /access-denied
-        const visitedAccessDenied = navigations.some(url => url.includes('access-denied'));
-        expect(visitedAccessDenied).toBe(false);
+        // Should show access-denied and stay
+        await expect(page).toHaveURL(/access-denied/);
+        await page.waitForTimeout(2000);
+        await expect(page).toHaveURL(/access-denied/);
     });
 
-    test('/admin/settings?tab=general redirects to dictionaries (NO flicker)', async ({ page }) => {
+    test('/admin/settings?tab=general shows terminal 403', async ({ page }) => {
         await page.goto('/admin/settings?tab=general');
         await page.waitForLoadState('networkidle');
 
-        await expect(page).toHaveURL(/tab=dictionaries/);
-        await expect(page).not.toHaveURL(/access-denied/);
+        await expect(page).toHaveURL(/access-denied/);
     });
 
-    test('/admin/settings?tab=dictionaries&subTab=tax redirects to currency (NO flicker)', async ({ page }) => {
+    test('/admin/settings?tab=dictionaries&subTab=tax shows terminal 403', async ({ page }) => {
         await page.goto('/admin/settings?tab=dictionaries&subTab=tax');
         await page.waitForLoadState('networkidle');
 
-        // Should redirect to allowed subTab
-        await expect(page).toHaveURL(/subTab=currency/);
-        await expect(page).not.toHaveURL(/access-denied/);
+        // Unauthorized subTab → terminal 403
+        await expect(page).toHaveURL(/access-denied/);
     });
 
     test('other settings tabs are NOT in DOM', async ({ page }) => {

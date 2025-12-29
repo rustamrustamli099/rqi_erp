@@ -109,18 +109,24 @@ export const ProtectedRoute = ({
             const tabConfig = pageConfig.tabs.find(t => t.key === currentTab);
 
             if (!tabConfig) {
-                // UNKNOWN tab → direct redirect to first allowed (NO /access-denied flicker)
-                console.warn('[ProtectedRoute] UNKNOWN tab, redirecting:', currentTab, '→', firstAllowed.tab);
-                return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                // FAIL-CLOSED: UNKNOWN tab → terminal 403 (NO auto-rewrite)
+                console.warn('[ProtectedRoute] UNKNOWN tab → 403:', currentTab);
+                return <Navigate to="/access-denied" state={{
+                    error: 'unknown_tab',
+                    attempted: `${location.pathname}?tab=${currentTab}`
+                }} replace />;
             }
 
             // Check tab permission
             const hasTabAccess = canForTab(pageConfig.pageKey, currentTab, currentSubTab || undefined);
 
             if (!hasTabAccess) {
-                // NO-FLICKER: UNAUTHORIZED tab → direct redirect to first allowed
-                console.warn('[ProtectedRoute] Tab DENIED, redirecting:', currentTab, '→', firstAllowed.tab);
-                return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                // FAIL-CLOSED: UNAUTHORIZED tab → terminal 403 (NO auto-rewrite)
+                console.warn('[ProtectedRoute] Tab DENIED → 403:', currentTab);
+                return <Navigate to="/access-denied" state={{
+                    error: 'unauthorized_tab',
+                    attempted: `${location.pathname}?tab=${currentTab}`
+                }} replace />;
             }
 
             // Check subTab if present
@@ -128,17 +134,23 @@ export const ProtectedRoute = ({
                 const subTabConfig = tabConfig.subTabs.find(st => st.key === currentSubTab);
 
                 if (!subTabConfig) {
-                    // UNKNOWN subTab → direct redirect to first allowed
-                    return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                    // FAIL-CLOSED: UNKNOWN subTab → terminal 403
+                    return <Navigate to="/access-denied" state={{
+                        error: 'unknown_subtab',
+                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
+                    }} replace />;
                 }
 
                 if (!canForTab(pageConfig.pageKey, currentTab, currentSubTab)) {
-                    // NO-FLICKER: UNAUTHORIZED subTab → direct redirect to first allowed
-                    return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                    // FAIL-CLOSED: UNAUTHORIZED subTab → terminal 403
+                    return <Navigate to="/access-denied" state={{
+                        error: 'unauthorized_subtab',
+                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
+                    }} replace />;
                 }
             }
         } else {
-            // No tab specified → redirect to first allowed
+            // No tab specified → redirect to first allowed (ONLY allowed redirect)
             return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
         }
     } else {

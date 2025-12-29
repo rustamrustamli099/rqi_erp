@@ -1,8 +1,8 @@
 /**
- * SAP-Grade E2E Test: Curators-Only User (NO FLICKER)
+ * SAP-Grade E2E Test: Curators-Only User (FAIL-CLOSED)
  * 
- * Tests no-flicker behavior for unauthorized tabs
- * /admin/users?tab=users → immediate replace to ?tab=curators (NO /access-denied)
+ * Tests terminal 403 behavior for unauthorized tabs
+ * /admin/users?tab=users → 403 terminal (NO redirect)
  */
 
 import { test, expect } from '@playwright/test';
@@ -12,7 +12,7 @@ const CURATORS_ONLY_USER = {
     password: 'TestPassword123!'
 };
 
-test.describe('RBAC: Curators-Only User - No Flicker', () => {
+test.describe('RBAC: Curators-Only User - Fail Closed', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
@@ -53,25 +53,17 @@ test.describe('RBAC: Curators-Only User - No Flicker', () => {
         await expect(curatorsTab.first()).toBeVisible();
     });
 
-    // NO-FLICKER: Direct redirect test
-    test('typing ?tab=users redirects to curators (NO /access-denied flicker)', async ({ page }) => {
-        // Track navigations
-        const navigations: string[] = [];
-        page.on('framenavigated', (frame) => {
-            if (frame === page.mainFrame()) {
-                navigations.push(frame.url());
-            }
-        });
-
+    // FAIL-CLOSED: Terminal 403 test
+    test('typing ?tab=users shows terminal 403', async ({ page }) => {
         await page.goto('/admin/users?tab=users');
         await page.waitForLoadState('networkidle');
 
-        // Should end up at curators tab
-        await expect(page).toHaveURL(/tab=curators/);
+        // FAIL-CLOSED: Should show access-denied
+        await expect(page).toHaveURL(/access-denied/);
 
-        // Should NOT have visited /access-denied at any point
-        const visitedAccessDenied = navigations.some(url => url.includes('access-denied'));
-        expect(visitedAccessDenied).toBe(false);
+        // Should stay on 403 page
+        await page.waitForTimeout(2000);
+        await expect(page).toHaveURL(/access-denied/);
     });
 
     test('no redirect loops (max 3 navigations)', async ({ page }) => {

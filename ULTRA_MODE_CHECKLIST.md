@@ -1,46 +1,48 @@
-# SAP-Grade RBAC Navigation Checklist ✅
+# SAP-Grade RBAC Fail-Closed Checklist ✅
 
 ## STATUS: 100% COMPLETE
 
 ---
 
-## A) Repo-wide Audit ✅
-- [x] startsWith/includes removed from auth paths
-- [x] TAB_SUBTAB_REGISTRY is single source
+## Commit 1: Page-level auto-fallbacks ✅
+- [x] ProtectedRoute handles all fallbacks
+- [x] Pages don't auto-rewrite tabs
 
-## B) Canonical Helper API ✅
+## Commit 2: ProtectedRoute fail-closed ✅
+- [x] Unknown tab → terminal 403
+- [x] Unauthorized tab → terminal 403
+- [x] Unknown subTab → terminal 403
+- [x] Unauthorized subTab → terminal 403
+- [x] ONLY redirect: no tab in URL → first allowed
+
+## Commit 3: Sidebar visibility ✅
+- [x] Parent visible if ANY tab allowed
+- [x] Only allowed descendants render
+
+## Commit 4: Permission helpers ✅
 - [x] can() - exact match
-- [x] canAny() - exact any
 - [x] canForTab() - registry lookup
-- [x] getFirstAllowedTab() - resolved route
+- [x] NO startsWith/includes
 
-## C) Kill the Flicker ✅
-- [x] ProtectedRoute computes before render
-- [x] /access-denied ONLY for terminal
-- [x] Direct redirect for unauthorized tab
-
-## D) Tabs Not Render Unauthorized ✅
-- [x] UsersPage - registry-driven
-- [x] SettingsPage - registry-driven
-- [x] BillingPage - registry-driven
-
-## E) Sidebar Behavior ✅
-- [x] Flat sidebar
-- [x] Page visible if ANY tab allowed
-- [x] Click → first allowed route
-
-## F) Sub-sub Menu (dictionaries) ✅
-- [x] Registry complete
-
-## G) E2E Tests ✅
-- [x] curators-only: no flicker
-- [x] settings-dictionaries: no flicker
-- [x] no-permissions: terminal only
-
-## H) Deliverables ✅
-- [x] RBAC_NAVIGATION_STANDARD.md
-- [x] TAB_SUBTAB_FROZEN_SPEC.md
+## Commit 5: E2E Tests ✅
+- [x] curators-only: 403 for ?tab=users
+- [x] settings: 403 for ?tab=smtp
+- [x] settings: 403 for ?subTab=tax
+- [x] no-permissions: terminal 403
 
 ---
 
-**ALL TASKS COMPLETE ✅**
+## Behavior Summary
+
+| Scenario | Action |
+|----------|--------|
+| No tab in URL | Redirect to first allowed |
+| Unknown tab | Terminal 403 |
+| Unauthorized tab | Terminal 403 |
+| Unknown subTab | Terminal 403 |
+| Unauthorized subTab | Terminal 403 |
+| Zero allowed tabs | Terminal 403 |
+
+---
+
+**ALL COMMITS COMPLETE ✅**
