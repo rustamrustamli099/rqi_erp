@@ -253,15 +253,6 @@ let PermissionsService = class PermissionsService {
                 const readPerm = [...parts.slice(0, -1), 'read'].join('.');
                 normalized.add(readPerm);
             }
-            for (let i = 2; i < parts.length - 1; i++) {
-                const parentPath = parts.slice(0, i).join('.');
-                normalized.add(`${parentPath}.read`);
-            }
-            let currentPath = scope;
-            for (let i = 1; i < parts.length; i++) {
-                normalized.add(`${currentPath}.access`);
-                currentPath += `.${parts[i]}`;
-            }
         });
         return Array.from(normalized).sort();
     }

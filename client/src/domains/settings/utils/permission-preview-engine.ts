@@ -1,15 +1,11 @@
+/**
+ * SAP-Grade Permission Preview Engine
+ * 
+ * Uses TAB_SUBTAB_REGISTRY as Single Source of Truth
+ * EXACT permission matching only - NO startsWith/prefix
+ */
 
-import { ADMIN_MENU } from "@/app/navigation/menu.definitions";
-
-// --- LOCAL INTERFACE (Safe against imports) ---
-interface AdminMenuItem {
-    id: string;
-    title: string;
-    icon: string;
-    route: string;
-    tab?: string;
-    permissionPrefixes: string[];
-}
+import { TAB_SUBTAB_REGISTRY, getFirstAllowedTab, buildLandingPath } from "@/app/navigation/tabSubTab.registry";
 
 export interface PreviewResult {
     visibleMenuIds: string[];
@@ -27,74 +23,93 @@ export interface PreviewResult {
 const RISKY_ACTIONS = ['delete', 'export', 'impersonate', 'manage', 'execute', 'approve'];
 
 /**
+ * Normalize permission to base form (remove action suffix)
+ */
+function normalizeToBase(perm: string): string {
+    const parts = perm.split('.');
+    const lastPart = parts[parts.length - 1];
+    const actions = ['read', 'create', 'update', 'delete', 'export', 'approve', 'manage'];
+    if (actions.includes(lastPart)) {
+        return parts.slice(0, -1).join('.');
+    }
+    return perm;
+}
+
+/**
+ * Check if user has EXACT permission (base match)
+ */
+function hasExactPermission(required: string, userPerms: string[]): boolean {
+    const reqBase = normalizeToBase(required);
+    return userPerms.some(p => normalizeToBase(p) === reqBase);
+}
+
+/**
  * SAP-Grade Deterministic Permission Engine
- * 
- * Rules:
- * 1. Visibility is based on PREFIX matching.
- *    If user has `platform.settings.general.read`, it matches prefix `platform.settings.general`.
- * 2. Flat List. No recursion for visibility (Sidebar is flat).
- * 3. Tabs are derived contextually (Simulated here for stats).
+ * Uses TAB_SUBTAB_REGISTRY - EXACT matching only
  */
 export function calculateUserAccess(userPermissions: string[]): PreviewResult {
     const visibleMenuIds: Set<string> = new Set();
     const visibleRoutes: Set<string> = new Set();
+    const visibleTabs: Record<string, string[]> = {};
     const riskFlags: Set<string> = new Set();
 
     let totalMenus = 0;
+    let accessibleTabs = 0;
 
-    // 1. Normalize Permissions (SAP-Grade Formal Algorithm Step 1)
-    // "platform.settings.dictionary.currencies.read" -> "platform.settings.dictionary"
-    // We strip the specific action/resource to get the module scope for broader matching.
-    const normalizedUserPerms = userPermissions.map(p => {
-        const parts = p.split('.');
-        // Heuristic: If > 3 parts, keep first 3? Or drop last 2?
-        // User example: platform.settings.dictionary.currencies.read -> platform.settings.dictionary (5 parts -> 3 parts).
-        // If system.dashboard.read (3 parts) -> system.dashboard (2 parts).
-        if (parts.length > 2) {
-            // Keep up to 3 parts or drop last 2?
-            // "son 2 hissə atılır" (last 2 parts dropped).
-            return parts.slice(0, parts.length - 2).join('.');
-        }
-        return p;
-    });
-
-    // 2. Identify Risk Flags
-    // ... (logic on original permissions) ...
-
-    // 3. Process Flat Menu Items
-    const menuItems = ADMIN_MENU as unknown as AdminMenuItem[]; // Cast to safe local type
-
-    for (const item of menuItems) {
-        totalMenus++;
-
-        // Visibility Logic (Step 2):
-        // Menu item is visible IF exists userPermission startsWith any(permissionPrefixes)
-        // We check against ORIGINAL permissions for exact prefix match (as startsWith handles hierarchy)
-        // But for "Safety", user asked for Normalization.
-        // Actually, startsWith is robust.
-        // Let's allow match against EITHER original OR normalized.
-
-        const isVisible = item.permissionPrefixes.some(prefix =>
-            userPermissions.some(uPerm => uPerm.startsWith(prefix))
-        );
-
-
-        if (isVisible) {
-            visibleMenuIds.add(item.id);
-            visibleRoutes.add(item.route);
+    // Check for risky permissions
+    for (const perm of userPermissions) {
+        const parts = perm.split('.');
+        const action = parts[parts.length - 1];
+        if (RISKY_ACTIONS.includes(action)) {
+            riskFlags.add(perm);
         }
     }
 
-    // 3. Determine First Allowed Route
-    // Simply the first visible item in the list
-    let firstAllowed: string | null = null;
-    for (const item of menuItems) {
-        if (visibleMenuIds.has(item.id)) {
-            firstAllowed = item.route;
-            // Append default tab if present
-            if (item.tab) {
-                // If the route already has query params, usage might vary, but standard implementation:
-                firstAllowed += `?tab=${item.tab}`;
+    // Process admin pages
+    const adminPages = TAB_SUBTAB_REGISTRY.admin;
+
+    for (const page of adminPages) {
+        totalMenus++;
+
+        // Check if ANY tab is accessible
+        const allowedTabs: string[] = [];
+
+        for (const tab of page.tabs) {
+            const hasTabAccess = tab.requiredAnyOf.some(p => hasExactPermission(p, userPermissions));
+
+            if (hasTabAccess) {
+                allowedTabs.push(`tab=${tab.key}`);
+                accessibleTabs++;
+
+                // Check subTabs
+                if (tab.subTabs) {
+                    for (const subTab of tab.subTabs) {
+                        const hasSubTabAccess = subTab.requiredAnyOf.some(p => hasExactPermission(p, userPermissions));
+                        if (hasSubTabAccess) {
+                            allowedTabs.push(`tab=${tab.key}&subTab=${subTab.key}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (allowedTabs.length > 0) {
+            visibleMenuIds.add(page.pageKey);
+            visibleRoutes.add(page.basePath);
+            visibleTabs[page.basePath] = allowedTabs;
+        }
+    }
+
+    // Determine first allowed route
+    let firstAllowedRoute: string | null = null;
+
+    for (const page of adminPages) {
+        if (visibleMenuIds.has(page.pageKey)) {
+            const firstTab = getFirstAllowedTab(page.pageKey, userPermissions, 'admin');
+            if (firstTab) {
+                firstAllowedRoute = buildLandingPath(page.basePath, firstTab);
+            } else {
+                firstAllowedRoute = page.basePath;
             }
             break;
         }
@@ -102,17 +117,14 @@ export function calculateUserAccess(userPermissions: string[]): PreviewResult {
 
     return {
         visibleMenuIds: Array.from(visibleMenuIds),
-        // Tabs logic is technically page-specific now, but we can simulate "accessible tabs" 
-        // by counting prefixes that match? 
-        // For now, returning empty or dummy to satisfy interface.
-        visibleTabs: {},
+        visibleTabs,
         visibleRoutes: Array.from(visibleRoutes),
-        firstAllowedRoute: firstAllowed,
+        firstAllowedRoute,
         riskFlags: Array.from(riskFlags),
         stats: {
             totalMenus,
             visibleMenus: visibleMenuIds.size,
-            accessibleTabs: 0 // Not calculating sub-tabs in this engine anymore, as they are page-level
+            accessibleTabs
         }
     };
 }

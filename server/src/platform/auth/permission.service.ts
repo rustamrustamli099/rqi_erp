@@ -261,18 +261,10 @@ export class PermissionsService implements OnModuleInit {
                 normalized.add(readPerm);
             }
 
-            // Rule 2: Child permission implies parent read
-            for (let i = 2; i < parts.length - 1; i++) {
-                const parentPath = parts.slice(0, i).join('.');
-                normalized.add(`${parentPath}.read`);
-            }
-
-            // Rule 3: Generate .access permissions for navigation
-            let currentPath = scope;
-            for (let i = 1; i < parts.length; i++) {
-                normalized.add(`${currentPath}.access`);
-                currentPath += `.${parts[i]}`;
-            }
+            // SAP-GRADE: Rule 2 & Rule 3 REMOVED
+            // - NO parent read inference
+            // - NO .access synthesis
+            // Only Rule 1 kept: write action implies read for same resource
         });
 
         return Array.from(normalized).sort();

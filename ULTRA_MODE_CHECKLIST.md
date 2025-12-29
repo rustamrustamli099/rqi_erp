@@ -1,31 +1,29 @@
 # ULTRA MODE — SAP-Grade RBAC ✅
 
-## A-K Tasks Complete
+## Cleanup Complete
 
-### Migrated to TAB_SUBTAB_REGISTRY
-- ✅ ProtectedRoute.tsx
-- ✅ useMenu.ts
-- ✅ usePermissions.ts
-- ✅ menu-visibility.ts
-- ✅ SettingsPage.tsx
-- ✅ preview-engine.ts
+### Files Deleted
+- ✅ `rbac.registry.ts`
+- ✅ `settings.registry.ts`
+- ✅ `settings-tabs.registry.ts`
+- ✅ `permission-preview.ts`
+- ✅ `permission-preview.engine.ts`
 
-### Deleted
-- ✅ settings-tabs.registry.ts
+### Files Rewritten
+- ✅ `permission-preview-engine.ts` → TAB_SUBTAB_REGISTRY
 
-### To Delete (deprecated)
-- settings.registry.ts
-- rbac.registry.ts (partial)
+### Sistem Konfiqurasiyası
+- ✅ `billing_config` əlavə edildi
+- ✅ `dictionaries` mövcuddur
 
 ---
 
-## SAP-Grade Invariants
+## TAB_SUBTAB_REGISTRY = Single Source of Truth
 
 ```
 ✅ EXACT permission match
-✅ Single Source: TAB_SUBTAB_REGISTRY
-✅ NO prefix matching
-✅ Visible == Actionable
+✅ NO startsWith/prefix
+✅ All pages/tabs from registry
 ```
 
 ---
@@ -33,8 +31,7 @@
 ## To Test
 
 1. **Logout** və **Login**
-2. Bütün menular görünməli
-3. Settings tabs işləməli
-4. Users page tabs correct
+2. Settings page - Sistem Konfiqurasiyası
+3. billing_config + dictionaries görünməli
 
 **Status: 100% ✅**

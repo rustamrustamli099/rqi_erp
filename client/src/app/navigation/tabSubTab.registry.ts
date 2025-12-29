@@ -213,8 +213,13 @@ const ADMIN_PAGES: PageConfig[] = [
                 requiredAnyOf: ['system.settings.security.user_rights.role.read']
             },
             {
+                key: 'billing_config',
+                label: 'Billing Konfiqurasiyası',
+                requiredAnyOf: ['system.settings.system_configurations.billing_configurations.read']
+            },
+            {
                 key: 'dictionaries',
-                label: 'Soraqçalar',
+                label: 'Soraqçalar (Dictionaries)',
                 requiredAnyOf: ['system.settings.system_configurations.dictionary.read'],
                 subTabs: [
                     { key: 'currency', label: 'Valyuta', requiredAnyOf: ['system.settings.system_configurations.dictionary.currency.read'] },
@@ -475,7 +480,7 @@ export function getSettingsTabsForUI(): Array<{
         {
             groupLabel: 'Sistem Konfiqurasiyası',
             items: settingsPage.tabs.filter(t =>
-                ['dictionaries', 'templates', 'workflow'].includes(t.key)
+                ['billing_config', 'dictionaries', 'templates', 'workflow'].includes(t.key)
             )
         }
     ];
