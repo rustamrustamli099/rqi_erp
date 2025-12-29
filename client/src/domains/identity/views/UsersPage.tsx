@@ -5,49 +5,46 @@ import { UsersListTab } from "./UsersListTab";
 import { CuratorsListTab } from "./CuratorsListTab";
 import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+import { getAllowedTabs, normalizePermissions } from "@/app/security/rbacResolver";
 
 import { useHelp } from "@/app/context/HelpContext";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+
+// Tab configuration
+const USERS_TABS = [
+    { key: 'users', label: 'İstifadəçilər', icon: Users },
+    { key: 'curators', label: 'Kuratorlar', icon: ShieldAlert },
+];
 
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get("tab") || "users"; // Will be validated by effect
     const { setPageKey } = useHelp();
-    const { hasAny } = usePermissions();
+    const { permissions } = usePermissions();
 
-    // Permission Logic
-    const canViewUsers = hasAny([
-        PermissionSlugs.SYSTEM.USERS.READ,
-        PermissionSlugs.SYSTEM.USERS.CONNECT_TO_EMPLOYEE
-    ]);
-    const canViewCurators = hasAny([PermissionSlugs.SYSTEM.CURATORS.READ]);
+    // SAP-GRADE: Get allowed tabs from resolver
+    const allowedTabKeys = useMemo(() => {
+        const permSet = normalizePermissions(permissions);
+        return getAllowedTabs({
+            pageKey: 'admin.users',
+            perms: permSet,
+            context: 'admin'
+        });
+    }, [permissions]);
 
-    // Valid Tabs Calculation
-    const validTabs: string[] = [];
-    if (canViewUsers) validTabs.push("users");
-    if (canViewCurators) validTabs.push("curators");
+    // Filter visible tabs
+    const visibleTabs = useMemo(() => {
+        return USERS_TABS.filter(tab => allowedTabKeys.includes(tab.key));
+    }, [allowedTabKeys]);
+
+    const activeTab = searchParams.get("tab") || (visibleTabs[0]?.key || "users");
 
     useEffect(() => {
         setPageKey("users");
     }, [setPageKey]);
 
-    // Smart Redirect for Tabs
-    useEffect(() => {
-        if (validTabs.length === 0) return; // Wait for perms or handled by route guard
-
-        // If current activeTab is not valid, switch to the first valid one
-        if (!validTabs.includes(activeTab)) {
-            setSearchParams({ tab: validTabs[0] }, { replace: true });
-        }
-    }, [activeTab, validTabs.join(','), setSearchParams]); // validTabs.join to avoid deep dependency issues
-
     const handleTabChange = (val: string) => {
         setSearchParams({ tab: val });
     };
-
-    // If activeTab is invalid, we are redirecting, so don't render bad state
-    if (!validTabs.includes(activeTab) && validTabs.length > 0) return null;
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground animate-in fade-in duration-500">
@@ -62,42 +59,31 @@ export default function UsersPage() {
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
                     <div className="border-b">
                         <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b-0 gap-6">
-                            {canViewUsers && (
-                                <TabsTrigger
-                                    value="users"
-                                    className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Users className="w-4 h-4" />
-                                        İstifadəçilər
-                                    </div>
-                                </TabsTrigger>
-                            )}
-                            {canViewCurators && (
-                                <TabsTrigger
-                                    value="curators"
-                                    className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <ShieldAlert className="w-4 h-4" />
-                                        Kuratorlar
-                                    </div>
-                                </TabsTrigger>
-                            )}
+                            {/* SAP-GRADE: Only render ALLOWED tabs */}
+                            {visibleTabs.map(tab => {
+                                const Icon = tab.icon;
+                                return (
+                                    <TabsTrigger
+                                        key={tab.key}
+                                        value={tab.key}
+                                        className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Icon className="w-4 h-4" />
+                                            {tab.label}
+                                        </div>
+                                    </TabsTrigger>
+                                );
+                            })}
                         </TabsList>
                     </div>
 
-                    {canViewUsers && (
-                        <TabsContent value="users" className="flex-1 mt-4 overflow-hidden data-[state=inactive]:hidden">
-                            <UsersListTab />
-                        </TabsContent>
-                    )}
-
-                    {canViewCurators && (
-                        <TabsContent value="curators" className="flex-1 mt-4 overflow-hidden data-[state=inactive]:hidden">
-                            <CuratorsListTab />
-                        </TabsContent>
-                    )}
+                    <TabsContent value="users" className="flex-1 overflow-auto pt-4 min-h-0">
+                        <UsersListTab />
+                    </TabsContent>
+                    <TabsContent value="curators" className="flex-1 overflow-auto pt-4 min-h-0">
+                        <CuratorsListTab />
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>

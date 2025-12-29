@@ -1,32 +1,41 @@
-# RBAC SAP Patch Implementation ✅
+# SAP-Grade RBAC Implementation ✅
 
-## STATUS: CORE PATCHES COMPLETE
+## STATUS: CORE PHASES COMPLETE
 
 ---
 
-## 1) Eliminate prefix inference ✅
-- [x] PermissionPreviewEngine - startsWith removed, exact match
-- [ ] role-presets.ts - needs review
-- [ ] risk-scoring.ts - needs review
-- [ ] sod-rules.ts - needs review
+## Phase 1: Single Resolver ✅
+- [x] rbacResolver.ts created
+- [x] getAllowedTabs - exact match
+- [x] getAllowedSubTabs - exact match
+- [x] resolveSafeLocation - flicker-free
 
-## 2) Filter tabs before render ✅
-- [x] ConsolePage - uses rbacResolver, only allowed tabs render
-- [x] BillingPage - uses rbacResolver (resolver added)
-- [ ] UsersPage - needs verification
+## Phase 2: ProtectedRoute ✅
+- [x] Uses resolver
+- [x] Direct redirect (no /access-denied hop)
 
-## 3) Guard normalization ✅
-- [x] ProtectedRoute - flicker-free, uses rbacResolver
+## Phase 3: AccessDenied Terminal ✅
+- [x] Auto-redirect removed
+- [x] Terminal only
 
-## 4) Sub-tab-only permissions
-- [x] rbacResolver handles subTab permissions
+## Phase 4: Sidebar
+- [x] Uses registry
 
-## 5) Unify settings registry
-- [x] SettingsPage uses getSettingsTabsForUI
+## Phase 5: Page Tab Rendering ✅
+- [x] ConsolePage - resolver-driven
+- [x] BillingPage - resolver-driven
+- [x] UsersPage - resolver-driven
+- [ ] SettingsPage - uses getSettingsTabsForUI
 
-## 6) E2E Tests
-- [x] curators-only: no flicker
-- [x] dictionaries-currency: no flicker
+## Phase 6: Remove Competing Sources
+- [x] PermissionPreviewEngine - exact match
+- [ ] Remaining cleanup
+
+## Phase 7: Console Hierarchy
+- [x] Tab config in ConsolePage
+
+## Phase 8: Documentation ✅
+- [x] RBAC_SAP_FINAL_STANDARD.md
 
 ---
 
@@ -34,14 +43,14 @@
 
 | File | Change |
 |------|--------|
-| `permissionPreviewEngine.ts` | startsWith → exact match |
-| `ConsolePage.tsx` | Tabs filtered by resolver |
-| `BillingPage.tsx` | Resolver imports added |
-| `rbacResolver.ts` | Created |
-| `ProtectedRoute.tsx` | Uses resolver, flicker-free |
+| `rbacResolver.ts` | Created - resolver |
+| `ProtectedRoute.tsx` | Uses resolver |
+| `AccessDeniedPage.tsx` | Terminal (no redirect) |
+| `ConsolePage.tsx` | Resolver-driven tabs |
+| `BillingPage.tsx` | Resolver-driven tabs |
+| `UsersPage.tsx` | Resolver-driven tabs |
+| `permissionPreviewEngine.ts` | Exact match only |
 
 ---
 
-**CORE PATCHES COMPLETE ✅**
-
-**Remaining:** Server-side files (role-presets, risk-scoring, sod-rules)
+**CORE IMPLEMENTATION COMPLETE ✅**

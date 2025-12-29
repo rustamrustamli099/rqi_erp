@@ -11,13 +11,9 @@ export default function AccessDeniedPage() {
     const location = useLocation();
     const { permissions } = useAuth();
 
-    // Prevent direct URL access unless explicitly redirected or zero-perm lockout
-    const isInternal = location.state?.error;
-    const isZeroPerm = permissions?.length === 0;
-
-    if (!isInternal && !isZeroPerm) {
-        return <Navigate to="/" replace />;
-    }
+    // SAP-GRADE: AccessDenied is TERMINAL - no auto-redirect
+    // Direct URL access without state is also denied (security)
+    // User must use Logout button only
 
     const handleLogout = () => {
         dispatch(logout());
