@@ -109,24 +109,18 @@ export const ProtectedRoute = ({
             const tabConfig = pageConfig.tabs.find(t => t.key === currentTab);
 
             if (!tabConfig) {
-                // UNKNOWN tab → terminal 403
-                console.warn('[ProtectedRoute] UNKNOWN tab:', currentTab);
-                return <Navigate to="/access-denied" state={{
-                    error: 'unknown_tab',
-                    attempted: `${location.pathname}?tab=${currentTab}`
-                }} replace />;
+                // UNKNOWN tab → direct redirect to first allowed (NO /access-denied flicker)
+                console.warn('[ProtectedRoute] UNKNOWN tab, redirecting:', currentTab, '→', firstAllowed.tab);
+                return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
             }
 
             // Check tab permission
             const hasTabAccess = canForTab(pageConfig.pageKey, currentTab, currentSubTab || undefined);
 
             if (!hasTabAccess) {
-                // SAP-GRADE: UNAUTHORIZED tab → terminal 403 (NO silent rewrite)
-                console.warn('[ProtectedRoute] Tab DENIED (terminal 403):', currentTab);
-                return <Navigate to="/access-denied" state={{
-                    error: 'unauthorized_tab',
-                    attempted: `${location.pathname}?tab=${currentTab}`
-                }} replace />;
+                // NO-FLICKER: UNAUTHORIZED tab → direct redirect to first allowed
+                console.warn('[ProtectedRoute] Tab DENIED, redirecting:', currentTab, '→', firstAllowed.tab);
+                return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
             }
 
             // Check subTab if present
@@ -134,23 +128,17 @@ export const ProtectedRoute = ({
                 const subTabConfig = tabConfig.subTabs.find(st => st.key === currentSubTab);
 
                 if (!subTabConfig) {
-                    // UNKNOWN subTab → terminal 403
-                    return <Navigate to="/access-denied" state={{
-                        error: 'unknown_subtab',
-                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
-                    }} replace />;
+                    // UNKNOWN subTab → direct redirect to first allowed
+                    return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
                 }
 
                 if (!canForTab(pageConfig.pageKey, currentTab, currentSubTab)) {
-                    // SAP-GRADE: UNAUTHORIZED subTab → terminal 403 (NO silent rewrite)
-                    return <Navigate to="/access-denied" state={{
-                        error: 'unauthorized_subtab',
-                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
-                    }} replace />;
+                    // NO-FLICKER: UNAUTHORIZED subTab → direct redirect to first allowed
+                    return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
                 }
             }
         } else {
-            // No tab specified → redirect to first allowed (this is the ONLY redirect allowed)
+            // No tab specified → redirect to first allowed
             return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
         }
     } else {

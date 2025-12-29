@@ -1,8 +1,8 @@
 /**
- * SAP-Grade E2E Test: Settings Dictionaries Currency-Only User
+ * SAP-Grade E2E Test: Settings Dictionaries Currency-Only (NO FLICKER)
  * 
- * Tests terminal 403 behavior for unauthorized tabs/subtabs
- * /admin/settings?tab=smtp MUST show 403
+ * Tests no-flicker behavior for unauthorized tabs/subtabs
+ * /admin/settings?tab=smtp → immediate replace to ?tab=dictionaries&subTab=currency
  */
 
 import { test, expect } from '@playwright/test';
@@ -12,7 +12,7 @@ const DICTIONARIES_ONLY_USER = {
     password: 'TestPassword123!'
 };
 
-test.describe('RBAC: Settings Dictionaries Currency-Only User', () => {
+test.describe('RBAC: Settings Dictionaries Currency-Only - No Flicker', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
@@ -34,7 +34,6 @@ test.describe('RBAC: Settings Dictionaries Currency-Only User', () => {
         await page.goto('/admin/settings');
         await page.waitForLoadState('networkidle');
 
-        // Should redirect to dictionaries with currency subTab
         await expect(page).toHaveURL(/tab=dictionaries/);
         await expect(page).toHaveURL(/subTab=currency/);
     });
@@ -43,48 +42,57 @@ test.describe('RBAC: Settings Dictionaries Currency-Only User', () => {
         await page.goto('/admin/settings?tab=dictionaries&subTab=currency');
         await page.waitForLoadState('networkidle');
 
-        // Currency should be visible
         const currencySubTab = page.getByText(/currency|valyuta/i);
         await expect(currencySubTab.first()).toBeVisible();
 
-        // Tax subTab should NOT exist
         const taxSubTab = page.locator('[data-subtab="tax"]');
         await expect(taxSubTab).toHaveCount(0);
     });
 
-    // SAP-GRADE: Terminal 403 tests
-    test('/admin/settings?tab=smtp shows 403 (NOT rewrite)', async ({ page }) => {
+    // NO-FLICKER tests
+    test('/admin/settings?tab=smtp redirects to dictionaries (NO /access-denied)', async ({ page }) => {
+        const navigations: string[] = [];
+        page.on('framenavigated', (frame) => {
+            if (frame === page.mainFrame()) {
+                navigations.push(frame.url());
+            }
+        });
+
         await page.goto('/admin/settings?tab=smtp');
         await page.waitForLoadState('networkidle');
 
-        // SAP-GRADE: Should show access-denied
-        await expect(page).toHaveURL(/access-denied/);
+        // Should end up at dictionaries
+        await expect(page).toHaveURL(/tab=dictionaries/);
+
+        // Should NOT have visited /access-denied
+        const visitedAccessDenied = navigations.some(url => url.includes('access-denied'));
+        expect(visitedAccessDenied).toBe(false);
     });
 
-    test('/admin/settings?tab=general shows 403', async ({ page }) => {
+    test('/admin/settings?tab=general redirects to dictionaries (NO flicker)', async ({ page }) => {
         await page.goto('/admin/settings?tab=general');
         await page.waitForLoadState('networkidle');
 
-        await expect(page).toHaveURL(/access-denied/);
+        await expect(page).toHaveURL(/tab=dictionaries/);
+        await expect(page).not.toHaveURL(/access-denied/);
     });
 
-    test('/admin/settings?tab=dictionaries&subTab=tax shows 403', async ({ page }) => {
+    test('/admin/settings?tab=dictionaries&subTab=tax redirects to currency (NO flicker)', async ({ page }) => {
         await page.goto('/admin/settings?tab=dictionaries&subTab=tax');
         await page.waitForLoadState('networkidle');
 
-        // SAP-GRADE: Unauthorized subTab should show 403
-        await expect(page).toHaveURL(/access-denied/);
+        // Should redirect to allowed subTab
+        await expect(page).toHaveURL(/subTab=currency/);
+        await expect(page).not.toHaveURL(/access-denied/);
     });
 
     test('other settings tabs are NOT in DOM', async ({ page }) => {
         await page.goto('/admin/settings?tab=dictionaries&subTab=currency');
         await page.waitForLoadState('networkidle');
 
-        // General tab should NOT exist
         const generalTab = page.locator('[data-tab="general"]');
         await expect(generalTab).toHaveCount(0);
 
-        // SMTP tab should NOT exist
         const smtpTab = page.locator('[data-tab="smtp"]');
         await expect(smtpTab).toHaveCount(0);
     });

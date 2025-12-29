@@ -1,8 +1,8 @@
 /**
- * SAP-Grade E2E Test: Curators-Only User
+ * SAP-Grade E2E Test: Curators-Only User (NO FLICKER)
  * 
- * Tests terminal 403 behavior for unauthorized tabs
- * /admin/users?tab=users MUST show 403 (NOT rewrite to curators)
+ * Tests no-flicker behavior for unauthorized tabs
+ * /admin/users?tab=users → immediate replace to ?tab=curators (NO /access-denied)
  */
 
 import { test, expect } from '@playwright/test';
@@ -12,16 +12,13 @@ const CURATORS_ONLY_USER = {
     password: 'TestPassword123!'
 };
 
-test.describe('RBAC: Curators-Only User - Terminal 403', () => {
+test.describe('RBAC: Curators-Only User - No Flicker', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Login as curators-only user
         await page.goto('/login');
         await page.fill('input[name="email"]', CURATORS_ONLY_USER.email);
         await page.fill('input[name="password"]', CURATORS_ONLY_USER.password);
         await page.click('button[type="submit"]');
-
-        // Wait for redirect to admin area
         await page.waitForURL(/\/admin/, { timeout: 10000 });
     });
 
@@ -29,7 +26,6 @@ test.describe('RBAC: Curators-Only User - Terminal 403', () => {
         await page.goto('/admin/users');
         await page.waitForLoadState('networkidle');
 
-        // Users menu should be visible
         const usersMenu = page.locator('[data-testid="menu-users"]');
         await expect(usersMenu).toBeVisible();
     });
@@ -38,7 +34,6 @@ test.describe('RBAC: Curators-Only User - Terminal 403', () => {
         await page.goto('/admin/users');
         await page.waitForLoadState('networkidle');
 
-        // Should redirect to curators tab (only allowed tab)
         await expect(page).toHaveURL(/tab=curators/);
     });
 
@@ -46,7 +41,6 @@ test.describe('RBAC: Curators-Only User - Terminal 403', () => {
         await page.goto('/admin/users?tab=curators');
         await page.waitForLoadState('networkidle');
 
-        // Users tab should NOT exist in DOM
         const usersTab = page.locator('[data-value="users"], [data-tab="users"]');
         await expect(usersTab).toHaveCount(0);
     });
@@ -55,22 +49,29 @@ test.describe('RBAC: Curators-Only User - Terminal 403', () => {
         await page.goto('/admin/users?tab=curators');
         await page.waitForLoadState('networkidle');
 
-        // Curators tab should be visible
         const curatorsTab = page.locator('[data-value="curators"], [data-tab="curators"]');
         await expect(curatorsTab.first()).toBeVisible();
     });
 
-    // SAP-GRADE: Terminal 403 test
-    test('typing ?tab=users in URL shows 403 (NOT rewrite)', async ({ page }) => {
+    // NO-FLICKER: Direct redirect test
+    test('typing ?tab=users redirects to curators (NO /access-denied flicker)', async ({ page }) => {
+        // Track navigations
+        const navigations: string[] = [];
+        page.on('framenavigated', (frame) => {
+            if (frame === page.mainFrame()) {
+                navigations.push(frame.url());
+            }
+        });
+
         await page.goto('/admin/users?tab=users');
         await page.waitForLoadState('networkidle');
 
-        // SAP-GRADE: Should show access-denied, NOT rewrite to curators
-        await expect(page).toHaveURL(/access-denied/);
+        // Should end up at curators tab
+        await expect(page).toHaveURL(/tab=curators/);
 
-        // Should see "Səlahiyyətiniz yoxdur" or similar message
-        const accessDeniedText = page.getByText(/access|denied|səlahiyyət/i);
-        await expect(accessDeniedText.first()).toBeVisible();
+        // Should NOT have visited /access-denied at any point
+        const visitedAccessDenied = navigations.some(url => url.includes('access-denied'));
+        expect(visitedAccessDenied).toBe(false);
     });
 
     test('no redirect loops (max 3 navigations)', async ({ page }) => {
@@ -82,11 +83,8 @@ test.describe('RBAC: Curators-Only User - Terminal 403', () => {
 
         await page.goto('/admin/users');
         await page.waitForLoadState('networkidle');
-
-        // Wait a bit for any potential loops
         await page.waitForTimeout(2000);
 
-        // Should not have more than 3 navigations
         expect(navigationCount).toBeLessThanOrEqual(3);
     });
 
@@ -94,7 +92,6 @@ test.describe('RBAC: Curators-Only User - Terminal 403', () => {
         await page.goto('/admin/users?tab=curators');
         await page.waitForLoadState('networkidle');
 
-        // Settings should NOT be visible (no permission)
         const settingsMenu = page.locator('[data-testid="menu-settings"]');
         await expect(settingsMenu).toHaveCount(0);
     });
