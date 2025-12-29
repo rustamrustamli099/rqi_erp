@@ -45,7 +45,7 @@ export default function SystemCorePage() {
     const allowedTabKeys = useMemo(() => {
         const permSet = normalizePermissions(permissions);
         return getAllowedTabs({
-            pageKey: 'admin.system-console',
+            pageKey: 'admin.console',  // Must match registry exactly
             perms: permSet,
             context: 'admin'
         });

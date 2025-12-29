@@ -230,3 +230,76 @@ export function isTerminal403(result: SafeLocationResult): result is Terminal403
 export function buildUrl(location: ResolvedLocation): string {
     return `${location.pathname}${location.search}`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// evaluateNavigation - Main API for ProtectedRoute
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type NavigationDecision =
+    | { decision: 'allow' }
+    | { decision: 'redirect'; redirectTo: string }
+    | { decision: 'deny'; reason: string };
+
+/**
+ * Evaluate navigation and return decision.
+ * This is the SINGLE entry point for route guards.
+ */
+export function evaluateNavigation(params: {
+    pathname: string;
+    search: string;
+    perms: Set<string>;
+    context?: 'admin' | 'tenant';
+}): NavigationDecision {
+    const result = resolveSafeLocation(params);
+
+    if (isTerminal403(result)) {
+        return { decision: 'deny', reason: result.reason };
+    }
+
+    const currentUrl = `${params.pathname}${params.search}`;
+    const safeUrl = buildUrl(result);
+
+    if (currentUrl !== safeUrl) {
+        return { decision: 'redirect', redirectTo: safeUrl };
+    }
+
+    return { decision: 'allow' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// firstAllowedTarget - For sidebar links
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get the first allowed target URL for a page.
+ * Used for sidebar item links.
+ */
+export function firstAllowedTarget(params: {
+    pageKey: string;
+    basePath: string;
+    perms: Set<string>;
+    context?: 'admin' | 'tenant';
+}): string | null {
+    const { pageKey, basePath, perms, context = 'admin' } = params;
+    const allowedTabs = getAllowedTabs({ pageKey, perms, context });
+
+    if (allowedTabs.length === 0) return null;
+
+    const firstTab = allowedTabs[0];
+    const allowedSubTabs = getAllowedSubTabs({ pageKey, tabKey: firstTab, perms, context });
+
+    if (allowedSubTabs.length > 0) {
+        return `${basePath}?tab=${firstTab}&subTab=${allowedSubTabs[0]}`;
+    }
+
+    return `${basePath}?tab=${firstTab}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// resolvePageByPath - Get page config from path
+// ═══════════════════════════════════════════════════════════════════════════
+
+export function resolvePageByPath(pathname: string, context: 'admin' | 'tenant' = 'admin'): PageConfig | null {
+    return getPageByPath(pathname, context) ?? null;
+}
+
