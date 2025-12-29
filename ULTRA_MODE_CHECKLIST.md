@@ -1,48 +1,47 @@
-# SAP-Grade RBAC Fail-Closed Checklist ✅
+# RBAC SAP Patch Implementation ✅
 
-## STATUS: 100% COMPLETE
-
----
-
-## Commit 1: Page-level auto-fallbacks ✅
-- [x] ProtectedRoute handles all fallbacks
-- [x] Pages don't auto-rewrite tabs
-
-## Commit 2: ProtectedRoute fail-closed ✅
-- [x] Unknown tab → terminal 403
-- [x] Unauthorized tab → terminal 403
-- [x] Unknown subTab → terminal 403
-- [x] Unauthorized subTab → terminal 403
-- [x] ONLY redirect: no tab in URL → first allowed
-
-## Commit 3: Sidebar visibility ✅
-- [x] Parent visible if ANY tab allowed
-- [x] Only allowed descendants render
-
-## Commit 4: Permission helpers ✅
-- [x] can() - exact match
-- [x] canForTab() - registry lookup
-- [x] NO startsWith/includes
-
-## Commit 5: E2E Tests ✅
-- [x] curators-only: 403 for ?tab=users
-- [x] settings: 403 for ?tab=smtp
-- [x] settings: 403 for ?subTab=tax
-- [x] no-permissions: terminal 403
+## STATUS: CORE PATCHES COMPLETE
 
 ---
 
-## Behavior Summary
+## 1) Eliminate prefix inference ✅
+- [x] PermissionPreviewEngine - startsWith removed, exact match
+- [ ] role-presets.ts - needs review
+- [ ] risk-scoring.ts - needs review
+- [ ] sod-rules.ts - needs review
 
-| Scenario | Action |
-|----------|--------|
-| No tab in URL | Redirect to first allowed |
-| Unknown tab | Terminal 403 |
-| Unauthorized tab | Terminal 403 |
-| Unknown subTab | Terminal 403 |
-| Unauthorized subTab | Terminal 403 |
-| Zero allowed tabs | Terminal 403 |
+## 2) Filter tabs before render ✅
+- [x] ConsolePage - uses rbacResolver, only allowed tabs render
+- [x] BillingPage - uses rbacResolver (resolver added)
+- [ ] UsersPage - needs verification
+
+## 3) Guard normalization ✅
+- [x] ProtectedRoute - flicker-free, uses rbacResolver
+
+## 4) Sub-tab-only permissions
+- [x] rbacResolver handles subTab permissions
+
+## 5) Unify settings registry
+- [x] SettingsPage uses getSettingsTabsForUI
+
+## 6) E2E Tests
+- [x] curators-only: no flicker
+- [x] dictionaries-currency: no flicker
 
 ---
 
-**ALL COMMITS COMPLETE ✅**
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `permissionPreviewEngine.ts` | startsWith → exact match |
+| `ConsolePage.tsx` | Tabs filtered by resolver |
+| `BillingPage.tsx` | Resolver imports added |
+| `rbacResolver.ts` | Created |
+| `ProtectedRoute.tsx` | Uses resolver, flicker-free |
+
+---
+
+**CORE PATCHES COMPLETE ✅**
+
+**Remaining:** Server-side files (role-presets, risk-scoring, sod-rules)

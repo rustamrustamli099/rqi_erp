@@ -309,14 +309,44 @@ const getBadgeIcon = (type: ProductType) => {
 import { PageHeader } from "@/shared/components/ui/page-header";
 
 import { useSearchParams } from "react-router-dom";
+import { useMemo } from "react";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { getAllowedTabs, normalizePermissions } from "@/app/security/rbacResolver";
+
+// Tab configuration for filtering
+const BILLING_TABS = [
+    { key: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
+    { key: 'packages', label: 'Kompakt Paketlər', icon: Package },
+    { key: 'subscriptions', label: 'Abunəlik Planları', icon: CreditCard },
+    { key: 'invoices', label: 'Fakturalar', icon: BarChart3 },
+    { key: 'licenses', label: 'Lisenziyalar', icon: Shield },
+];
 
 export default function BillingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get("tab") || "marketplace";
+    const { permissions } = usePermissions();
+
+    // SAP-GRADE: Get allowed tabs from resolver
+    const allowedTabKeys = useMemo(() => {
+        const permSet = normalizePermissions(permissions);
+        return getAllowedTabs({
+            pageKey: 'admin.billing',
+            perms: permSet,
+            context: 'admin'
+        });
+    }, [permissions]);
+
+    // Filter visible tabs
+    const visibleTabs = useMemo(() => {
+        return BILLING_TABS.filter(tab => allowedTabKeys.includes(tab.key));
+    }, [allowedTabKeys]);
+
+    const activeTab = searchParams.get("tab") || (visibleTabs[0]?.key || "marketplace");
 
     const handleTabChange = (val: string) => {
         setSearchParams({ tab: val });
     };
+
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">

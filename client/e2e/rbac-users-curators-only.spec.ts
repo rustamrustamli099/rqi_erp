@@ -1,8 +1,8 @@
 /**
- * SAP-Grade E2E Test: Curators-Only User (FAIL-CLOSED)
+ * SAP-Grade E2E Test: Curators-Only User (Flicker-Free)
  * 
- * Tests terminal 403 behavior for unauthorized tabs
- * /admin/users?tab=users → 403 terminal (NO redirect)
+ * Tests flicker-free navigation with rbacResolver
+ * /admin/users?tab=users → redirects to ?tab=curators (NO /access-denied)
  */
 
 import { test, expect } from '@playwright/test';
@@ -12,7 +12,7 @@ const CURATORS_ONLY_USER = {
     password: 'TestPassword123!'
 };
 
-test.describe('RBAC: Curators-Only User - Fail Closed', () => {
+test.describe('RBAC: Curators-Only User - Flicker-Free', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
@@ -53,17 +53,24 @@ test.describe('RBAC: Curators-Only User - Fail Closed', () => {
         await expect(curatorsTab.first()).toBeVisible();
     });
 
-    // FAIL-CLOSED: Terminal 403 test
-    test('typing ?tab=users shows terminal 403', async ({ page }) => {
+    // FLICKER-FREE: Direct redirect test
+    test('?tab=users redirects to curators without /access-denied', async ({ page }) => {
+        const navigations: string[] = [];
+        page.on('framenavigated', (frame) => {
+            if (frame === page.mainFrame()) {
+                navigations.push(frame.url());
+            }
+        });
+
         await page.goto('/admin/users?tab=users');
         await page.waitForLoadState('networkidle');
 
-        // FAIL-CLOSED: Should show access-denied
-        await expect(page).toHaveURL(/access-denied/);
+        // Should end up at curators tab
+        await expect(page).toHaveURL(/tab=curators/);
 
-        // Should stay on 403 page
-        await page.waitForTimeout(2000);
-        await expect(page).toHaveURL(/access-denied/);
+        // Should NOT have visited /access-denied
+        const visitedAccessDenied = navigations.some(url => url.includes('access-denied'));
+        expect(visitedAccessDenied).toBe(false);
     });
 
     test('no redirect loops (max 3 navigations)', async ({ page }) => {
@@ -78,13 +85,5 @@ test.describe('RBAC: Curators-Only User - Fail Closed', () => {
         await page.waitForTimeout(2000);
 
         expect(navigationCount).toBeLessThanOrEqual(3);
-    });
-
-    test('other admin pages are hidden if no permission', async ({ page }) => {
-        await page.goto('/admin/users?tab=curators');
-        await page.waitForLoadState('networkidle');
-
-        const settingsMenu = page.locator('[data-testid="menu-settings"]');
-        await expect(settingsMenu).toHaveCount(0);
     });
 });

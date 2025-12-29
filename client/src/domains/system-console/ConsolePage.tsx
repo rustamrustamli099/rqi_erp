@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useMemo } from "react";
 import { useHelp } from "@/app/context/HelpContext";
 import { PageHeader } from "@/shared/components/ui/page-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,10 +6,11 @@ import { useSearchParams } from "react-router-dom";
 import { ShieldAlert, Server as ServerIcon, Activity, Database, Flag, MessageSquare, Wrench, LayoutDashboard } from "lucide-react";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { SystemHealthWidget, CacheManager, MaintenanceControls } from "./components/SystemDashboardWidgets";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { getAllowedTabs, normalizePermissions } from "@/app/security/rbacResolver";
 
 // Lazy load components
-// Lazy load components
-const MonitoringPage = lazy(() => import("@/domains/system-console/monitoring/views/MonitoringPage")); // Added
+const MonitoringPage = lazy(() => import("@/domains/system-console/monitoring/views/MonitoringPage"));
 const JobRegistryPage = lazy(() => import("@/domains/system-console/scheduler/views/JobRegistryPage"));
 const RetentionPolicyPage = lazy(() => import("@/domains/system-console/maintenance/RetentionPolicyPage"));
 const FeatureFlagsPage = lazy(() => import("@/domains/system-console/feature-flags/FeatureFlagsPage"));
@@ -18,15 +19,44 @@ const FeedbackPage = lazy(() => import("@/domains/system-console/feedback/Feedba
 const AuditLogsPage = lazy(() => import("@/domains/system-console/audit-logs/AuditLogsPage"));
 const SystemToolsTab = lazy(() => import("@/domains/system-console/tools/SystemToolsTab"));
 
+// Tab configuration with icons
+const CONSOLE_TABS = [
+    { key: 'dashboard', label: 'İdarəetmə Paneli', icon: LayoutDashboard },
+    { key: 'monitoring', label: 'Monitorinq', icon: Activity },
+    { key: 'audit', label: 'Audit & Compliance', icon: ShieldAlert },
+    { key: 'jobs', label: 'Job Scheduler', icon: ServerIcon },
+    { key: 'retention', label: 'Data Retention', icon: Database },
+    { key: 'features', label: 'Feature Flags', icon: Flag },
+    { key: 'policy', label: 'Policy & Security', icon: ShieldAlert },
+    { key: 'feedback', label: 'Feedback Inbox', icon: MessageSquare },
+    { key: 'tools', label: 'Alətlər (Tools)', icon: Wrench },
+];
+
 export default function SystemCorePage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { setPageKey } = useHelp();
+    const { permissions } = usePermissions();
 
     React.useEffect(() => {
         setPageKey("sys-admin");
     }, [setPageKey]);
 
-    const currentTab = searchParams.get("tab") || "dashboard";
+    // SAP-GRADE: Get allowed tabs from resolver
+    const allowedTabKeys = useMemo(() => {
+        const permSet = normalizePermissions(permissions);
+        return getAllowedTabs({
+            pageKey: 'admin.system-console',
+            perms: permSet,
+            context: 'admin'
+        });
+    }, [permissions]);
+
+    // Filter tabs to only show allowed ones
+    const visibleTabs = useMemo(() => {
+        return CONSOLE_TABS.filter(tab => allowedTabKeys.includes(tab.key));
+    }, [allowedTabKeys]);
+
+    const currentTab = searchParams.get("tab") || (visibleTabs[0]?.key || "dashboard");
 
     const handleTabChange = (value: string) => {
         setSearchParams({ tab: value });
@@ -45,60 +75,19 @@ export default function SystemCorePage() {
                 <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
                     <ScrollableTabs className="w-full border-b">
                         <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent space-x-6 border-b-0">
-                            <TabsTrigger
-                                value="dashboard"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <LayoutDashboard className="w-4 h-4 mr-2" /> İdarəetmə Paneli
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="monitoring"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <Activity className="w-4 h-4 mr-2" /> Monitorinq
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="audit"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <ShieldAlert className="w-4 h-4 mr-2" /> Audit & Compliance
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="jobs"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <ServerIcon className="w-4 h-4 mr-2" /> Job Scheduler
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="retention"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <Database className="w-4 h-4 mr-2" /> Data Retention
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="features"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <Flag className="w-4 h-4 mr-2" /> Feature Flags
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="policy"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <ShieldAlert className="w-4 h-4 mr-2" /> Policy & Security
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="feedback"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <MessageSquare className="w-4 h-4 mr-2" /> Feedback Inbox
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="tools"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
-                            >
-                                <Wrench className="w-4 h-4 mr-2" /> Alətlər (Tools)
-                            </TabsTrigger>
+                            {/* SAP-GRADE: Only render ALLOWED tabs */}
+                            {visibleTabs.map(tab => {
+                                const Icon = tab.icon;
+                                return (
+                                    <TabsTrigger
+                                        key={tab.key}
+                                        value={tab.key}
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
+                                    >
+                                        <Icon className="w-4 h-4 mr-2" /> {tab.label}
+                                    </TabsTrigger>
+                                );
+                            })}
                         </TabsList>
                     </ScrollableTabs>
 

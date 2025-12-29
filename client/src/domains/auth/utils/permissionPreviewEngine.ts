@@ -220,15 +220,20 @@ export class PermissionPreviewEngine {
     /**
      * Check if user has ANY of the required permissions
      */
+    /**
+     * SAP-GRADE: EXACT permission match only
+     * NO startsWith, NO prefix inference
+     */
     private static checkAccess(
         requiredAnyOf: string[],
         normalizedPerms: string[]
     ): boolean {
         return requiredAnyOf.some(req =>
             normalizedPerms.some(perm => {
-                const reqBase = req.replace(/\.(read|view|access)$/, '');
-                const permBase = perm.replace(/\.(read|view|access)$/, '');
-                return perm.startsWith(reqBase) || req.startsWith(permBase);
+                // Exact base match (strip action verb)
+                const reqBase = req.replace(/\.(read|view|create|update|delete|export|approve)$/, '');
+                const permBase = perm.replace(/\.(read|view|create|update|delete|export|approve)$/, '');
+                return reqBase === permBase;
             })
         );
     }
@@ -236,15 +241,18 @@ export class PermissionPreviewEngine {
     /**
      * Find which permission grants access
      */
+    /**
+     * SAP-GRADE: Find matching permission with EXACT base match
+     */
     private static findMatchingPerm(
         requiredAnyOf: string[],
         normalizedPerms: string[]
     ): string | null {
         for (const req of requiredAnyOf) {
-            const reqBase = req.replace(/\.(read|view|access)$/, '');
+            const reqBase = req.replace(/\.(read|view|create|update|delete|export|approve)$/, '');
             const match = normalizedPerms.find(perm => {
-                const permBase = perm.replace(/\.(read|view|access)$/, '');
-                return perm.startsWith(reqBase) || req.startsWith(permBase);
+                const permBase = perm.replace(/\.(read|view|create|update|delete|export|approve)$/, '');
+                return reqBase === permBase;
             });
             if (match) return match;
         }

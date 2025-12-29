@@ -1,14 +1,14 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * SAP-Grade Protected Route
+ * SAP-Grade Protected Route (Flicker-Free)
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * SINGLE SOURCE OF TRUTH: TAB_SUBTAB_REGISTRY
+ * Uses rbacResolver for ALL authorization decisions.
  * 
  * Rules:
  * 1. EXACT permission match only
- * 2. Unknown tab → terminal /access-denied
- * 3. Unauthorized tab → redirect to first allowed
+ * 2. Flicker-free: redirect to allowed tab if exists
+ * 3. Terminal 403 ONLY when zero allowed tabs
  * 4. NO prefix matching
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -17,14 +17,14 @@ import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom
 import { useAuth } from '@/domains/auth/context/AuthContext';
 import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import {
-    TAB_SUBTAB_REGISTRY,
-    getFirstAllowedTab,
-    getPageByPath,
-    buildLandingPath,
-    type PageConfig
-} from '@/app/navigation/tabSubTab.registry';
+    resolveSafeLocation,
+    isTerminal403,
+    buildUrl,
+    normalizePermissions
+} from '@/app/security/rbacResolver';
+import { getPageByPath, buildLandingPath, getFirstAllowedTab } from '@/app/navigation/tabSubTab.registry';
 import { Loader2 } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface ProtectedRouteProps {
     requiredPermissions?: string[];
@@ -40,17 +40,18 @@ export const ProtectedRoute = ({
     children
 }: ProtectedRouteProps) => {
     const { isAuthenticated, isLoading, authState, activeTenantType } = useAuth();
-    const { canAny, canAll, canForTab, permissions } = usePermissions();
+    const { canAny, canAll, permissions } = usePermissions();
     const location = useLocation();
     const [searchParams] = useSearchParams();
 
-    // Normalize permissions
+    // Normalize permissions for exact matching
     const perms = [...requiredPermissions];
     if (requiredPermission) perms.push(requiredPermission);
 
     const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
-    const currentTab = searchParams.get('tab');
-    const currentSubTab = searchParams.get('subTab');
+
+    // Memoize normalized permissions set
+    const permSet = useMemo(() => normalizePermissions(permissions), [permissions]);
 
     // ═══════════════════════════════════════════════════════════════════════
     // WAITING STATES
@@ -69,7 +70,7 @@ export const ProtectedRoute = ({
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // SAP-GRADE: Page + Tab validation using TAB_SUBTAB_REGISTRY
+    // SAP-GRADE: Use RBAC Resolver for flicker-free navigation
     // ═══════════════════════════════════════════════════════════════════════
 
     const basePath = location.pathname.split('?')[0];
@@ -90,68 +91,35 @@ export const ProtectedRoute = ({
         return children ? <>{children}</> : <Outlet />;
     }
 
-    // Page has tabs - check tab access
+    // Page has tabs - use resolver for flicker-free navigation
     const hasTabs = pageConfig.tabs && pageConfig.tabs.length > 0;
 
     if (hasTabs) {
-        const firstAllowed = getFirstAllowedTab(pageConfig.pageKey, permissions, context);
+        // Use the resolver to determine safe location
+        const result = resolveSafeLocation({
+            pathname: location.pathname,
+            search: location.search,
+            perms: permSet,
+            context
+        });
 
-        if (!firstAllowed) {
-            // NO tab access at all → terminal access-denied
+        // TERMINAL 403: No allowed tabs at all
+        if (isTerminal403(result)) {
             return <Navigate to="/access-denied" state={{
                 error: 'no_tab_access',
+                reason: result.reason,
                 page: pageConfig.pageKey
             }} replace />;
         }
 
-        if (currentTab) {
-            // Check if tab exists in registry
-            const tabConfig = pageConfig.tabs.find(t => t.key === currentTab);
+        // Check if we need to redirect (current URL differs from safe URL)
+        const safeUrl = buildUrl(result);
+        const currentUrl = `${location.pathname}${location.search}`;
 
-            if (!tabConfig) {
-                // FAIL-CLOSED: UNKNOWN tab → terminal 403 (NO auto-rewrite)
-                console.warn('[ProtectedRoute] UNKNOWN tab → 403:', currentTab);
-                return <Navigate to="/access-denied" state={{
-                    error: 'unknown_tab',
-                    attempted: `${location.pathname}?tab=${currentTab}`
-                }} replace />;
-            }
-
-            // Check tab permission
-            const hasTabAccess = canForTab(pageConfig.pageKey, currentTab, currentSubTab || undefined);
-
-            if (!hasTabAccess) {
-                // FAIL-CLOSED: UNAUTHORIZED tab → terminal 403 (NO auto-rewrite)
-                console.warn('[ProtectedRoute] Tab DENIED → 403:', currentTab);
-                return <Navigate to="/access-denied" state={{
-                    error: 'unauthorized_tab',
-                    attempted: `${location.pathname}?tab=${currentTab}`
-                }} replace />;
-            }
-
-            // Check subTab if present
-            if (currentSubTab && tabConfig.subTabs) {
-                const subTabConfig = tabConfig.subTabs.find(st => st.key === currentSubTab);
-
-                if (!subTabConfig) {
-                    // FAIL-CLOSED: UNKNOWN subTab → terminal 403
-                    return <Navigate to="/access-denied" state={{
-                        error: 'unknown_subtab',
-                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
-                    }} replace />;
-                }
-
-                if (!canForTab(pageConfig.pageKey, currentTab, currentSubTab)) {
-                    // FAIL-CLOSED: UNAUTHORIZED subTab → terminal 403
-                    return <Navigate to="/access-denied" state={{
-                        error: 'unauthorized_subtab',
-                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
-                    }} replace />;
-                }
-            }
-        } else {
-            // No tab specified → redirect to first allowed (ONLY allowed redirect)
-            return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+        if (safeUrl !== currentUrl) {
+            // FLICKER-FREE: Redirect directly to allowed tab (no /access-denied)
+            console.log('[ProtectedRoute] Redirecting to safe location:', safeUrl);
+            return <Navigate to={safeUrl} replace />;
         }
     } else {
         // Page without tabs - simple permission check
