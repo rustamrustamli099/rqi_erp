@@ -121,9 +121,12 @@ export const ProtectedRoute = ({
             const hasTabAccess = canForTab(pageConfig.pageKey, currentTab, currentSubTab || undefined);
 
             if (!hasTabAccess) {
-                // UNAUTHORIZED tab → redirect to first allowed
-                console.warn('[ProtectedRoute] Tab DENIED:', currentTab, '→', firstAllowed.tab);
-                return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                // SAP-GRADE: UNAUTHORIZED tab → terminal 403 (NO silent rewrite)
+                console.warn('[ProtectedRoute] Tab DENIED (terminal 403):', currentTab);
+                return <Navigate to="/access-denied" state={{
+                    error: 'unauthorized_tab',
+                    attempted: `${location.pathname}?tab=${currentTab}`
+                }} replace />;
             }
 
             // Check subTab if present
@@ -131,17 +134,23 @@ export const ProtectedRoute = ({
                 const subTabConfig = tabConfig.subTabs.find(st => st.key === currentSubTab);
 
                 if (!subTabConfig) {
-                    // UNKNOWN subTab → redirect to first allowed subTab
-                    return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                    // UNKNOWN subTab → terminal 403
+                    return <Navigate to="/access-denied" state={{
+                        error: 'unknown_subtab',
+                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
+                    }} replace />;
                 }
 
                 if (!canForTab(pageConfig.pageKey, currentTab, currentSubTab)) {
-                    // UNAUTHORIZED subTab → redirect to first allowed
-                    return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
+                    // SAP-GRADE: UNAUTHORIZED subTab → terminal 403 (NO silent rewrite)
+                    return <Navigate to="/access-denied" state={{
+                        error: 'unauthorized_subtab',
+                        attempted: `${location.pathname}?tab=${currentTab}&subTab=${currentSubTab}`
+                    }} replace />;
                 }
             }
         } else {
-            // No tab specified → redirect to first allowed
+            // No tab specified → redirect to first allowed (this is the ONLY redirect allowed)
             return <Navigate to={buildLandingPath(basePath, firstAllowed)} replace />;
         }
     } else {

@@ -1,25 +1,18 @@
 /**
- * RBAC E2E Test: Curators-Only User
+ * SAP-Grade E2E Test: Curators-Only User
  * 
- * Scenario: User has ONLY system.users.curators.read permission
- * 
- * Expected:
- * - Sidebar: Users page visible
- * - UsersPage: ONLY Curators tab visible
- * - /admin/users opens to /admin/users?tab=curators
- * - /admin/users?tab=users rewrites to curators
- * - Users tab NOT in DOM
+ * Tests terminal 403 behavior for unauthorized tabs
+ * /admin/users?tab=users MUST show 403 (NOT rewrite to curators)
  */
 
 import { test, expect } from '@playwright/test';
 
-// Test user credentials (must have ONLY curators permission)
 const CURATORS_ONLY_USER = {
     email: 'curators-only@test.com',
     password: 'TestPassword123!'
 };
 
-test.describe('RBAC: Curators-Only User', () => {
+test.describe('RBAC: Curators-Only User - Terminal 403', () => {
 
     test.beforeEach(async ({ page }) => {
         // Login as curators-only user
@@ -28,56 +21,56 @@ test.describe('RBAC: Curators-Only User', () => {
         await page.fill('input[name="password"]', CURATORS_ONLY_USER.password);
         await page.click('button[type="submit"]');
 
-        // Wait for redirect after login
-        await page.waitForURL(/\/admin/);
+        // Wait for redirect to admin area
+        await page.waitForURL(/\/admin/, { timeout: 10000 });
     });
 
     test('sidebar shows Users page', async ({ page }) => {
-        // Users menu item should be visible
-        const usersMenuItem = page.locator('[data-testid="menu-users"], a[href*="/admin/users"]');
-        await expect(usersMenuItem).toBeVisible();
+        await page.goto('/admin/users');
+        await page.waitForLoadState('networkidle');
+
+        // Users menu should be visible
+        const usersMenu = page.locator('[data-testid="menu-users"]');
+        await expect(usersMenu).toBeVisible();
     });
 
     test('navigating to /admin/users opens with ?tab=curators', async ({ page }) => {
         await page.goto('/admin/users');
+        await page.waitForLoadState('networkidle');
 
-        // Wait for URL rewrite
-        await page.waitForURL(/tab=curators/);
-
-        // URL should contain tab=curators
-        expect(page.url()).toContain('tab=curators');
+        // Should redirect to curators tab (only allowed tab)
+        await expect(page).toHaveURL(/tab=curators/);
     });
 
     test('Users tab is NOT rendered in DOM', async ({ page }) => {
         await page.goto('/admin/users?tab=curators');
-
-        // Wait for page to load
         await page.waitForLoadState('networkidle');
 
         // Users tab should NOT exist in DOM
-        const usersTab = page.locator('[data-tab="users"], button:has-text("Users"):not(:has-text("Curators"))');
+        const usersTab = page.locator('[data-value="users"], [data-tab="users"]');
         await expect(usersTab).toHaveCount(0);
     });
 
     test('Curators tab IS rendered and active', async ({ page }) => {
         await page.goto('/admin/users?tab=curators');
-
         await page.waitForLoadState('networkidle');
 
         // Curators tab should be visible
-        const curatorsTab = page.locator('[data-tab="curators"], button:has-text("Curators")');
+        const curatorsTab = page.locator('[data-value="curators"], [data-tab="curators"]');
         await expect(curatorsTab.first()).toBeVisible();
     });
 
-    test('typing ?tab=users in URL rewrites to curators', async ({ page }) => {
-        // Try to access unauthorized tab via URL
+    // SAP-GRADE: Terminal 403 test
+    test('typing ?tab=users in URL shows 403 (NOT rewrite)', async ({ page }) => {
         await page.goto('/admin/users?tab=users');
+        await page.waitForLoadState('networkidle');
 
-        // Should rewrite to curators (first allowed tab)
-        await page.waitForURL(/tab=curators/);
+        // SAP-GRADE: Should show access-denied, NOT rewrite to curators
+        await expect(page).toHaveURL(/access-denied/);
 
-        expect(page.url()).toContain('tab=curators');
-        expect(page.url()).not.toContain('tab=users');
+        // Should see "Səlahiyyətiniz yoxdur" or similar message
+        const accessDeniedText = page.getByText(/access|denied|səlahiyyət/i);
+        await expect(accessDeniedText.first()).toBeVisible();
     });
 
     test('no redirect loops (max 3 navigations)', async ({ page }) => {
@@ -88,23 +81,21 @@ test.describe('RBAC: Curators-Only User', () => {
         });
 
         await page.goto('/admin/users');
-
-        // Wait for stable state
         await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
 
-        // Should not exceed 3 navigations (initial + rewrite + possible one more)
+        // Wait a bit for any potential loops
+        await page.waitForTimeout(2000);
+
+        // Should not have more than 3 navigations
         expect(navigationCount).toBeLessThanOrEqual(3);
     });
 
     test('other admin pages are hidden if no permission', async ({ page }) => {
-        // Settings should not be visible (no permission)
-        const settingsMenuItem = page.locator('[data-testid="menu-settings"], a[href*="/admin/settings"]');
+        await page.goto('/admin/users?tab=curators');
+        await page.waitForLoadState('networkidle');
 
-        // Either not visible or not in DOM
-        const count = await settingsMenuItem.count();
-        if (count > 0) {
-            await expect(settingsMenuItem).not.toBeVisible();
-        }
+        // Settings should NOT be visible (no permission)
+        const settingsMenu = page.locator('[data-testid="menu-settings"]');
+        await expect(settingsMenu).toHaveCount(0);
     });
 });

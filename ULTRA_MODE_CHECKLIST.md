@@ -4,10 +4,10 @@
 
 ---
 
-## SAP ERP Authorization Model Applied
+## SAP-Grade Authorization Applied
 
-### 1. SAP Principles ✅
-- [x] Authorization object = explicit
+### 1. Authorization Model ✅
+- [x] Explicit authorization (no inference)
 - [x] No prefix inheritance
 - [x] No optimistic UI rendering
 
@@ -17,100 +17,74 @@
 - [x] Sub-sub permission unlocks ONLY its exact path
 
 ### 3. Tabs ✅
-- [x] Tabs are NOT navigation guesses
 - [x] Tabs are authorization endpoints
+- [x] Unauthorized tabs NOT in DOM
 
 ### 4. Routing ✅
-- [x] Unauthorized = terminal
-- [x] No silent redirects
+- [x] Unauthorized = terminal 403
+- [x] No silent redirects for explicit tab URL
 
 ---
 
-## STRICT RULES Applied
+## Terminal 403 Behavior Applied ✅
+
+| Scenario | Behavior |
+|----------|----------|
+| No tab in URL | Redirect to first allowed tab |
+| Unknown tab | Terminal 403 |
+| Unauthorized tab | Terminal 403 (NO rewrite) |
+| Unknown subTab | Terminal 403 |
+| Unauthorized subTab | Terminal 403 (NO rewrite) |
+
+---
+
+## Strict Rules Applied
 
 ### 1. Single Source of Truth ✅
 - [x] `tabSubTab.registry.ts` ONLY
-- [x] No other permission logic allowed anywhere
 
 ### 2. Visibility Rule ✅
-- [x] Parent menu visible ONLY IF at least ONE child tab/subTab is allowed
-- [x] Sibling tabs MUST NOT render without permission
-- [x] Unauthorized tabs do NOT EXIST in DOM
+- [x] Unauthorized tabs NOT rendered
+- [x] No sibling leakage
 
 ### 3. Permission Matching ✅
-- [x] EXACT permission match ONLY
+- [x] EXACT match ONLY
 - [x] NO startsWith
 - [x] NO includes
 - [x] NO child-implies-parent
 - [x] NO synthetic `.access`
-- [x] Normalization: write/delete/approve → read ONLY
 
-### 4. Routing ✅
-- [x] ProtectedRoute uses tabSubTab.registry.ts
-- [x] If no allowed tab → TERMINAL access-denied
-- [x] NO fallback guessing
-- [x] NO dashboard redirect
+### 4. Components ✅
+- [x] UsersPage - registry-driven
+- [x] SettingsPage - registry-driven
+- [x] BillingPage - registry-driven
 
-### 5. Components ✅
-- [x] UsersPage renders tabs ONLY from registry
-- [x] SettingsPage renders tabs ONLY from registry
-- [x] BillingPage renders tabs ONLY from registry
-- [x] No local tab computation
-- [x] No legacy helpers
-
-### 6. Sidebar ✅
-- [x] Sidebar shows ONLY page-level entries
-- [x] Tabs/SubTabs NEVER in sidebar
-- [x] Item navigates to FIRST ALLOWED TAB
-- [x] If zero → menu hidden
-
-### 7. Server Alignment ✅
-- [x] Permission slugs match registry
-- [x] `.access` synthesis REMOVED
-- [x] `.view` verbs → `.read`
-
----
-
-## DELIVERABLES ✅
-
-- [x] Logic files fixed
-- [x] No UI change
-- [x] No styling change
-- [x] Docs updated:
-  - [x] RBAC_NAVIGATION_STANDARD.md
-  - [x] TAB_SUBTAB_FROZEN_SPEC.md
-
----
-
-## FAILURE CONDITIONS - ALL PASSED ✅
-
-- [x] No unauthorized tab visible
-- [x] No redirect instead of hard deny
-- [x] No prefix inference
+### 5. Sidebar ✅
+- [x] Flat sidebar (page-level only)
+- [x] No tabs in sidebar
 
 ---
 
 ## Files Changed
 
-### DELETED
-- `rbac.registry.ts`
-- `settings.registry.ts`
-- `settings-tabs.registry.ts`
-- `permission-preview.ts`
-- `permission-preview.engine.ts`
+### Modified
+- `ProtectedRoute.tsx` - Terminal 403 for unauthorized tabs
+- `TAB_SUBTAB_FROZEN_SPEC.md` - Updated with 403 rules
+- `rbac-users-curators-only.spec.ts` - 403 tests
+- `rbac-settings-dictionaries-only.spec.ts` - 403 tests
 
-### ADDED
-- `tabSubTab.registry.ts`
-- `docs/delete-plan-rbac.md`
-- `e2e/rbac-*.spec.ts` (4 files)
-- `scripts/ci-prefix-auth-scan.*`
-- `server/scripts/seed-test-users.ts`
+---
 
-### MODIFIED
-- `usePermissions.ts` - EXACT match
-- `ProtectedRoute.tsx` - Registry-driven
-- `SettingsPage.tsx` - Registry tabs
-- `permission.service.ts` - .access removed
+## Verification
+
+```bash
+# Test: curators-only user
+# /admin/users?tab=users → should show 403
+
+# Test: dictionaries-currency user  
+# /admin/settings?tab=smtp → should show 403
+# /admin/settings?tab=dictionaries&subTab=tax → should show 403
+```
 
 ---
 
