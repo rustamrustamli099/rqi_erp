@@ -222,9 +222,11 @@ const ADMIN_PAGES: PageConfig[] = [
                 label: 'Soraqçalar (Dictionaries)',
                 requiredAnyOf: ['system.settings.system_configurations.dictionary.read'],
                 subTabs: [
-                    { key: 'currency', label: 'Valyuta', requiredAnyOf: ['system.settings.system_configurations.dictionary.currency.read'] },
-                    { key: 'tax', label: 'Vergi', requiredAnyOf: ['system.settings.system_configurations.dictionary.tax.read'] },
-                    { key: 'country', label: 'Ölkə', requiredAnyOf: ['system.settings.system_configurations.dictionary.country.read'] }
+                    { key: 'sectors', label: 'Sektorlar', requiredAnyOf: ['system.settings.system_configurations.dictionary.sectors.read'] },
+                    { key: 'units', label: 'Ölçü Vahidləri', requiredAnyOf: ['system.settings.system_configurations.dictionary.units.read'] },
+                    { key: 'currency', label: 'Valyutalar', requiredAnyOf: ['system.settings.system_configurations.dictionary.currency.read'] },
+                    { key: 'timezones', label: 'Zaman Zonaları', requiredAnyOf: ['system.settings.system_configurations.dictionary.timezones.read'] },
+                    { key: 'address', label: 'Ünvanlar', requiredAnyOf: ['system.settings.system_configurations.dictionary.address.read'] }
                 ]
             },
             {

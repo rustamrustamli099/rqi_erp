@@ -58,17 +58,32 @@ import type {
 } from "@/shared/constants/reference-data"
 import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
+import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { getAllowedSubTabs } from "@/app/security/navigationResolver"
+import { useMemo } from "react"
 
 export function DictionariesTab() {
+    // Get permissions and allowed subTabs from resolver
+    const { permissions } = usePermissions();
+
+    // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
+    const allowedSubTabs = useMemo(() => {
+        return getAllowedSubTabs('admin.settings', 'dictionaries', permissions, 'admin');
+    }, [permissions]);
+
     // Read subTab from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const initialSubTab = urlParams.get('subTab') || 'sectors';
+    const urlSubTab = urlParams.get('subTab');
+
+    // Clamp to allowed subTab
+    const initialSubTab = urlSubTab && allowedSubTabs.some(st => st.key === urlSubTab)
+        ? urlSubTab
+        : (allowedSubTabs[0]?.key || 'sectors');
     const [currentSubTab, setCurrentSubTab] = useState(initialSubTab);
 
     // Handler for subTab change - update state AND URL
     const handleSubTabChange = (value: string) => {
         setCurrentSubTab(value);
-        // Update URL to keep subTab in sync
         const currentTab = urlParams.get('tab') || 'dictionaries';
         const newUrl = `${window.location.pathname}?tab=${currentTab}&subTab=${value}`;
         window.history.replaceState(null, '', newUrl);
@@ -77,14 +92,14 @@ export function DictionariesTab() {
     return (
         <div className="space-y-4">
             <Tabs value={currentSubTab} onValueChange={handleSubTabChange} className="w-full">
-                {/* Horizontal scrollable tabs */}
+                {/* Horizontal scrollable tabs - SAP-GRADE: Only render ALLOWED subTabs */}
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                     <TabsList className="inline-flex w-max gap-1 h-10 justify-start">
-                        <TabsTrigger value="sectors" className="whitespace-nowrap">Sektorlar</TabsTrigger>
-                        <TabsTrigger value="units" className="whitespace-nowrap">Ölçü Vahidləri</TabsTrigger>
-                        <TabsTrigger value="currency" className="whitespace-nowrap">Valyutalar</TabsTrigger>
-                        <TabsTrigger value="timezones" className="whitespace-nowrap">Zaman Zonaları</TabsTrigger>
-                        <TabsTrigger value="address" className="whitespace-nowrap">Ünvanlar</TabsTrigger>
+                        {allowedSubTabs.map(st => (
+                            <TabsTrigger key={st.key} value={st.key} className="whitespace-nowrap">
+                                {st.label}
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
                 </div>
 
