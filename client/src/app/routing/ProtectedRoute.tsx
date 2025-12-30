@@ -1,139 +1,79 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * SAP-Grade Protected Route (Flicker-Free)
+ * SAP-Grade Protected Route (USES NAVIGATION RESOLVER)
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * Uses rbacResolver for ALL authorization decisions.
- * 
- * Rules:
- * 1. EXACT permission match only
- * 2. Flicker-free: redirect to allowed tab if exists
- * 3. Terminal 403 ONLY when zero allowed tabs
- * 4. NO prefix matching
+ * RULES:
+ * 1. Calls evaluateRoute() ONCE
+ * 2. ALLOW → render children
+ * 3. REDIRECT → Navigate directly (NO /access-denied)
+ * 4. DENY → terminal AccessDenied (no auto-redirect)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/context/AuthContext';
 import { usePermissions } from '@/app/auth/hooks/usePermissions';
-import {
-    resolveSafeLocation,
-    isTerminal403,
-    buildUrl,
-    normalizePermissions
-} from '@/app/security/rbacResolver';
-import { getPageByPath, buildLandingPath, getFirstAllowedTab } from '@/app/navigation/tabSubTab.registry';
+import { evaluateRoute } from '@/app/security/navigationResolver';
 import { Loader2 } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React from 'react';
 
 interface ProtectedRouteProps {
-    requiredPermissions?: string[];
-    requiredPermission?: string;
-    mode?: 'any' | 'all';
     children?: React.ReactNode;
 }
 
-export const ProtectedRoute = ({
-    requiredPermissions = [],
-    requiredPermission,
-    mode = 'all',
-    children
-}: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     const { isAuthenticated, isLoading, authState, activeTenantType } = useAuth();
-    const { canAny, canAll, permissions } = usePermissions();
+    const { permissions } = usePermissions();
     const location = useLocation();
     const [searchParams] = useSearchParams();
 
-    // Normalize permissions for exact matching
-    const perms = [...requiredPermissions];
-    if (requiredPermission) perms.push(requiredPermission);
-
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
-
-    // Memoize normalized permissions set
-    const permSet = useMemo(() => normalizePermissions(permissions), [permissions]);
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // WAITING STATES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    if (isLoading || authState === 'BOOTSTRAPPING' || authState === 'UNINITIALIZED') {
+    // 1. Loading state - show skeleton
+    if (isLoading || authState === 'BOOTSTRAPPING') {
         return (
-            <div className="h-screen w-full flex items-center justify-center bg-background">
+            <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
 
+    // 2. Not authenticated - redirect to login
     if (!isAuthenticated) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SAP-GRADE: Use RBAC Resolver for flicker-free navigation
-    // ═══════════════════════════════════════════════════════════════════════
+    // 3. Determine context
+    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
-    const basePath = location.pathname.split('?')[0];
-    const pageConfig = getPageByPath(basePath, context);
+    // 4. SINGLE DECISION POINT: evaluateRoute
+    const decision = evaluateRoute(
+        location.pathname,
+        searchParams,
+        permissions,
+        context
+    );
 
-    // If page not in registry, use legacy permission check
-    if (!pageConfig) {
-        const hasAccess = perms.length === 0
-            ? true
-            : mode === 'all' ? canAll(perms) : canAny(perms);
+    // 5. Handle decision
+    switch (decision.decision) {
+        case 'ALLOW':
+            return children ? <>{children}</> : <Outlet />;
 
-        if (!hasAccess) {
+        case 'REDIRECT':
+            // Direct redirect - NO /access-denied intermediate
+            console.log('[ProtectedRoute] REDIRECT to:', decision.normalizedUrl);
+            return <Navigate to={decision.normalizedUrl} replace />;
+
+        case 'DENY':
+            // Terminal AccessDenied - no navigation
+            console.log('[ProtectedRoute] DENY:', decision.reason);
             return <Navigate to="/access-denied" state={{
-                error: 'page_not_found',
-                attempted: location.pathname
+                error: 'no_access',
+                reason: decision.reason
             }} replace />;
-        }
-        return children ? <>{children}</> : <Outlet />;
+
+        default:
+            return children ? <>{children}</> : <Outlet />;
     }
-
-    // Page has tabs - use resolver for flicker-free navigation
-    const hasTabs = pageConfig.tabs && pageConfig.tabs.length > 0;
-
-    if (hasTabs) {
-        // Use the resolver to determine safe location
-        const result = resolveSafeLocation({
-            pathname: location.pathname,
-            search: location.search,
-            perms: permSet,
-            context
-        });
-
-        // TERMINAL 403: No allowed tabs at all
-        if (isTerminal403(result)) {
-            return <Navigate to="/access-denied" state={{
-                error: 'no_tab_access',
-                reason: result.reason,
-                page: pageConfig.pageKey
-            }} replace />;
-        }
-
-        // Check if we need to redirect (current URL differs from safe URL)
-        const safeUrl = buildUrl(result);
-        const currentUrl = `${location.pathname}${location.search}`;
-
-        if (safeUrl !== currentUrl) {
-            // FLICKER-FREE: Redirect directly to allowed tab (no /access-denied)
-            console.log('[ProtectedRoute] Redirecting to safe location:', safeUrl);
-            return <Navigate to={safeUrl} replace />;
-        }
-    } else {
-        // Page without tabs - simple permission check
-        const hasAccess = perms.length === 0
-            ? true
-            : mode === 'all' ? canAll(perms) : canAny(perms);
-
-        if (!hasAccess) {
-            return <Navigate to="/access-denied" state={{
-                error: 'permission_denied',
-                page: pageConfig.pageKey
-            }} replace />;
-        }
-    }
-
-    return children ? <>{children}</> : <Outlet />;
 };
+
+export default ProtectedRoute;

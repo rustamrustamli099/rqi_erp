@@ -1,97 +1,96 @@
 # RBAC Navigation Standard
 
-## SAP-Grade Authorization Rules
+## Single Resolver Architecture
+
+### Core Principle
+**ONE RESOLVER** - `client/src/app/security/navigationResolver.ts`
+
+This is the SINGLE source for ALL navigation authorization decisions.
 
 ---
 
-## Core Invariants
+## Exact Allowlist Rules
+
+### ✅ ALLOWED
+```typescript
+// Exact string match
+userPerms.includes('system.users.curators.read')
+```
+
+### ❌ FORBIDDEN
+```typescript
+// Prefix matching
+perm.startsWith('system.users')
+
+// Includes on permission parts
+perm.includes('curators')
+
+// Action-verb stripping
+perm.replace(/\.read$/, '')
+
+// Synthetic permissions
+'system.users.access'
+```
+
+---
+
+## Resolver API
+
+```typescript
+// Get allowed tabs (EXACT match)
+getAllowedTabs(pageKey, userPerms, context): AllowedTab[]
+
+// Get allowed subTabs (EXACT match)
+getAllowedSubTabs(pageKey, tabKey, userPerms, context): AllowedSubTab[]
+
+// Evaluate route decision
+evaluateRoute(pathname, searchParams, userPerms, context): RouteDecision
+// Returns: ALLOW | REDIRECT | DENY
+
+// Get first allowed target for sidebar links
+getFirstAllowedTarget(pageKey, userPerms, context): string | null
+```
+
+---
+
+## Consumer Integration
+
+### ProtectedRoute
+```typescript
+const decision = evaluateRoute(pathname, searchParams, perms, context);
+// ALLOW → render children
+// REDIRECT → Navigate directly (NO /access-denied)
+// DENY → terminal AccessDenied
+```
+
+### useMenu/Sidebar
+```typescript
+// Show page only if has allowed tabs
+const allowedTabs = getAllowedTabs(pageKey, perms, context);
+if (allowedTabs.length === 0) return null;
+
+// Link URL = first allowed target
+const href = getFirstAllowedTarget(pageKey, perms, context);
+```
+
+### Page Components
+```typescript
+// Render ONLY allowed tabs
+const allowedTabs = getAllowedTabs(pageKey, perms, context);
+{allowedTabs.map(tab => <TabsTrigger key={tab.key} ... />)}
+```
+
+---
+
+## SAP Rules
 
 | Rule | Description |
 |------|-------------|
-| **Visible ⇒ Actionable** | If tab is visible, user CAN access it |
-| **No Optimistic Render** | Never render unauthorized content |
-| **No Flicker** | Never show /access-denied then redirect |
-| **Exact Match Only** | NO startsWith, includes, wildcards |
-| **Single Source** | TAB_SUBTAB_REGISTRY only |
+| Visible = Actionable | If rendered, must be clickable |
+| No DOM Leaks | Unauthorized items NOT in DOM |
+| No Flicker | Never navigate to /access-denied for recoverable cases |
+| Terminal Deny | Only when zero allowed targets |
 
 ---
 
-## Permission Matching
-
-### Allowed
-```typescript
-// Exact match
-can('system.users.curators.read')
-canAny(['perm.a', 'perm.b'])
-canForTab(pageKey, tabKey, subTabKey)
-```
-
-### FORBIDDEN
-```typescript
-// These cause sibling leakage
-startsWith('system.users')
-includes('read')
-parent.implies(child)
-```
-
----
-
-## Routing Behavior
-
-### Tab Resolution
-
-| Scenario | Behavior |
-|----------|----------|
-| No tab in URL | Redirect to first allowed tab |
-| Unknown tab | Redirect to first allowed tab |
-| Unauthorized tab | Redirect to first allowed tab |
-| Unknown subTab | Redirect to first allowed subTab |
-| Unauthorized subTab | Redirect to first allowed subTab |
-| **NO allowed tabs** | Terminal /access-denied |
-
-### Key: NO /access-denied Flicker
-- /access-denied is ONLY for TERMINAL cases
-- If user has ANY allowed tab → direct redirect
-- NO intermediate /access-denied visit
-
----
-
-## Tab Rendering
-
-### Page Components MUST:
-1. Get allowed tabs from registry
-2. Render ONLY allowed tabs
-3. Filter before render (not after)
-
-```typescript
-// Correct
-const allowedTabs = getAllowedTabs(pageKey, permissions);
-return allowedTabs.map(tab => <Tab key={tab.key} />);
-
-// WRONG
-const allTabs = getAllTabs();
-return allTabs.filter(t => can(t.perm)).map(...);
-```
-
----
-
-## Sidebar Behavior
-
-- Flat sidebar (no nested menus)
-- Page visible if ANY tab is allowed
-- Click → first allowed tab URL
-- If zero tabs allowed → page hidden
-
----
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `tabSubTab.registry.ts` | Single Source of Truth |
-| `usePermissions.ts` | Exact match helpers |
-| `ProtectedRoute.tsx` | No-flicker guard |
-
----
-
-**STATUS: ENFORCED ✅**
+**STATUS: IMPLEMENTED ✅**

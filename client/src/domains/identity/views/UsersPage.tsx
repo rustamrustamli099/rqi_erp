@@ -5,38 +5,27 @@ import { UsersListTab } from "./UsersListTab";
 import { CuratorsListTab } from "./CuratorsListTab";
 import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs, normalizePermissions } from "@/app/security/rbacResolver";
-
+import { getAllowedTabs } from "@/app/security/navigationResolver";
 import { useHelp } from "@/app/context/HelpContext";
 import { useEffect, useMemo } from "react";
 
-// Tab configuration
-const USERS_TABS = [
-    { key: 'users', label: 'İstifadəçilər', icon: Users },
-    { key: 'curators', label: 'Kuratorlar', icon: ShieldAlert },
-];
+// Tab icons
+const TAB_ICONS: Record<string, React.ComponentType<any>> = {
+    users: Users,
+    curators: ShieldAlert,
+};
 
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { setPageKey } = useHelp();
     const { permissions } = usePermissions();
 
-    // SAP-GRADE: Get allowed tabs from resolver
-    const allowedTabKeys = useMemo(() => {
-        const permSet = normalizePermissions(permissions);
-        return getAllowedTabs({
-            pageKey: 'admin.users',
-            perms: permSet,
-            context: 'admin'
-        });
+    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
+    const allowedTabs = useMemo(() => {
+        return getAllowedTabs('admin.users', permissions, 'admin');
     }, [permissions]);
 
-    // Filter visible tabs
-    const visibleTabs = useMemo(() => {
-        return USERS_TABS.filter(tab => allowedTabKeys.includes(tab.key));
-    }, [allowedTabKeys]);
-
-    const activeTab = searchParams.get("tab") || (visibleTabs[0]?.key || "users");
+    const activeTab = searchParams.get("tab") || (allowedTabs[0]?.key || "users");
 
     useEffect(() => {
         setPageKey("users");
@@ -60,8 +49,8 @@ export default function UsersPage() {
                     <div className="border-b">
                         <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b-0 gap-6">
                             {/* SAP-GRADE: Only render ALLOWED tabs */}
-                            {visibleTabs.map(tab => {
-                                const Icon = tab.icon;
+                            {allowedTabs.map(tab => {
+                                const Icon = TAB_ICONS[tab.key] || Users;
                                 return (
                                     <TabsTrigger
                                         key={tab.key}
