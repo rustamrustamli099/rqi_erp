@@ -11,20 +11,21 @@ const common_1 = require("@nestjs/common");
 let MenuService = class MenuService {
     filterMenu(menuItems, permissions) {
         return menuItems
-            .filter(item => {
-            if (!item.permission)
-                return true;
-            return permissions.includes(item.permission);
-        })
             .map(item => {
+            const selfAllowed = !item.permission || permissions.includes(item.permission);
+            let visibleChildren = [];
             if (item.children && item.children.length > 0) {
-                const filteredChildren = this.filterMenu(item.children, permissions);
-                if (!item.path && filteredChildren.length === 0) {
-                    return null;
-                }
-                return { ...item, children: filteredChildren };
+                visibleChildren = this.filterMenu(item.children, permissions);
             }
-            return item;
+            const anyChildVisible = visibleChildren.length > 0;
+            const isVisible = selfAllowed || anyChildVisible;
+            if (!isVisible) {
+                return null;
+            }
+            return {
+                ...item,
+                children: visibleChildren.length > 0 ? visibleChildren : undefined
+            };
         })
             .filter(Boolean);
     }

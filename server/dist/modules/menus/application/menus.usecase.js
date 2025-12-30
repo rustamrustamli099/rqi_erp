@@ -34,17 +34,18 @@ let MenusUseCase = class MenusUseCase {
     filterMenu(items, userPermissions) {
         const filtered = [];
         for (const item of items) {
-            const hasPermission = !item.permission || userPermissions.has(item.permission);
-            if (hasPermission) {
-                if (item.children) {
-                    const filteredChildren = this.filterMenu(item.children, userPermissions);
-                    if (filteredChildren.length > 0 || !item.children.length) {
-                        filtered.push({ ...item, children: filteredChildren });
-                    }
-                }
-                else {
-                    filtered.push(item);
-                }
+            const selfAllowed = !item.permission || userPermissions.has(item.permission);
+            let visibleChildren = [];
+            if (item.children && item.children.length > 0) {
+                visibleChildren = this.filterMenu(item.children, userPermissions);
+            }
+            const anyChildVisible = visibleChildren.length > 0;
+            const isVisible = selfAllowed || anyChildVisible;
+            if (isVisible) {
+                filtered.push({
+                    ...item,
+                    children: visibleChildren.length > 0 ? visibleChildren : undefined
+                });
             }
         }
         return filtered;

@@ -6,41 +6,42 @@ import { MenuItem } from './menu.definition';
 export class MenuService {
 
     /**
-     * Recursively filters menu items based on user permissions.
+     * SAP-GRADE MENU FILTER
+     * 
+     * SAP LAW:
+     * - Parent visible = self.permission OR ANY(child.visible)
+     * - Order-independent
+     * - Parents can be permissionless
+     * 
      * @param menuItems The full menu tree or subtree
      * @param permissions The list of permissions the user possesses
      * @returns Filtered menu tree
      */
     filterMenu(menuItems: MenuItem[], permissions: string[]): MenuItem[] {
         return menuItems
-            .filter(item => {
-                // If no permission requirement, show it (or default to public)
-                if (!item.permission) return true;
-                // Check if user has the required permission
-                return permissions.includes(item.permission);
-            })
             .map(item => {
-                // If item has children, recurse
+                // Check self permission
+                const selfAllowed = !item.permission || permissions.includes(item.permission);
+
+                // Process children recursively FIRST (order-independent)
+                let visibleChildren: MenuItem[] = [];
                 if (item.children && item.children.length > 0) {
-                    const filteredChildren = this.filterMenu(item.children, permissions);
-
-                    // Logic Decision: 
-                    // 1. If parent is shown but all children are hidden, should parent be shown?
-                    // SAP Style: Usually yes, but as empty folder or it hides. 
-                    // Let's hide parent if all children are hidden to keep UI clean.
-                    // UNLESS parent has a direct path action itself.
-
-                    // If the item has a path, keep it even if children are gone.
-                    // If the item is just a folder (no path), remove it if no children.
-
-                    if (!item.path && filteredChildren.length === 0) {
-                        return null;
-                    }
-
-                    return { ...item, children: filteredChildren };
+                    visibleChildren = this.filterMenu(item.children, permissions);
                 }
-                return item;
+
+                // SAP LAW: visible = selfAllowed OR ANY(child.visible)
+                const anyChildVisible = visibleChildren.length > 0;
+                const isVisible = selfAllowed || anyChildVisible;
+
+                if (!isVisible) {
+                    return null;
+                }
+
+                return {
+                    ...item,
+                    children: visibleChildren.length > 0 ? visibleChildren : undefined
+                };
             })
-            .filter(Boolean) as MenuItem[]; // Remove nulls from map above
+            .filter(Boolean) as MenuItem[];
     }
 }
