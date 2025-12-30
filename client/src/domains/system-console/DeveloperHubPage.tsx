@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Code, Download, ExternalLink, Zap, Lock, BookOpen, Terminal } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { useSearchParams } from "react-router-dom";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { Inline403 } from "@/shared/components/security/Inline403";
 
 import {
     flexRender,
@@ -144,10 +147,31 @@ function PermissionsDataTable() {
 
 export default function DeveloperHubPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get("tab") || "api";
+    const { permissions, isLoading } = usePermissions();
     const [webhookUrl, setWebhookUrl] = useState("https://your-api.com/webhook");
 
+    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
+    const allowedTabs = useMemo(() => {
+        return getAllowedTabs('admin.developer', permissions, 'admin');
+    }, [permissions]);
+
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+
+    // URL clamp
+    const currentParam = searchParams.get('tab');
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
+        ? currentParam
+        : allowedKeys[0] || '';
+
+    // Sync URL if clamped
+    useEffect(() => {
+        if (!isLoading && activeTab && activeTab !== currentParam) {
+            setSearchParams({ tab: activeTab }, { replace: true });
+        }
+    }, [activeTab, currentParam, setSearchParams, isLoading]);
+
     const handleTabChange = (value: string) => {
+        if (!allowedKeys.includes(value)) return;
         setSearchParams({ tab: value }, { replace: true });
     };
 
@@ -155,6 +179,22 @@ export default function DeveloperHubPage() {
         toast.info("Test payload göndərilir...");
         setTimeout(() => toast.success("Webhook uğurla göndərildi! (HTTP 200 OK)"), 1500);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[50vh] w-full items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+        );
+    }
+
+    if (allowedKeys.length === 0) {
+        return (
+            <div className="p-8">
+                <Inline403 message="Bu bölməni görmək üçün icazəniz yoxdur." />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground animate-in fade-in duration-500">
@@ -168,103 +208,116 @@ export default function DeveloperHubPage() {
             <div className="flex-1 px-8 min-w-0 pb-8">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col">
                     <ScrollableTabs>
+                        {/* SAP-GRADE: Only render ALLOWED tabs */}
                         <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b-0 gap-6">
-                            <TabsTrigger value="api" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium">API Reference</TabsTrigger>
-                            <TabsTrigger value="sdks" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium">SDKs</TabsTrigger>
-                            <TabsTrigger value="webhooks" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium">Webhooks</TabsTrigger>
-                            <TabsTrigger value="permissions" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium">Permission Map</TabsTrigger>
+                            {allowedTabs.map(tab => (
+                                <TabsTrigger
+                                    key={tab.key}
+                                    value={tab.key}
+                                    data-tab={tab.key}
+                                    className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium"
+                                >
+                                    {tab.label}
+                                </TabsTrigger>
+                            ))}
                         </TabsList>
                     </ScrollableTabs>
 
                     <div className="mt-6">
+                        {/* SAP-GRADE: Only render ALLOWED TabsContent */}
                         {/* API Reference Tab */}
-                        <TabsContent value="api" className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5" /> REST API Documentation</CardTitle>
-                                        <CardDescription>Tam interaktiv Swagger UI sənədləşməsi.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm text-muted-foreground mb-4">
-                                            Bütün endpoint-lər, request/response modelləri və authentication detalları.
-                                        </p>
-                                        <Button className="w-full" variant="outline" onClick={() => window.open("/api/docs", "_blank")}>
-                                            <ExternalLink className="w-4 h-4 mr-2" /> Sənədləri Aç
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><Terminal className="w-5 h-5" /> GraphQL API</CardTitle>
-                                        <CardDescription>Playground və Schema referansı.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm text-muted-foreground mb-4">
-                                            Kompleks sorğular üçün GraphQL endpoint-i istifadə edin.
-                                        </p>
-                                        <Button className="w-full" variant="outline" onClick={() => window.open("/graphql", "_blank")}>
-                                            <ExternalLink className="w-4 h-4 mr-2" /> Playground Aç
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </TabsContent>
-
-                        {/* SDKs Tab */}
-                        <TabsContent value="sdks" className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-3">
-                                {[
-                                    { lang: "Node.js", ver: "v2.1.0", icon: "🟢" },
-                                    { lang: "Python", ver: "v1.4.2", icon: "🐍" },
-                                    { lang: "Go", ver: "v1.0.1", icon: "🐹" },
-                                    { lang: "Java", ver: "v3.0.0", icon: "☕" },
-                                    { lang: ".NET", ver: "v2.5.0", icon: "#️⃣" },
-                                    { lang: "PHP", ver: "v1.2.0", icon: "🐘" },
-                                ].map((sdk) => (
-                                    <Card key={sdk.lang}>
-                                        <CardHeader className="pb-3">
-                                            <CardTitle className="text-base flex justify-between">
-                                                <span>{sdk.icon} {sdk.lang} SDK</span>
-                                                <Badge variant="secondary" className="font-mono text-xs">{sdk.ver}</Badge>
-                                            </CardTitle>
+                        {allowedKeys.includes('api') && (
+                            <TabsContent value="api" className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5" /> REST API Documentation</CardTitle>
+                                            <CardDescription>Tam interaktiv Swagger UI sənədləşməsi.</CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
-                                                npm install @antigravity/{sdk.lang.toLowerCase().replace('.', '')}
-                                            </div>
+                                            <p className="text-sm text-muted-foreground mb-4">
+                                                Bütün endpoint-lər, request/response modelləri və authentication detalları.
+                                            </p>
+                                            <Button className="w-full" variant="outline" onClick={() => window.open("/api/docs", "_blank")}>
+                                                <ExternalLink className="w-4 h-4 mr-2" /> Sənədləri Aç
+                                            </Button>
                                         </CardContent>
-                                        <CardFooter>
-                                            <Button size="sm" className="w-full" variant="ghost"><Download className="w-4 h-4 mr-2" /> Yüklə</Button>
-                                        </CardFooter>
                                     </Card>
-                                ))}
-                            </div>
-                        </TabsContent>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2"><Terminal className="w-5 h-5" /> GraphQL API</CardTitle>
+                                            <CardDescription>Playground və Schema referansı.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm text-muted-foreground mb-4">
+                                                Kompleks sorğular üçün GraphQL endpoint-i istifadə edin.
+                                            </p>
+                                            <Button className="w-full" variant="outline" onClick={() => window.open("/graphql", "_blank")}>
+                                                <ExternalLink className="w-4 h-4 mr-2" /> Playground Aç
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </TabsContent>
+                        )}
+
+                        {/* SDKs Tab */}
+                        {allowedKeys.includes('sdks') && (
+                            <TabsContent value="sdks" className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    {[
+                                        { lang: "Node.js", ver: "v2.1.0", icon: "🟢" },
+                                        { lang: "Python", ver: "v1.4.2", icon: "🐍" },
+                                        { lang: "Go", ver: "v1.0.1", icon: "🐹" },
+                                        { lang: "Java", ver: "v3.0.0", icon: "☕" },
+                                        { lang: ".NET", ver: "v2.5.0", icon: "#️⃣" },
+                                        { lang: "PHP", ver: "v1.2.0", icon: "🐘" },
+                                    ].map((sdk) => (
+                                        <Card key={sdk.lang}>
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-base flex justify-between">
+                                                    <span>{sdk.icon} {sdk.lang} SDK</span>
+                                                    <Badge variant="secondary" className="font-mono text-xs">{sdk.ver}</Badge>
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
+                                                    npm install @antigravity/{sdk.lang.toLowerCase().replace('.', '')}
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter>
+                                                <Button size="sm" className="w-full" variant="ghost"><Download className="w-4 h-4 mr-2" /> Yüklə</Button>
+                                            </CardFooter>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </TabsContent>
+                        )}
 
                         {/* Webhooks Tab */}
-                        <TabsContent value="webhooks" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Webhook Tester</CardTitle>
-                                    <CardDescription>Sistem hadisələrini simulasiya edərək webhook endpoint-inizi test edin.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid gap-2">
-                                        <label className="text-sm font-medium">Target URL</label>
-                                        <Input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <label className="text-sm font-medium">Event Type</label>
-                                        <select className="w-full p-2 rounded-md border text-sm bg-background">
-                                            <option>user.created</option>
-                                            <option>order.completed</option>
-                                            <option>invoice.paid</option>
-                                        </select>
-                                    </div>
-                                    <div className="bg-muted p-4 rounded-md">
-                                        <pre className="text-xs font-mono">
-                                            {`{
+                        {allowedKeys.includes('webhooks') && (
+                            <TabsContent value="webhooks" className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Webhook Tester</CardTitle>
+                                        <CardDescription>Sistem hadisələrini simulasiya edərək webhook endpoint-inizi test edin.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-medium">Target URL</label>
+                                            <Input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-medium">Event Type</label>
+                                            <select className="w-full p-2 rounded-md border text-sm bg-background">
+                                                <option>user.created</option>
+                                                <option>order.completed</option>
+                                                <option>invoice.paid</option>
+                                            </select>
+                                        </div>
+                                        <div className="bg-muted p-4 rounded-md">
+                                            <pre className="text-xs font-mono">
+                                                {`{
   "event": "user.created",
   "timestamp": "${new Date().toISOString()}",
   "data": {
@@ -273,31 +326,34 @@ export default function DeveloperHubPage() {
     "role": "admin"
   }
 }`}
-                                        </pre>
-                                    </div>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button onClick={handleTestWebhook}><Zap className="w-4 h-4 mr-2" /> Test Payload Göndər</Button>
-                                </CardFooter>
-                            </Card>
-                        </TabsContent>
+                                            </pre>
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button onClick={handleTestWebhook}><Zap className="w-4 h-4 mr-2" /> Test Payload Göndər</Button>
+                                    </CardFooter>
+                                </Card>
+                            </TabsContent>
+                        )}
 
                         {/* Permission Map Tab */}
-                        <TabsContent value="permissions" className="space-y-4">
-                            <Card className="border-none shadow-none">
-                                <CardHeader className="px-0">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <CardTitle>Endpoint Permissions</CardTitle>
-                                            <CardDescription>Hər bir API endpoint üçün tələb olunan icazələr referansı.</CardDescription>
+                        {allowedKeys.includes('permissions') && (
+                            <TabsContent value="permissions" className="space-y-4">
+                                <Card className="border-none shadow-none">
+                                    <CardHeader className="px-0">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <CardTitle>Endpoint Permissions</CardTitle>
+                                                <CardDescription>Hər bir API endpoint üçün tələb olunan icazələr referansı.</CardDescription>
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="px-0">
-                                    <PermissionsDataTable />
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
+                                    </CardHeader>
+                                    <CardContent className="px-0">
+                                        <PermissionsDataTable />
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        )}
                     </div>
                 </Tabs>
             </div>

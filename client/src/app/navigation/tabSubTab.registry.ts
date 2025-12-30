@@ -217,16 +217,24 @@ const ADMIN_PAGES: PageConfig[] = [
                     'system.settings.system_configurations.dictionary.read',
                     'system.settings.system_configurations.dictionary.sectors.read',
                     'system.settings.system_configurations.dictionary.units.read',
-                    'system.settings.system_configurations.dictionary.currency.read',
-                    'system.settings.system_configurations.dictionary.timezones.read',
-                    'system.settings.system_configurations.dictionary.address.read'
+                    'system.settings.system_configurations.dictionary.currencies.read',
+                    'system.settings.system_configurations.dictionary.time_zones.read',
+                    'system.settings.system_configurations.dictionary.addresses.read_country',
+                    'system.settings.system_configurations.dictionary.addresses.read_city',
+                    'system.settings.system_configurations.dictionary.addresses.read_district'
                 ],
                 subTabs: [
                     { key: 'sectors', label: 'Sektorlar', requiredAnyOf: ['system.settings.system_configurations.dictionary.sectors.read'] },
                     { key: 'units', label: 'Ölçü Vahidləri', requiredAnyOf: ['system.settings.system_configurations.dictionary.units.read'] },
-                    { key: 'currency', label: 'Valyutalar', requiredAnyOf: ['system.settings.system_configurations.dictionary.currency.read'] },
-                    { key: 'timezones', label: 'Zaman Zonaları', requiredAnyOf: ['system.settings.system_configurations.dictionary.timezones.read'] },
-                    { key: 'address', label: 'Ünvanlar', requiredAnyOf: ['system.settings.system_configurations.dictionary.address.read'] }
+                    { key: 'currencies', label: 'Valyutalar', requiredAnyOf: ['system.settings.system_configurations.dictionary.currencies.read'] },
+                    { key: 'time_zones', label: 'Zaman Zonaları', requiredAnyOf: ['system.settings.system_configurations.dictionary.time_zones.read'] },
+                    {
+                        key: 'addresses', label: 'Ünvanlar', requiredAnyOf: [
+                            'system.settings.system_configurations.dictionary.addresses.read_country',
+                            'system.settings.system_configurations.dictionary.addresses.read_city',
+                            'system.settings.system_configurations.dictionary.addresses.read_district'
+                        ]
+                    }
                 ]
             },
             {
@@ -252,7 +260,13 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'monitoring',
                 label: 'Monitoring',
-                requiredAnyOf: ['system.system_console.monitoring.dashboard.read'],
+                // SAP-GRADE: Parent tab visible if user has ANY sub-subtab permission
+                requiredAnyOf: [
+                    'system.system_console.monitoring.dashboard.read',
+                    'system.system_console.monitoring.alerts.read',
+                    'system.system_console.monitoring.anomalies.read',
+                    'system.system_console.monitoring.logs.read'
+                ],
                 subTabs: [
                     { key: 'dashboard', label: 'Dashboard', requiredAnyOf: ['system.system_console.monitoring.dashboard.read'] },
                     { key: 'alerts', label: 'Alert Rules', requiredAnyOf: ['system.system_console.monitoring.alerts.read'] },
@@ -418,13 +432,16 @@ export function buildLandingPath(
 
 /**
  * Get page config by path
+ * SAP-GRADE: EXACT basePath match only - NO startsWith prefix matching
  */
 export function getPageByPath(
     path: string,
     context: 'admin' | 'tenant' = 'admin'
 ): PageConfig | undefined {
     const pages = context === 'admin' ? ADMIN_PAGES : TENANT_PAGES;
-    return pages.find(p => path.startsWith(p.basePath));
+    // Normalize: strip query params and trailing slashes
+    const normalizedPath = path.split('?')[0].replace(/\/+$/, '');
+    return pages.find(p => p.basePath === normalizedPath);
 }
 
 /**

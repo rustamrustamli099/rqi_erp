@@ -125,18 +125,18 @@ export function DictionariesTab() {
                         <UnitsManager />
                     </TabsContent>
                 )}
-                {allowedKeys.includes('currency') && (
-                    <TabsContent value="currency" className="space-y-4 mt-4">
+                {allowedKeys.includes('currencies') && (
+                    <TabsContent value="currencies" className="space-y-4 mt-4">
                         <CurrenciesManager />
                     </TabsContent>
                 )}
-                {allowedKeys.includes('timezones') && (
-                    <TabsContent value="timezones" className="space-y-4 mt-4">
+                {allowedKeys.includes('time_zones') && (
+                    <TabsContent value="time_zones" className="space-y-4 mt-4">
                         <TimezoneSettingsTab />
                     </TabsContent>
                 )}
-                {allowedKeys.includes('address') && (
-                    <TabsContent value="address" className="space-y-4 mt-4">
+                {allowedKeys.includes('addresses') && (
+                    <TabsContent value="addresses" className="space-y-4 mt-4">
                         <div className="space-y-2 mb-4">
                             <h3 className="text-lg font-medium">Ünvanlar</h3>
                             <p className="text-sm text-muted-foreground">Ölkə, Şəhər və Rayon məlumatlarının idarə olunması.</p>

@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { ShieldAlert } from "lucide-react";
 import AdminDashboard from "@/domains/dashboard/views/AdminDashboard";
 import UsersPage from "@/domains/identity/views/UsersPage";
 import ProfilePage from "@/domains/identity/views/ProfilePage";
@@ -15,157 +14,117 @@ import FilesManagerPage from "@/domains/file-manager/views/FilesManagerPage";
 // New Domain Routes
 import { BillingRoutes } from "@/domains/billing/routes";
 import { BranchesRoutes } from "@/domains/branches/routes";
-import { MonitoringRoutes } from "@/domains/system-console/monitoring/routes";
 import { ProtectedRoute } from "@/app/routing/ProtectedRoute";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SAP-Grade Admin Routes
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * ALL authorization is handled by ProtectedRoute + evaluateRoute().
+ * NO legacy requiredPermission/requiredPermissions props.
+ * 
+ * If a route is not in TAB_SUBTAB_REGISTRY, evaluateRoute returns DENY.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 
 export default function AdminRoutes() {
     return (
         <Routes>
             <Route path="/" element={<Navigate to="dashboard" replace />} />
 
+            {/* Dashboard */}
             <Route path="dashboard" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.PLATFORM.DASHBOARD.VIEW}>
+                <ProtectedRoute>
                     <AdminDashboard />
                 </ProtectedRoute>
             } />
 
-            {/* Core Domains */}
+            {/* Users */}
             <Route path="users" element={
-                <ProtectedRoute
-                    requiredPermissions={[
-                        PermissionSlugs.PLATFORM.USERS.VIEW,
-                        PermissionSlugs.PLATFORM.USERS.CONNECT_TO_EMPLOYEE
-                    ]}
-                    mode="any"
-                >
+                <ProtectedRoute>
                     <UsersPage />
                 </ProtectedRoute>
             } />
 
+            {/* Profile - always accessible if authenticated */}
             <Route path="profile" element={
                 <ProtectedRoute>
                     <ProfilePage />
                 </ProtectedRoute>
             } />
 
-            {/* Modular Domains */}
+            {/* Branches */}
             <Route path="branches/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.BRANCHES.VIEW}>
+                <ProtectedRoute>
                     <BranchesRoutes />
                 </ProtectedRoute>
             } />
 
+            {/* Files */}
             <Route path="files" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.FILES.VIEW}>
+                <ProtectedRoute>
                     <FilesManagerPage />
                 </ProtectedRoute>
             } />
 
-            {/* Added Missing Modules */}
+            {/* Tenants */}
             <Route path="tenants" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.TENANTS.VIEW}>
+                <ProtectedRoute>
                     <TenantList />
                 </ProtectedRoute>
             } />
 
+            {/* Approvals */}
             <Route path="approvals" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.APPROVALS.VIEW}>
+                <ProtectedRoute>
                     <ApprovalsPage />
                 </ProtectedRoute>
             } />
 
-            {/* Knowledge Base */}
+            {/* Guide */}
             <Route path="guide" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.GUIDE.VIEW}>
+                <ProtectedRoute>
                     <PlatformOverviewPage />
                 </ProtectedRoute>
             } />
 
             {/* System Console */}
             <Route path="console" element={
-                <ProtectedRoute
-                    requiredPermissions={[
-                        PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.MONITORING.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.AUDIT.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.SCHEDULER.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.RETENTION.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.FEATURES.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.POLICY.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.FEEDBACK.READ,
-                        PermissionSlugs.SYSTEM.CONSOLE.TOOLS.READ
-                    ]}
-                    mode="any"
-                >
+                <ProtectedRoute>
                     <ConsolePage />
-                </ProtectedRoute>
-            } />
-
-            {/* Monitoring */}
-            <Route path="monitoring/*" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.CONSOLE.DASHBOARD.READ}>
-                    <MonitoringRoutes />
                 </ProtectedRoute>
             } />
 
             {/* Developer Hub */}
             <Route path="developer" element={
-                <ProtectedRoute
-                    requiredPermissions={[
-                        PermissionSlugs.SYSTEM.DEVELOPER.API.READ,
-                        PermissionSlugs.SYSTEM.DEVELOPER.SDK.READ,
-                        PermissionSlugs.SYSTEM.DEVELOPER.WEBHOOKS.READ,
-                        PermissionSlugs.SYSTEM.DEVELOPER.PERM_MAP.READ
-                    ]}
-                    mode="any"
-                >
+                <ProtectedRoute>
                     <DeveloperHubPage />
                 </ProtectedRoute>
             } />
 
             {/* Billing */}
             <Route path="billing/*" element={
-                <ProtectedRoute
-                    requiredPermissions={[
-                        PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.READ,
-                        PermissionSlugs.SYSTEM.BILLING.PACKAGES.READ,
-                        PermissionSlugs.SYSTEM.BILLING.PLANS.READ,
-                        PermissionSlugs.SYSTEM.BILLING.INVOICES.READ,
-                        PermissionSlugs.SYSTEM.BILLING.LICENSES.READ
-                    ]}
-                    mode="any"
-                >
+                <ProtectedRoute>
                     <BillingRoutes />
                 </ProtectedRoute>
             } />
 
             {/* Finance */}
             <Route path="finance" element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.SYSTEM.BILLING.INVOICES.READ}>
+                <ProtectedRoute>
                     <FinancePage />
                 </ProtectedRoute>
             } />
 
             {/* Settings */}
             <Route path="settings" element={
-                <ProtectedRoute
-                    requiredPermissions={[
-                        PermissionSlugs.SYSTEM.SETTINGS.GENERAL.READ,
-                        PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.READ,
-                        PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ,
-                        PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ,
-                        PermissionSlugs.SYSTEM.ROLES.READ,
-                        PermissionSlugs.SYSTEM.SETTINGS.CONFIG.READ
-                    ]}
-                    mode="any"
-                >
+                <ProtectedRoute>
                     <SettingsPage />
                 </ProtectedRoute>
             } />
 
-
-
+            {/* Catch-all: redirect to dashboard (evaluateRoute will handle) */}
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
     );
