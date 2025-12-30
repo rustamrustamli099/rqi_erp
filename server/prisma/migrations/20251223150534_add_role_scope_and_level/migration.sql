@@ -1,8 +1,0 @@
--- CreateEnum
-CREATE TYPE "RoleScope" AS ENUM ('SYSTEM', 'TENANT');
-
--- AlterTable
-ALTER TABLE "roles" ADD COLUMN     "isEnabled" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN     "isLocked" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "level" INTEGER NOT NULL DEFAULT 10,
-ADD COLUMN     "scope" "RoleScope" NOT NULL DEFAULT 'TENANT';

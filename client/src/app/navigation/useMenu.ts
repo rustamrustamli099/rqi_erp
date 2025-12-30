@@ -6,15 +6,36 @@ import { PLATFORM_MENU, TENANT_MENU, type AdminMenuItem } from '@/app/navigation
 import { TAB_SUBTAB_REGISTRY } from '@/app/navigation/tabSubTab.registry';
 import { getAllowedTabs, getFirstAllowedTarget } from '@/app/security/navigationResolver';
 import { usePendingApprovals } from '@/domains/approvals/hooks/useApprovals';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+
+/**
+ * Fetch menu from backend (SAP-filtered)
+ */
+const fetchBackendMenu = async (token: string | null): Promise<AdminMenuItem[] | null> => {
+    if (!token) return null;
+    try {
+        const response = await axios.get('/api/v1/me/menu', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        // Handle wrapped response
+        const data = response.data?.data || response.data;
+        return Array.isArray(data) ? data : null;
+    } catch {
+        return null;
+    }
+};
 
 /**
  * Enterprise Menu Hook - SAP Grade
- * Uses navigationResolver for visibility and links.
- * EXACT permission match only.
+ * 
+ * PRIORITY:
+ * 1. Backend /me/menu (SAP-filtered, includes parent visibility from children)
+ * 2. Fallback to static menu with resolver filtering
  */
 
 export const useMenu = () => {
-    const { activeTenantType, isLoading, authState } = useAuth();
+    const { activeTenantType, isLoading, authState, token } = useAuth();
     const { permissions } = usePermissions();
 
     const { data: approvalData } = usePendingApprovals();
@@ -25,10 +46,28 @@ export const useMenu = () => {
     const rawMenu = activeTenantType === 'SYSTEM' ? PLATFORM_MENU : TENANT_MENU;
     const registry = context === 'admin' ? TAB_SUBTAB_REGISTRY.admin : TAB_SUBTAB_REGISTRY.tenant;
 
+    // Fetch backend menu
+    const { data: backendMenu } = useQuery({
+        queryKey: ['menu', context, token],
+        queryFn: () => fetchBackendMenu(token),
+        enabled: isStable && !!token,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 1
+    });
+
     const filteredMenu = useMemo(() => {
         if (!isStable) return [];
 
-        // Filter menu items using resolver
+        // SAP-GRADE: Use backend menu if available (already filtered with SAP rule)
+        if (backendMenu && backendMenu.length > 0) {
+            // Backend returns already-filtered tree
+            return backendMenu.map(item => ({
+                ...item,
+                pageKey: item.pageKey || item.id
+            }));
+        }
+
+        // FALLBACK: Client-side filtering with resolver
         const filtered = rawMenu.filter(item => {
             if (!item.pageKey) return true;
 
@@ -74,7 +113,7 @@ export const useMenu = () => {
         }
 
         return withResolvedPaths;
-    }, [rawMenu, permissions, activeTenantType, pendingCount, isStable, context, registry]);
+    }, [rawMenu, permissions, activeTenantType, pendingCount, isStable, context, registry, backendMenu]);
 
     const getFirstAllowedRoute = () => {
         if (filteredMenu.length === 0) {
@@ -90,3 +129,4 @@ export const useMenu = () => {
         getFirstAllowedRoute
     };
 };
+
