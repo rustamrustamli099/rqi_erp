@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useMemo, useEffect } from "react";
+import React, { lazy, Suspense, useMemo } from "react";
 import { useHelp } from "@/app/context/HelpContext";
 import { PageHeader } from "@/shared/components/ui/page-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,22 +48,22 @@ export default function SystemCorePage() {
 
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
 
-    // URL clamp
+    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
+    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
     const currentParam = searchParams.get("tab");
     const currentTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : allowedKeys[0] || "";
 
-    // Sync URL if clamped
-    useEffect(() => {
-        if (currentTab && currentTab !== currentParam) {
-            setSearchParams({ tab: currentTab }, { replace: true });
-        }
-    }, [currentTab, currentParam, setSearchParams]);
-
+    // SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
-        setSearchParams({ tab: value });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('tab', value);
+            newParams.delete('subTab');
+            return newParams;
+        });
     };
 
     if (allowedKeys.length === 0) {

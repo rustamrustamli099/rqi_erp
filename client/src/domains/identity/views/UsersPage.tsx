@@ -27,26 +27,26 @@ export default function UsersPage() {
 
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
 
-    // URL clamp: if tab not allowed, redirect to first allowed
+    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
+    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
     const currentParam = searchParams.get("tab");
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : allowedKeys[0] || "";
 
-    // Sync URL if clamped
-    useEffect(() => {
-        if (activeTab && activeTab !== currentParam) {
-            setSearchParams({ tab: activeTab }, { replace: true });
-        }
-    }, [activeTab, currentParam, setSearchParams]);
-
     useEffect(() => {
         setPageKey("users");
     }, [setPageKey]);
 
+    // SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (val: string) => {
         if (!allowedKeys.includes(val)) return;
-        setSearchParams({ tab: val });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('tab', val);
+            newParams.delete('subTab');
+            return newParams;
+        });
     };
 
     if (allowedKeys.length === 0) {

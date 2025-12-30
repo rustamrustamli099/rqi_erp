@@ -71,25 +71,21 @@ export function DictionariesTab() {
 
     const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
 
-    // URL clamp
+    // SAP-GRADE: Read subTab from URL (already canonicalized by ProtectedRoute)
+    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
     const currentParam = searchParams.get('subTab');
     const currentSubTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : allowedKeys[0] || '';
 
-    // Sync URL if clamped
-    useEffect(() => {
-        if (currentSubTab && currentSubTab !== currentParam) {
-            const currentTab = searchParams.get('tab') || 'dictionaries';
-            setSearchParams({ tab: currentTab, subTab: currentSubTab }, { replace: true });
-        }
-    }, [currentSubTab, currentParam, searchParams, setSearchParams]);
-
-    // Handler for subTab change
+    // Handler for subTab change - SAP-GRADE: MERGE params, don't replace
     const handleSubTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
-        const currentTab = searchParams.get('tab') || 'dictionaries';
-        setSearchParams({ tab: currentTab, subTab: value });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('subTab', value);
+            return newParams;
+        });
     };
 
     if (allowedKeys.length === 0) {

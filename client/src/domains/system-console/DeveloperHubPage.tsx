@@ -157,22 +157,22 @@ export default function DeveloperHubPage() {
 
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
 
-    // URL clamp
+    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
+    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
     const currentParam = searchParams.get('tab');
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : allowedKeys[0] || '';
 
-    // Sync URL if clamped
-    useEffect(() => {
-        if (!isLoading && activeTab && activeTab !== currentParam) {
-            setSearchParams({ tab: activeTab }, { replace: true });
-        }
-    }, [activeTab, currentParam, setSearchParams, isLoading]);
-
+    // SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
-        setSearchParams({ tab: value }, { replace: true });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('tab', value);
+            newParams.delete('subTab');
+            return newParams;
+        }, { replace: true });
     };
 
     const handleTestWebhook = () => {

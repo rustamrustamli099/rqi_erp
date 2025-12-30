@@ -83,9 +83,17 @@ export function useListQuery(config: ListQueryConfig = {}) {
     const setFilter = (key: string, value: string | null) => updateParams({ filters: { [key]: value }, page: 1 });
     const handleSearch = (val: string) => setSearchTerm(val);
 
-    // 4. Reset
+    // 4. Reset - SAP-GRADE: PRESERVE tab/subTab, only clear list query params
     const reset = () => {
-        setSearchParams(new URLSearchParams());
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams();
+            // SAP-GRADE: Preserve navigation params (tab, subTab)
+            const tab = prev.get('tab');
+            const subTab = prev.get('subTab');
+            if (tab) newParams.set('tab', tab);
+            if (subTab) newParams.set('subTab', subTab);
+            return newParams;
+        });
         setSearchTerm("");
     };
 

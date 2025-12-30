@@ -79,23 +79,22 @@ export default function SettingsPage() {
         })).filter(group => group.items.length > 0);
     }, [allowedKeys]);
 
-    // URL clamp
+    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
+    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
     const currentParam = searchParams.get('tab');
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : allowedKeys[0] || '';
 
-    // Sync URL if clamped
-    useEffect(() => {
-        if (activeTab && activeTab !== currentParam) {
-            setSearchParams({ tab: activeTab }, { replace: true });
-        }
-    }, [activeTab, currentParam, setSearchParams]);
-
-    // Handler for tab change
+    // Handler for tab change - SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (tabId: string) => {
         if (!allowedKeys.includes(tabId)) return;
-        setSearchParams({ tab: tabId });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('tab', tabId);
+            newParams.delete('subTab'); // Clear subTab when changing tab
+            return newParams;
+        });
     };
 
     if (isLoading) {
