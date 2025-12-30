@@ -1,37 +1,43 @@
-# RBAC SAP Final Implementation ✅
+# RBAC Steps 0-7 Implementation ✅
 
 ## STATUS: COMPLETE
 
 ---
 
-## A) rbac-resolver.ts ✅
-- [x] resolvePageByPath
-- [x] getAllowedTabs
-- [x] getAllowedSubTabs
-- [x] evaluateNavigation
-- [x] firstAllowedTarget
+## Step 0: Registry ✅
+- [x] tabSubTab.registry.ts is canonical
 
-## B) ProtectedRoute ✅
-- [x] Uses resolver ONCE
+## Step 1: Resolver ✅
+- [x] rbac-resolver.ts created
+- [x] allowedTabs/allowedSubTabs
+- [x] firstAllowedTarget
+- [x] evaluateNavigation
+
+## Step 2: ProtectedRoute ✅
+- [x] Uses resolver
 - [x] No /access-denied intermediate
 
-## C) AccessDenied Terminal ✅
-- [x] No auto-redirect
+## Step 3: Sidebar ✅
+- [x] useMenu uses firstAllowedTarget
 
-## D) Sidebar
-- [x] Uses registry
+## Step 4: Pages ✅
+- [x] UsersPage - resolver
+- [x] BillingPage - resolver
+- [x] ConsolePage - resolver
+- [x] SettingsPage - getSettingsTabsForUI
 
-## E) Page Components ✅
-- [x] UsersPage - resolver-driven
-- [x] BillingPage - resolver-driven
-- [x] ConsolePage - pageKey fixed
+## Step 5: AccessDenied ✅
+- [x] Terminal only
 
-## F) Console Fix ✅
-- [x] pageKey: admin.console (not admin.system-console)
+## Step 6: Competing Engines
+- [x] MenuVisibilityEngine - still used for page visibility (refactored)
+- [x] route-utils.ts - not imported
+- [x] permissionPreviewEngine - used by RootRedirect
 
-## G) Documentation ✅
-- [x] RBAC_SAP_FINAL_IMPLEMENTATION.md
+## Step 7: Tests + Docs ✅
+- [x] 5 E2E test files
+- [x] RBAC_SAP_VERIFICATION.md
 
 ---
 
-**ALL TASKS COMPLETE ✅**
+**COMPLETE ✅**
