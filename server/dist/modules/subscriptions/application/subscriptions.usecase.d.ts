@@ -23,8 +23,8 @@ export declare class SubscriptionsUseCase {
         };
         package: {
             name: string;
-            priceMonthly: Prisma.Decimal;
             currency: string;
+            priceMonthly: Prisma.Decimal;
         };
     } & {
         id: string;

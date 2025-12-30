@@ -186,8 +186,57 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             children: [{
                 id: 'billing_config',
                 label: 'Bilinq Ayarları',
-                path: '/admin/settings?tab=billing_config',
-                permission: 'system.settings.system_configurations.billing_configurations.price_rules.read'
+                // SAP-GRADE: Container is PERMISSIONLESS. Visibility from ANY child.
+                icon: 'DollarSign',
+                children: [{
+                    id: 'pricing',
+                    label: 'Qiymət Qaydaları',
+                    path: '/admin/settings?tab=billing_config&subTab=pricing',
+                    permission: 'system.settings.system_configurations.billing_configurations.pricing.read'
+                },
+                {
+                    id: 'limits',
+                    label: 'Limitlər',
+                    path: '/admin/settings?tab=billing_config&subTab=limits',
+                    permission: 'system.settings.system_configurations.billing_configurations.limits.read'
+                },
+                {
+                    id: 'overuse',
+                    label: 'Limit Aşıldıqda',
+                    path: '/admin/settings?tab=billing_config&subTab=overuse',
+                    permission: 'system.settings.system_configurations.billing_configurations.overuse.read'
+                },
+                {
+                    id: 'grace',
+                    label: 'Güzəşt Müddəti',
+                    path: '/admin/settings?tab=billing_config&subTab=grace',
+                    permission: 'system.settings.system_configurations.billing_configurations.grace.read'
+                },
+                {
+                    id: 'currency',
+                    label: 'Valyuta və Vergi',
+                    path: '/admin/settings?tab=billing_config&subTab=currency',
+                    permission: 'system.settings.system_configurations.billing_configurations.currency_tax.read'
+                },
+                {
+                    id: 'invoice',
+                    label: 'Faktura Qaydaları',
+                    path: '/admin/settings?tab=billing_config&subTab=invoice',
+                    permission: 'system.settings.system_configurations.billing_configurations.invoice.read'
+                },
+                {
+                    id: 'events',
+                    label: 'Hadisələr',
+                    path: '/admin/settings?tab=billing_config&subTab=events',
+                    permission: 'system.settings.system_configurations.billing_configurations.events.read'
+                },
+                {
+                    id: 'security',
+                    label: 'Giriş və Təhlükəsizlik',
+                    path: '/admin/settings?tab=billing_config&subTab=security',
+                    permission: 'system.settings.system_configurations.billing_configurations.security.read'
+                }
+                ]
             }, // Consolidated permission
             {
                 id: 'dictionaries',
