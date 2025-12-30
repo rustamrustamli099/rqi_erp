@@ -201,12 +201,26 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'billing_config',
                 label: 'Billing Konfiqurasiyası',
-                requiredAnyOf: ['system.settings.system_configurations.billing_configurations.read']
+                // SAP-GRADE: Parent tab visible if user has ANY child permission (EXACT match)
+                requiredAnyOf: [
+                    'system.settings.system_configurations.billing_configurations.read',
+                    'system.settings.system_configurations.billing_configurations.currency_tax.read',
+                    'system.settings.system_configurations.billing_configurations.payment_methods.read',
+                    'system.settings.system_configurations.billing_configurations.invoice_settings.read'
+                ]
             },
             {
                 key: 'dictionaries',
                 label: 'Soraqçalar (Dictionaries)',
-                requiredAnyOf: ['system.settings.system_configurations.dictionary.read'],
+                // SAP-GRADE: Parent tab visible if user has ANY child permission (EXACT match)
+                requiredAnyOf: [
+                    'system.settings.system_configurations.dictionary.read',
+                    'system.settings.system_configurations.dictionary.sectors.read',
+                    'system.settings.system_configurations.dictionary.units.read',
+                    'system.settings.system_configurations.dictionary.currency.read',
+                    'system.settings.system_configurations.dictionary.timezones.read',
+                    'system.settings.system_configurations.dictionary.address.read'
+                ],
                 subTabs: [
                     { key: 'sectors', label: 'Sektorlar', requiredAnyOf: ['system.settings.system_configurations.dictionary.sectors.read'] },
                     { key: 'units', label: 'Ölçü Vahidləri', requiredAnyOf: ['system.settings.system_configurations.dictionary.units.read'] },
