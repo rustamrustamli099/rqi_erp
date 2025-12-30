@@ -201,18 +201,8 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'billing_config',
                 label: 'Billing Konfiqurasiyası',
-                // SAP-GRADE: Parent tab visible if user has ANY child permission (EXACT match)
-                requiredAnyOf: [
-                    'system.settings.system_configurations.billing_configurations.read',
-                    'system.settings.system_configurations.billing_configurations.pricing.read',
-                    'system.settings.system_configurations.billing_configurations.limits.read',
-                    'system.settings.system_configurations.billing_configurations.overuse.read',
-                    'system.settings.system_configurations.billing_configurations.grace.read',
-                    'system.settings.system_configurations.billing_configurations.currency_tax.read',
-                    'system.settings.system_configurations.billing_configurations.invoice.read',
-                    'system.settings.system_configurations.billing_configurations.events.read',
-                    'system.settings.system_configurations.billing_configurations.security.read'
-                ],
+                // SAP-GRADE: Parent is PERMISSIONLESS. Visibility from ANY child.
+                requiredAnyOf: [],
                 subTabs: [
                     { key: 'pricing', label: 'Qiymət Qaydaları', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.pricing.read'] },
                     { key: 'limits', label: 'Limitlər və Kvotalar', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.limits.read'] },
@@ -227,17 +217,8 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'dictionaries',
                 label: 'Soraqçalar (Dictionaries)',
-                // SAP-GRADE: Parent tab visible if user has ANY child permission (EXACT match)
-                requiredAnyOf: [
-                    'system.settings.system_configurations.dictionary.read',
-                    'system.settings.system_configurations.dictionary.sectors.read',
-                    'system.settings.system_configurations.dictionary.units.read',
-                    'system.settings.system_configurations.dictionary.currencies.read',
-                    'system.settings.system_configurations.dictionary.time_zones.read',
-                    'system.settings.system_configurations.dictionary.addresses.read_country',
-                    'system.settings.system_configurations.dictionary.addresses.read_city',
-                    'system.settings.system_configurations.dictionary.addresses.read_district'
-                ],
+                // SAP-GRADE: Parent is PERMISSIONLESS. Visibility from ANY child.
+                requiredAnyOf: [],
                 subTabs: [
                     { key: 'sectors', label: 'Sektorlar', requiredAnyOf: ['system.settings.system_configurations.dictionary.sectors.read'] },
                     { key: 'units', label: 'Ölçü Vahidləri', requiredAnyOf: ['system.settings.system_configurations.dictionary.units.read'] },
@@ -275,13 +256,8 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'monitoring',
                 label: 'Monitoring',
-                // SAP-GRADE: Parent tab visible if user has ANY sub-subtab permission
-                requiredAnyOf: [
-                    'system.system_console.monitoring.dashboard.read',
-                    'system.system_console.monitoring.alerts.read',
-                    'system.system_console.monitoring.anomalies.read',
-                    'system.system_console.monitoring.logs.read'
-                ],
+                // SAP-GRADE: Parent is PERMISSIONLESS. Visibility from ANY child.
+                requiredAnyOf: [],
                 subTabs: [
                     { key: 'dashboard', label: 'Dashboard', requiredAnyOf: ['system.system_console.monitoring.dashboard.read'] },
                     { key: 'alerts', label: 'Alert Rules', requiredAnyOf: ['system.system_console.monitoring.alerts.read'] },

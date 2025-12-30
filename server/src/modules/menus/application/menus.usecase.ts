@@ -28,27 +28,36 @@ export class MenusUseCase {
         }));
     }
 
+    /**
+     * SAP-GRADE MENU FILTER
+     * 
+     * SAP LAW:
+     * - Parent visible = self.permission OR ANY(child.visible)
+     * - Order-independent
+     * - Parents can be permissionless
+     */
     private filterMenu(items: MenuItem[], userPermissions: Set<string>): any[] {
         const filtered: any[] = [];
 
         for (const item of items) {
-            // Check Permission
-            const hasPermission = !item.permission || userPermissions.has(item.permission);
+            // Check self permission
+            const selfAllowed = !item.permission || userPermissions.has(item.permission);
 
-            if (hasPermission) {
-                // If has children, filter them
-                if (item.children) {
-                    const filteredChildren = this.filterMenu(item.children, userPermissions);
-                    // Only include if item has no children requirement OR has visible children
-                    if (filteredChildren.length > 0 || !item.children.length) { // Keep parent if children exist or empty array allowed? Usually collapse empty parents.
-                        // Let's keep parent if it has a permission itself, even if children are empty? 
-                        // Or if it's a folder, hide if empty?
-                        // Simple logic: include filtered children. 
-                        filtered.push({ ...item, children: filteredChildren });
-                    }
-                } else {
-                    filtered.push(item);
-                }
+            // Process children recursively FIRST (order-independent)
+            let visibleChildren: any[] = [];
+            if (item.children && item.children.length > 0) {
+                visibleChildren = this.filterMenu(item.children, userPermissions);
+            }
+
+            // SAP LAW: visible = selfAllowed OR ANY(child.visible)
+            const anyChildVisible = visibleChildren.length > 0;
+            const isVisible = selfAllowed || anyChildVisible;
+
+            if (isVisible) {
+                filtered.push({
+                    ...item,
+                    children: visibleChildren.length > 0 ? visibleChildren : undefined
+                });
             }
         }
 

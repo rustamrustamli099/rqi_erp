@@ -81,15 +81,9 @@ describe('SAP Parent Visibility Law', () => {
             expect(billingTab).toBeUndefined();
         });
 
-        it('should show parent if parent.requiredAnyOf matches (even if no children)', () => {
-            // User has parent-level permission
-            const userPerms = ['system.settings.system_configurations.billing_configurations.read'];
-
-            const tabs = getAllowedTabs('admin.settings', userPerms, 'admin');
-            const billingTab = tabs.find(t => t.key === 'billing_config');
-
-            expect(billingTab).toBeDefined();
-        });
+        // SAP-GRADE: Parent containers are PERMISSIONLESS.
+        // Visibility comes ONLY from child permissions.
+        // No test needed for parent.requiredAnyOf - it's always empty.
     });
 
     describe('getAllowedSubTabs - Order-Independent', () => {
