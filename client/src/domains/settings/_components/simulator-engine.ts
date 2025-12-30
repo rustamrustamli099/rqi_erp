@@ -21,23 +21,21 @@ const isVisible = (item: MenuItem, permissions: string[]): boolean => {
 }
 
 // Recursive function to filter menu
+// SAP LAW: visible = self.allowed OR ANY(child.visible)
+// Order-independent
 const filterMenu = (items: MenuItem[], permissions: string[]): MenuItem[] => {
     return items
         .map(item => {
             // Check direct permission
             const hasDirectPermission = isVisible(item, permissions)
 
-            // Check children
+            // Check children recursively (ORDER-INDEPENDENT)
             const visibleChildren = item.children ? filterMenu(item.children, permissions) : []
-
-            const isContainer = item.children && item.children.length > 0;
             const hasVisibleChildren = visibleChildren.length > 0;
 
-            // VISIBILITY RULE (Matched with useMenu.ts):
-            // - Container: Visible IF it has visible children. (Direct perm ignored for container parent)
-            // - Leaf: Visible IF it has direct permission.
-
-            const isItemVisible = isContainer ? hasVisibleChildren : hasDirectPermission;
+            // SAP LAW: visible = self.allowed OR ANY(child.visible)
+            // This is order-independent - all children are checked before decision
+            const isItemVisible = hasDirectPermission || hasVisibleChildren;
 
             if (!isItemVisible) return null
 

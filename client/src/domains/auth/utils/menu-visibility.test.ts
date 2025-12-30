@@ -1,29 +1,29 @@
 import { MenuVisibilityEngine } from './menu-visibility';
-import { MenuItem } from '@/app/navigation/menu.definitions';
+import type { AdminMenuItem } from '@/app/navigation/menu.definitions';
 
-const MOCK_MENU: MenuItem[] = [
+const MOCK_MENU: AdminMenuItem[] = [
     {
         id: 'dashboard',
         label: 'Dashboard',
-        path: '/dashboard',
+        route: '/dashboard',
         requiredPermissions: ['dashboard.view']
     },
     {
         id: 'settings',
         label: 'Settings',
-        path: '/settings',
+        route: '/settings',
         requiredPermissions: ['settings.view'], // Direct permission
         children: [
             {
                 id: 'settings.general',
                 label: 'General',
-                path: '/settings/general',
+                route: '/settings/general',
                 requiredPermissions: ['settings.general.view']
             },
             {
                 id: 'settings.security',
                 label: 'Security',
-                path: '/settings/security',
+                route: '/settings/security',
                 requiredPermissions: ['settings.security.view']
             }
         ]
@@ -33,7 +33,7 @@ const MOCK_MENU: MenuItem[] = [
 describe('MenuVisibilityEngine', () => {
 
     test('Should show public items (no permissions required)', () => {
-        const menu: MenuItem[] = [{ id: 'public', label: 'Public', path: '/' }];
+        const menu: AdminMenuItem[] = [{ id: 'public', label: 'Public', route: '/' }];
         const result = MenuVisibilityEngine.computeVisibleTree(menu, () => false);
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe('public');
@@ -66,7 +66,7 @@ describe('MenuVisibilityEngine', () => {
 
         // Path Rewrite Check
         // Since user has no direct settings.view, path might be rewritten to first child
-        expect(result[0].path).toBe('/settings/security');
+        expect(result[0].route).toBe('/settings/security');
     });
 
     test('Direct Permission Preserves Path', () => {
@@ -76,6 +76,7 @@ describe('MenuVisibilityEngine', () => {
         const result = MenuVisibilityEngine.computeVisibleTree(MOCK_MENU, hasAny);
 
         expect(result[0].id).toBe('settings');
-        expect(result[0].path).toBe('/settings'); // Keeps original path
+        expect(result[0].route).toBe('/settings'); // Keeps original path
     });
 });
+

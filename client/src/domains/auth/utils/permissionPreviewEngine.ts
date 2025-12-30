@@ -168,29 +168,45 @@ export class PermissionPreviewEngine {
 
     /**
      * Preview a single tab
+     * SAP-GRADE: Tab allowed if self.allowed OR ANY(subTab.allowed)
      */
     private static previewTab(
         tab: TabConfig,
         normalizedPerms: string[],
         basePath: string
     ): TabPreviewResult {
-        const hasAccess = this.checkAccess(tab.requiredAnyOf, normalizedPerms);
+        const selfAllowed = this.checkAccess(tab.requiredAnyOf, normalizedPerms);
         const matchedPerm = this.findMatchingPerm(tab.requiredAnyOf, normalizedPerms);
 
         let subTabResults: SubTabPreviewResult[] | undefined;
+        let anySubTabAllowed = false;
+        let firstAllowedSubTab: string | undefined;
 
         if (tab.subTabs && tab.subTabs.length > 0) {
             subTabResults = tab.subTabs.map(subTab =>
                 this.previewSubTab(subTab, normalizedPerms)
             );
+
+            // SAP LAW: Check if ANY subTab is allowed (order-independent)
+            for (const st of subTabResults) {
+                if (st.allowed) {
+                    anySubTabAllowed = true;
+                    if (!firstAllowedSubTab) {
+                        firstAllowedSubTab = st.subTabKey;
+                    }
+                }
+            }
         }
+
+        // SAP LAW: Tab allowed = selfAllowed OR ANY(subTab.allowed)
+        const hasAccess = selfAllowed || anySubTabAllowed;
 
         return {
             tabKey: tab.key,
             label: tab.label,
             allowed: hasAccess,
             reason: hasAccess
-                ? `allowed_by:${matchedPerm}`
+                ? (selfAllowed ? `allowed_by:${matchedPerm}` : `child_allowed:${firstAllowedSubTab}`)
                 : `missing:${tab.requiredAnyOf.join(',')}`,
             landingPath: hasAccess ? `${basePath}?tab=${tab.key}` : undefined,
             subTabs: subTabResults
