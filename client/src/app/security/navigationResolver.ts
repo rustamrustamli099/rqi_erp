@@ -75,7 +75,10 @@ export function getAllowedTabs(
     if (!page?.tabs) return [];
 
     return page.tabs
-        .filter(tab => hasAnyPermission(userPerms, tab.requiredAnyOf))
+        .filter(tab => {
+            const allowedSubTabs = tab.subTabs?.filter(st => hasAnyPermission(userPerms, st.requiredAnyOf)) ?? [];
+            return hasAnyPermission(userPerms, tab.requiredAnyOf) || allowedSubTabs.length > 0;
+        })
         .map(tab => ({ key: tab.key, label: tab.label }));
 }
 

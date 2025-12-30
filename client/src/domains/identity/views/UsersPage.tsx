@@ -3,11 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, ShieldAlert } from "lucide-react";
 import { UsersListTab } from "./UsersListTab";
 import { CuratorsListTab } from "./CuratorsListTab";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { evaluateRoute, getAllowedTabs } from "@/app/security/navigationResolver";
 import { useHelp } from "@/app/context/HelpContext";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Inline403 } from "@/shared/components/security/Inline403";
 
 // Tab icons
 const TAB_ICONS: Record<string, React.ComponentType<any>> = {
@@ -17,13 +18,36 @@ const TAB_ICONS: Record<string, React.ComponentType<any>> = {
 
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const { setPageKey } = useHelp();
     const { permissions } = usePermissions();
+    const [denyReason, setDenyReason] = useState<string | null>(null);
 
     // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
     const allowedTabs = useMemo(() => {
         return getAllowedTabs('admin.users', permissions, 'admin');
     }, [permissions]);
+
+    const allowedTabKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+
+    useEffect(() => {
+        const decision = evaluateRoute(
+            location.pathname,
+            new URLSearchParams(location.search),
+            permissions,
+            'admin'
+        );
+
+        if (decision.decision === 'REDIRECT') {
+            navigate(decision.normalizedUrl, { replace: true });
+            setDenyReason(null);
+        } else if (decision.decision === 'DENY') {
+            setDenyReason(decision.reason);
+        } else {
+            setDenyReason(null);
+        }
+    }, [location.pathname, location.search, permissions, navigate]);
 
     const activeTab = searchParams.get("tab") || (allowedTabs[0]?.key || "users");
 
@@ -32,8 +56,13 @@ export default function UsersPage() {
     }, [setPageKey]);
 
     const handleTabChange = (val: string) => {
+        if (!allowedTabKeys.includes(val)) return;
         setSearchParams({ tab: val });
     };
+
+    if (denyReason) {
+        return <Inline403 message={denyReason} />;
+    }
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground animate-in fade-in duration-500">
@@ -67,12 +96,16 @@ export default function UsersPage() {
                         </TabsList>
                     </div>
 
-                    <TabsContent value="users" className="flex-1 overflow-auto pt-4 min-h-0">
-                        <UsersListTab />
-                    </TabsContent>
-                    <TabsContent value="curators" className="flex-1 overflow-auto pt-4 min-h-0">
-                        <CuratorsListTab />
-                    </TabsContent>
+                    {allowedTabKeys.includes('users') && (
+                        <TabsContent value="users" className="flex-1 overflow-auto pt-4 min-h-0">
+                            <UsersListTab />
+                        </TabsContent>
+                    )}
+                    {allowedTabKeys.includes('curators') && (
+                        <TabsContent value="curators" className="flex-1 overflow-auto pt-4 min-h-0">
+                            <CuratorsListTab />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
         </div>

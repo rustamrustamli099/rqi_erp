@@ -1,13 +1,14 @@
-import React, { lazy, Suspense, useMemo } from "react";
+import React, { lazy, Suspense, useMemo, useState, useEffect } from "react";
 import { useHelp } from "@/app/context/HelpContext";
 import { PageHeader } from "@/shared/components/ui/page-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ShieldAlert, Server as ServerIcon, Activity, Database, Flag, MessageSquare, Wrench, LayoutDashboard } from "lucide-react";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { SystemHealthWidget, CacheManager, MaintenanceControls } from "./components/SystemDashboardWidgets";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { evaluateRoute, getAllowedTabs } from "@/app/security/navigationResolver";
+import { Inline403 } from "@/shared/components/security/Inline403";
 
 // Lazy load components
 const MonitoringPage = lazy(() => import("@/domains/system-console/monitoring/views/MonitoringPage"));
@@ -34,8 +35,11 @@ const TAB_ICONS: Record<string, React.ComponentType<any>> = {
 
 export default function SystemCorePage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const { setPageKey } = useHelp();
     const { permissions } = usePermissions();
+    const [denyReason, setDenyReason] = useState<string | null>(null);
 
     React.useEffect(() => {
         setPageKey("sys-admin");
@@ -46,11 +50,36 @@ export default function SystemCorePage() {
         return getAllowedTabs('admin.console', permissions, 'admin');
     }, [permissions]);
 
+    const allowedTabKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+
+    useEffect(() => {
+        const decision = evaluateRoute(
+            location.pathname,
+            new URLSearchParams(location.search),
+            permissions,
+            'admin'
+        );
+
+        if (decision.decision === 'REDIRECT') {
+            navigate(decision.normalizedUrl, { replace: true });
+            setDenyReason(null);
+        } else if (decision.decision === 'DENY') {
+            setDenyReason(decision.reason);
+        } else {
+            setDenyReason(null);
+        }
+    }, [location.pathname, location.search, permissions, navigate]);
+
     const currentTab = searchParams.get("tab") || (allowedTabs[0]?.key || "dashboard");
 
     const handleTabChange = (value: string) => {
+        if (!allowedTabKeys.includes(value)) return;
         setSearchParams({ tab: value });
     };
+
+    if (denyReason) {
+        return <Inline403 message={denyReason} />;
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -84,7 +113,7 @@ export default function SystemCorePage() {
                     {/* Content Area */}
                     <div className="pt-4">
                         <Suspense fallback={<div className="p-8 text-center">Yüklənir...</div>}>
-                            {currentTab === 'dashboard' && (
+                            {currentTab === 'dashboard' && allowedTabKeys.includes('dashboard') && (
                                 <div className="space-y-6">
                                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
                                         <SystemHealthWidget />
@@ -95,14 +124,14 @@ export default function SystemCorePage() {
                                     </div>
                                 </div>
                             )}
-                            {currentTab === 'monitoring' && <MonitoringPage />}
-                            {currentTab === 'audit' && <AuditLogsPage />}
-                            {currentTab === 'jobs' && <JobRegistryPage />}
-                            {currentTab === 'retention' && <RetentionPolicyPage />}
-                            {currentTab === 'features' && <FeatureFlagsPage />}
-                            {currentTab === 'policy' && <PolicyRulesPage />}
-                            {currentTab === 'feedback' && <FeedbackPage />}
-                            {currentTab === 'tools' && <SystemToolsTab />}
+                            {currentTab === 'monitoring' && allowedTabKeys.includes('monitoring') && <MonitoringPage />}
+                            {currentTab === 'audit' && allowedTabKeys.includes('audit') && <AuditLogsPage />}
+                            {currentTab === 'jobs' && allowedTabKeys.includes('jobs') && <JobRegistryPage />}
+                            {currentTab === 'retention' && allowedTabKeys.includes('retention') && <RetentionPolicyPage />}
+                            {currentTab === 'features' && allowedTabKeys.includes('features') && <FeatureFlagsPage />}
+                            {currentTab === 'policy' && allowedTabKeys.includes('policy') && <PolicyRulesPage />}
+                            {currentTab === 'feedback' && allowedTabKeys.includes('feedback') && <FeedbackPage />}
+                            {currentTab === 'tools' && allowedTabKeys.includes('tools') && <SystemToolsTab />}
                         </Suspense>
                     </div>
                 </Tabs>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     CreditCard, Package, ShoppingBag, BarChart3,
     Check, Plus, Settings, AlertTriangle, MoreHorizontal,
@@ -308,10 +308,10 @@ const getBadgeIcon = (type: ProductType) => {
 
 import { PageHeader } from "@/shared/components/ui/page-header";
 
-import { useSearchParams } from "react-router-dom";
-import { useMemo } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs, normalizePermissions } from "@/app/security/rbacResolver";
+import { evaluateRoute, getAllowedTabs } from "@/app/security/navigationResolver";
+import { Inline403 } from "@/shared/components/security/Inline403";
 
 // Tab configuration for filtering
 const BILLING_TABS = [
@@ -324,28 +324,48 @@ const BILLING_TABS = [
 
 export default function BillingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const { permissions } = usePermissions();
+    const [denyReason, setDenyReason] = useState<string | null>(null);
 
     // SAP-GRADE: Get allowed tabs from resolver
     const allowedTabKeys = useMemo(() => {
-        const permSet = normalizePermissions(permissions);
-        return getAllowedTabs({
-            pageKey: 'admin.billing',
-            perms: permSet,
-            context: 'admin'
-        });
+        return getAllowedTabs('admin.billing', permissions, 'admin').map(t => t.key);
     }, [permissions]);
 
-    // Filter visible tabs
-    const visibleTabs = useMemo(() => {
+    const allowedTabs = useMemo(() => {
         return BILLING_TABS.filter(tab => allowedTabKeys.includes(tab.key));
     }, [allowedTabKeys]);
 
-    const activeTab = searchParams.get("tab") || (visibleTabs[0]?.key || "marketplace");
+    useEffect(() => {
+        const decision = evaluateRoute(
+            location.pathname,
+            new URLSearchParams(location.search),
+            permissions,
+            'admin'
+        );
+
+        if (decision.decision === 'REDIRECT') {
+            navigate(decision.normalizedUrl, { replace: true });
+            setDenyReason(null);
+        } else if (decision.decision === 'DENY') {
+            setDenyReason(decision.reason);
+        } else {
+            setDenyReason(null);
+        }
+    }, [location.pathname, location.search, permissions, navigate]);
+
+    const activeTab = searchParams.get("tab") || (allowedTabs[0]?.key || "marketplace");
 
     const handleTabChange = (val: string) => {
+        if (!allowedTabKeys.includes(val)) return;
         setSearchParams({ tab: val });
     };
+
+    if (denyReason || allowedTabs.length === 0) {
+        return <Inline403 message={denyReason || "No accessible billing tabs"} />;
+    }
 
 
     return (
@@ -361,48 +381,55 @@ export default function BillingPage() {
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
                     <div className="border-b flex-shrink-0">
                         <TabsList className="w-full justify-start border-b-0 rounded-none bg-transparent p-0 h-auto gap-6">
-                            <TabsTrigger value="marketplace" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3">
-                                <ShoppingBag className="mr-2 h-4 w-4" /> Marketplace
-                            </TabsTrigger>
-                            <TabsTrigger value="packages" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3">
-                                <Package className="mr-2 h-4 w-4" /> Kompakt Paketlər
-                            </TabsTrigger>
-                            <TabsTrigger value="subscriptions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3">
-                                <CreditCard className="mr-2 h-4 w-4" /> Abunəlik Planları
-                            </TabsTrigger>
-                            <TabsTrigger value="invoices" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3">
-                                <BarChart3 className="mr-2 h-4 w-4" /> Fakturalar
-                            </TabsTrigger>
-                            <TabsTrigger value="licenses" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3">
-                                <Shield className="mr-2 h-4 w-4" /> Lisenziyalar
-                            </TabsTrigger>
+                            {allowedTabs.map(tab => {
+                                const Icon = tab.icon;
+                                return (
+                                    <TabsTrigger
+                                        key={tab.key}
+                                        value={tab.key}
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3"
+                                    >
+                                        <Icon className="mr-2 h-4 w-4" /> {tab.label}
+                                    </TabsTrigger>
+                                );
+                            })}
                         </TabsList>
                     </div>
 
                     {/* --- MARKETPLACE TAB --- */}
-                    <TabsContent value="marketplace" className="flex-1 overflow-y-auto pt-6 min-h-0">
-                        <MarketplaceView />
-                    </TabsContent>
+                    {allowedTabKeys.includes('marketplace') && (
+                        <TabsContent value="marketplace" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                            <MarketplaceView />
+                        </TabsContent>
+                    )}
 
                     {/* --- PACKAGES TAB --- */}
-                    <TabsContent value="packages" className="flex-1 overflow-y-auto pt-6 min-h-0">
-                        <PackagesView />
-                    </TabsContent>
+                    {allowedTabKeys.includes('packages') && (
+                        <TabsContent value="packages" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                            <PackagesView />
+                        </TabsContent>
+                    )}
 
                     {/* --- SUBSCRIPTIONS TAB --- */}
-                    <TabsContent value="subscriptions" className="flex-1 overflow-y-auto pt-6 min-h-0">
-                        <SubscriptionsView />
-                    </TabsContent>
+                    {allowedTabKeys.includes('subscriptions') && (
+                        <TabsContent value="subscriptions" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                            <SubscriptionsView />
+                        </TabsContent>
+                    )}
 
                     {/* --- INVOICES TAB --- */}
-                    <TabsContent value="invoices" className="flex-1 overflow-y-auto pt-6 min-h-0">
-                        <InvoicesView />
-                    </TabsContent>
+                    {allowedTabKeys.includes('invoices') && (
+                        <TabsContent value="invoices" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                            <InvoicesView />
+                        </TabsContent>
+                    )}
 
                     {/* --- LICENSES TAB --- */}
-                    <TabsContent value="licenses" className="flex-1 overflow-y-auto pt-6 min-h-0">
-                        <LicensesView />
-                    </TabsContent>
+                    {allowedTabKeys.includes('licenses') && (
+                        <TabsContent value="licenses" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                            <LicensesView />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
         </div>
