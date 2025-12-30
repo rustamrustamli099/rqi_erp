@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { LEGACY_TO_CANONICAL_MAP, isCanonical } from '@/app/security/permission-slugs';
-import { normalizePermissions } from '@/app/auth/utils/permissions.normalize';
 
 interface User {
     id: string;
