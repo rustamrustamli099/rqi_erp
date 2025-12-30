@@ -47,27 +47,7 @@ export type SafeLocationResult = ResolvedLocation | Terminal403;
  * NO synthetic permissions, NO parent inference.
  */
 export function normalizePermissions(rawPerms: string[]): Set<string> {
-    const normalized = new Set<string>();
-
-    for (const perm of rawPerms) {
-        normalized.add(perm);
-
-        // Verb aliasing: .view → .read (for legacy compatibility)
-        if (perm.endsWith('.view')) {
-            normalized.add(perm.replace('.view', '.read'));
-        }
-
-        // Action normalization: write actions imply read
-        const writeActions = ['.create', '.update', '.delete', '.approve', '.export'];
-        for (const action of writeActions) {
-            if (perm.endsWith(action)) {
-                const basePerm = perm.slice(0, -action.length) + '.read';
-                normalized.add(basePerm);
-            }
-        }
-    }
-
-    return normalized;
+    return new Set(rawPerms);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

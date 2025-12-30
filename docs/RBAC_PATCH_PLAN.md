@@ -1,0 +1,6 @@
+1) Consolidate navigation: remove client/src/app/security/rbacResolver.ts references, route everything through client/src/app/security/navigationResolver.ts, and update useMenu/RootRedirect/ProtectedRoute tests to assert single decision point.
+2) Strip synthetic inference: ensure client/src/app/navigation/tabSubTab.registry.ts and client/src/app/auth/hooks/usePermissions.ts use exact permission sets (no verb stripping or read implication); refresh registry tests accordingly.
+3) Page-level enforcement: migrate UsersPage, BillingPage, ConsolePage, and SettingsPage to render tabs/subTabs only from navigationResolver outputs and perform immediate normalize-on-load redirects via evaluateRoute.
+4) Menu/preview engines: refactor client/src/domains/auth/utils/menu-visibility.ts and client/src/domains/auth/utils/permissionPreviewEngine.ts to delegate visibility to resolver helpers and drop regex base comparisons.
+5) Deep permission UX: enhance DictionariesTab to read tab/subTab from router search params, call evaluateRoute for normalization, and hide sub-items not in getAllowedSubTabs.
+6) Regression safety: add Playwright/manual scenarios for deep-only permissions (currency-only, curators-only, monitoring-dashboard-only) to verify no /access-denied flicker and correct tab/subTab visibility.

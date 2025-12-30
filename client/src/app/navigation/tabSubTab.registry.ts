@@ -45,29 +45,14 @@ export interface TabSubTabRegistry {
 }
 
 // =============================================================================
-// PERMISSION NORMALIZATION
+// PERMISSION UTILITIES (EXACT MATCH ONLY)
 // =============================================================================
 
 /**
- * SAP-GRADE: If user has write/manage action, READ is implied
- * This ensures entry to list pages when user has create/update/delete
+ * Deduplicate permission list WITHOUT any inference or verb stripping.
  */
 export function normalizePermissions(permissions: string[]): string[] {
-    const normalized = new Set(permissions);
-
-    permissions.forEach(perm => {
-        // Extract base and action
-        const parts = perm.split('.');
-        const action = parts[parts.length - 1];
-        const base = parts.slice(0, -1).join('.');
-
-        // If write action exists, add read
-        if (['create', 'update', 'delete', 'manage', 'approve', 'export'].includes(action)) {
-            normalized.add(`${base}.read`);
-        }
-    });
-
-    return Array.from(normalized);
+    return Array.from(new Set(permissions));
 }
 
 // =============================================================================
@@ -353,14 +338,13 @@ export function canAccessPage(
     userPermissions: string[],
     context: 'admin' | 'tenant' = 'admin'
 ): boolean {
-    const normalized = normalizePermissions(userPermissions);
     const pages = context === 'admin' ? ADMIN_PAGES : TENANT_PAGES;
     const page = pages.find(p => p.pageKey === pageKey);
 
     if (!page) return false;
 
     return page.tabs.some(tab =>
-        hasExactPermission(tab.requiredAnyOf, normalized)
+        hasExactPermission(tab.requiredAnyOf, userPermissions)
     );
 }
 
@@ -373,18 +357,17 @@ export function getFirstAllowedTab(
     userPermissions: string[],
     context: 'admin' | 'tenant' = 'admin'
 ): { tab: string; subTab?: string } | null {
-    const normalized = normalizePermissions(userPermissions);
     const pages = context === 'admin' ? ADMIN_PAGES : TENANT_PAGES;
     const page = pages.find(p => p.pageKey === pageKey);
 
     if (!page) return null;
 
     for (const tab of page.tabs) {
-        if (hasExactPermission(tab.requiredAnyOf, normalized)) {
+        if (hasExactPermission(tab.requiredAnyOf, userPermissions)) {
             // Check subTabs if exist
             if (tab.subTabs && tab.subTabs.length > 0) {
                 for (const subTab of tab.subTabs) {
-                    if (hasExactPermission(subTab.requiredAnyOf, normalized)) {
+                    if (hasExactPermission(subTab.requiredAnyOf, userPermissions)) {
                         return { tab: tab.key, subTab: subTab.key };
                     }
                 }
@@ -402,13 +385,7 @@ export function getFirstAllowedTab(
  * EXACT permission check helper - NO startsWith
  */
 function hasExactPermission(requiredAnyOf: string[], normalizedPerms: string[]): boolean {
-    return requiredAnyOf.some(required => {
-        const reqBase = required.replace(/\.(read|create|update|delete|approve|export)$/, '');
-        return normalizedPerms.some(perm => {
-            const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
-            return permBase === reqBase;
-        });
-    });
+    return requiredAnyOf.some(required => normalizedPerms.includes(required));
 }
 
 /**

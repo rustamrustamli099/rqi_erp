@@ -10,18 +10,19 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
 import {
     getFirstAllowedTab,
     canAccessPage,
     TAB_SUBTAB_REGISTRY,
-    normalizePermissions
 } from '@/app/navigation/tabSubTab.registry';
 
 export const usePermissions = () => {
     const { permissions, user, isImpersonating, isLoading, activeTenantType } = useAuth();
     const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+
+    const permSet = useMemo(() => new Set(permissions), [permissions]);
 
     /**
      * SAP-GRADE: Check if user has EXACT permission
@@ -30,15 +31,8 @@ export const usePermissions = () => {
     const can = useCallback((requiredPermission: string): boolean => {
         if (!requiredPermission) return false;
 
-        const normalized = normalizePermissions(permissions);
-        const reqBase = requiredPermission.replace(/\.(read|create|update|delete|view|access|manage|approve|export)$/, '');
-
-        return normalized.some(userPerm => {
-            const userBase = userPerm.replace(/\.(read|create|update|delete|view|access|manage|approve|export)$/, '');
-            // EXACT base match ONLY
-            return userBase === reqBase;
-        });
-    }, [permissions]);
+        return permSet.has(requiredPermission);
+    }, [permSet]);
 
     /**
      * SAP-GRADE: Check if user can access ANY of the permissions
@@ -69,8 +63,6 @@ export const usePermissions = () => {
         const page = pages.find(p => p.pageKey === pageKey);
         if (!page) return false;
 
-        const normalized = normalizePermissions(permissions);
-
         if (!tabKey) {
             // Check if user can access ANY tab of the page
             return canAccessPage(pageKey, permissions, context);
@@ -79,32 +71,16 @@ export const usePermissions = () => {
         const tab = page.tabs.find(t => t.key === tabKey);
         if (!tab) return false;
 
-        // Check tab permission
-        const hasTabAccess = tab.requiredAnyOf.some(req => {
-            const reqBase = req.replace(/\.(read|create|update|delete|approve|export)$/, '');
-            return normalized.some(perm => {
-                const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
-                return permBase === reqBase;
-            });
-        });
+        const hasTabAccess = tab.requiredAnyOf.some(req => permSet.has(req));
 
-        if (!hasTabAccess) return false;
+        const allowedSubTabs = tab.subTabs?.filter(st => st.requiredAnyOf.some(req => permSet.has(req))) ?? [];
 
-        if (subTabKey && tab.subTabs) {
-            const subTab = tab.subTabs.find(st => st.key === subTabKey);
-            if (!subTab) return false;
-
-            return subTab.requiredAnyOf.some(req => {
-                const reqBase = req.replace(/\.(read|create|update|delete|approve|export)$/, '');
-                return normalized.some(perm => {
-                    const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
-                    return permBase === reqBase;
-                });
-            });
+        if (subTabKey) {
+            return allowedSubTabs.some(st => st.key === subTabKey);
         }
 
-        return true;
-    }, [permissions, context]);
+        return hasTabAccess || allowedSubTabs.length > 0;
+    }, [permissions, context, permSet, can]);
 
     /**
      * SAP-GRADE: Get first allowed tab for a page

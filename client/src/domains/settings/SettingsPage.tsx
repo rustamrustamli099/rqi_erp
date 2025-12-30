@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
-import { PermissionSlugs } from "@/app/security/permission-slugs"
 import { Inline403 } from "@/shared/components/security/Inline403"
 // ...
 import { WorkflowConfigTab } from "@/shared/components/ui/WorkflowConfigTab"
@@ -28,6 +27,8 @@ import {
     ListOrdered
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
+import { evaluateRoute, getAllowedSubTabs, getAllowedTabs } from "@/app/security/navigationResolver"
 
 // Existing Components
 import RolesPage from "./RolesPage"
@@ -61,21 +62,63 @@ const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI();
 
 export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
-    const { can, isLoading } = usePermissions()
+    const { permissions, isLoading } = usePermissions()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const location = useLocation()
+    const navigate = useNavigate()
+    const [denyReason, setDenyReason] = useState<string | null>(null)
 
-    // Read initial tab from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlTab = urlParams.get('tab') || 'general';
-    const [activeTab, setActiveTab] = useState(urlTab);
+    const allowedTabs = useMemo(() => getAllowedTabs('admin.settings', permissions, 'admin'), [permissions])
+    const allowedTabKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs])
+    const allowedDictionaryKeys = useMemo(() => (
+        getAllowedSubTabs('admin.settings', 'dictionaries', permissions, 'admin').map(st => st.key)
+    ), [permissions])
 
-    // Handler for tab change - update local state AND URL
+    const activeTab = searchParams.get('tab') || allowedTabKeys[0] || ''
+
+    // Normalize tab query using resolver (no flicker)
+    useEffect(() => {
+        const decision = evaluateRoute(
+            location.pathname,
+            new URLSearchParams(location.search),
+            permissions,
+            'admin'
+        )
+
+        if (decision.decision === 'REDIRECT') {
+            navigate(decision.normalizedUrl, { replace: true })
+            setDenyReason(null)
+        } else if (decision.decision === 'DENY') {
+            setDenyReason(decision.reason)
+        } else {
+            setDenyReason(null)
+        }
+    }, [location.pathname, location.search, permissions, navigate])
+
+    // Handler for tab change - update URL only for allowed tabs
     const handleTabChange = (tabId: string) => {
-        console.log('[SettingsPage] Tab changing to:', tabId);
-        setActiveTab(tabId);
-        // Also update URL for bookmarkability
-        const newUrl = `${window.location.pathname}?tab=${tabId}`;
-        window.history.replaceState(null, '', newUrl);
-    };
+        if (!allowedTabKeys.includes(tabId)) return
+        setSearchParams({ tab: tabId })
+    }
+
+    const visibleSidebarGroups = useMemo(() => (
+        ALL_SIDEBAR_ITEMS.map(group => ({
+            ...group,
+            items: group.items
+                .filter(item => allowedTabKeys.includes(item.id))
+                .map(item => item.id === 'dictionaries'
+                    ? { ...item, subItems: item.subItems?.filter(sub => allowedDictionaryKeys.includes(sub.id)) }
+                    : item
+                )
+                .filter(item => item.id !== 'dictionaries' || (item.subItems ? item.subItems.length > 0 : true))
+        })).filter(group => group.items.length > 0)
+    ), [allowedTabKeys.join(','), allowedDictionaryKeys.join(',')])
+
+    useEffect(() => {
+        if (!activeTab && allowedTabKeys.length > 0) {
+            setSearchParams({ tab: allowedTabKeys[0] })
+        }
+    }, [activeTab, allowedTabKeys, setSearchParams])
 
     if (isLoading) {
         return (
@@ -88,58 +131,13 @@ export default function SettingsPage() {
         )
     }
 
-    // Filter Menu based on Permissions
-    const visibleSidebarGroups = ALL_SIDEBAR_ITEMS.map(group => ({
-        ...group,
-        items: group.items.filter(item => {
-            if (!item.permission) return true;
-            const hasPermission = can(item.permission);
-            // Debug dictionaries specifically
-            if (item.id === 'dictionaries') {
-                console.log('[SettingsPage] DICTIONARIES check:', {
-                    id: item.id,
-                    permission: item.permission,
-                    hasPermission
-                });
-            }
-            return hasPermission;
-        })
-    })).filter(group => group.items.length > 0);
-
-    const allVisibleItems = visibleSidebarGroups.flatMap(g => g.items);
-    const visibleIds = allVisibleItems.map(i => i.id);
-
-    // After permissions load, validate URL tab and sync if needed
-    useEffect(() => {
-        const currentUrlTab = new URLSearchParams(window.location.search).get('tab');
-
-        // If URL has a tab, check if it's valid (user has permission)
-        if (currentUrlTab && visibleIds.includes(currentUrlTab)) {
-            // URL tab is valid - use it
-            if (activeTab !== currentUrlTab) {
-                console.log('[SettingsPage] Syncing valid URL tab:', currentUrlTab);
-                setActiveTab(currentUrlTab);
-            }
-        } else if (currentUrlTab && !visibleIds.includes(currentUrlTab) && visibleIds.length > 0) {
-            // URL tab exists but user has no permission - fallback to first visible
-            const fallback = visibleIds[0];
-            console.log('[SettingsPage] URL tab not permitted, falling back to:', fallback);
-            setActiveTab(fallback);
-            // Update URL to reflect actual tab
-            window.history.replaceState(null, '', `${window.location.pathname}?tab=${fallback}`);
-        }
-    }, [visibleIds.join(',')]); // Re-run when visible tabs change
-
-    if (allVisibleItems.length === 0) {
+    if (denyReason || allowedTabKeys.length === 0) {
         return (
             <div className="p-8">
-                <Inline403 message="You do not have permission to view Settings." />
+                <Inline403 message={denyReason || "You do not have permission to view Settings."} />
             </div>
         )
     }
-
-    // Debug log
-    console.log('[SettingsPage] Tab State:', { activeTab, visibleIds });
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">
@@ -255,33 +253,33 @@ export default function SettingsPage() {
 
                         {/* 2. SMTP SETTINGS */}
                         {activeTab === 'smtp' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ) ? (
+                            allowedTabKeys.includes('smtp') ? (
                                 <EmailSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 3. NOTIFICATIONS */}
                         {activeTab === 'notifications' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.READ) ? (
+                            allowedTabKeys.includes('notifications') ? (
                                 <NotificationsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 5. SMS GATEWAY */}
                         {activeTab === 'sms' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ) ? (
+                            allowedTabKeys.includes('sms') ? (
                                 <SmsSettingsTab />
                             ) : <Inline403 />
                         )}
 
                         {/* 6. SECURITY */}
                         {activeTab === 'security' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ) ? (
+                            allowedTabKeys.includes('security') ? (
                                 <SecuritySettingsTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'sso' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ) ? (
+                            allowedTabKeys.includes('sso') ? (
                                 <SSOSettingsTab />
                             ) : <Inline403 />
                         )}
@@ -328,28 +326,28 @@ export default function SettingsPage() {
 
                         {/* --- EXISTING TABS MIGRATED --- */}
                         {activeTab === 'billing_config' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.READ) ? (
+                            allowedTabKeys.includes('billing_config') ? (
                                 <BillingConfigTab />
                             ) : <Inline403 />
                         )}
                         {/* UPDATE: Ensure CONFIG.DICTIONARIES.READ matches strict key */}
                         {activeTab === 'dictionaries' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.READ) ? (
+                            allowedTabKeys.includes('dictionaries') && allowedDictionaryKeys.length > 0 ? (
                                 <DictionariesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'templates' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.TEMPLATES.READ) ? (
+                            allowedTabKeys.includes('templates') ? (
                                 <DocumentTemplatesTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'workflow' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.WORKFLOW.READ) ? (
+                            allowedTabKeys.includes('workflow') ? (
                                 <WorkflowConfigTab />
                             ) : <Inline403 />
                         )}
                         {activeTab === 'roles' && (
-                            can(PermissionSlugs.SYSTEM.ROLES.READ) ? (
+                            allowedTabKeys.includes('roles') ? (
                                 <RolesPage />
                             ) : <Inline403 />
                         )}
