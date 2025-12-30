@@ -247,7 +247,17 @@ const ADMIN_PAGES: PageConfig[] = [
         labelAz: 'Sistem Konsolu',
         tabs: [
             { key: 'dashboard', label: 'Dashboard', requiredAnyOf: ['system.system_console.dashboard.read'] },
-            { key: 'monitoring', label: 'Monitoring', requiredAnyOf: ['system.system_console.monitoring.dashboard.read'] },
+            {
+                key: 'monitoring',
+                label: 'Monitoring',
+                requiredAnyOf: ['system.system_console.monitoring.dashboard.read'],
+                subTabs: [
+                    { key: 'dashboard', label: 'Dashboard', requiredAnyOf: ['system.system_console.monitoring.dashboard.read'] },
+                    { key: 'alerts', label: 'Alert Rules', requiredAnyOf: ['system.system_console.monitoring.alerts.read'] },
+                    { key: 'anomalies', label: 'Anomalies', requiredAnyOf: ['system.system_console.monitoring.anomalies.read'] },
+                    { key: 'logs', label: 'System Logs', requiredAnyOf: ['system.system_console.monitoring.logs.read'] }
+                ]
+            },
             { key: 'audit', label: 'Audit & Compliance', requiredAnyOf: ['system.system_console.audit_compliance.read'] },
             { key: 'jobs', label: 'Job Scheduler', requiredAnyOf: ['system.system_console.job_scheduler.read'] },
             { key: 'retention', label: 'Data Retention', requiredAnyOf: ['system.system_console.data_retention.read'] },
