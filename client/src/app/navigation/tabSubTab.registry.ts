@@ -204,9 +204,24 @@ const ADMIN_PAGES: PageConfig[] = [
                 // SAP-GRADE: Parent tab visible if user has ANY child permission (EXACT match)
                 requiredAnyOf: [
                     'system.settings.system_configurations.billing_configurations.read',
+                    'system.settings.system_configurations.billing_configurations.pricing.read',
+                    'system.settings.system_configurations.billing_configurations.limits.read',
+                    'system.settings.system_configurations.billing_configurations.overuse.read',
+                    'system.settings.system_configurations.billing_configurations.grace.read',
                     'system.settings.system_configurations.billing_configurations.currency_tax.read',
-                    'system.settings.system_configurations.billing_configurations.payment_methods.read',
-                    'system.settings.system_configurations.billing_configurations.invoice_settings.read'
+                    'system.settings.system_configurations.billing_configurations.invoice.read',
+                    'system.settings.system_configurations.billing_configurations.events.read',
+                    'system.settings.system_configurations.billing_configurations.security.read'
+                ],
+                subTabs: [
+                    { key: 'pricing', label: 'Qiymət Qaydaları', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.pricing.read'] },
+                    { key: 'limits', label: 'Limitlər və Kvotalar', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.limits.read'] },
+                    { key: 'overuse', label: 'Limit Aşıldıqda', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.overuse.read'] },
+                    { key: 'grace', label: 'Güzəşt Müddəti', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.grace.read'] },
+                    { key: 'currency', label: 'Valyuta və Vergi', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.currency_tax.read'] },
+                    { key: 'invoice', label: 'Faktura Qaydaları', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.invoice.read'] },
+                    { key: 'events', label: 'Hadisələr', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.events.read'] },
+                    { key: 'security', label: 'Giriş və Təhlükəsizlik', requiredAnyOf: ['system.settings.system_configurations.billing_configurations.security.read'] }
                 ]
             },
             {
