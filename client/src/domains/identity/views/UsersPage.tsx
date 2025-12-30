@@ -25,15 +25,37 @@ export default function UsersPage() {
         return getAllowedTabs('admin.users', permissions, 'admin');
     }, [permissions]);
 
-    const activeTab = searchParams.get("tab") || (allowedTabs[0]?.key || "users");
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+
+    // URL clamp: if tab not allowed, redirect to first allowed
+    const currentParam = searchParams.get("tab");
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
+        ? currentParam
+        : allowedKeys[0] || "";
+
+    // Sync URL if clamped
+    useEffect(() => {
+        if (activeTab && activeTab !== currentParam) {
+            setSearchParams({ tab: activeTab }, { replace: true });
+        }
+    }, [activeTab, currentParam, setSearchParams]);
 
     useEffect(() => {
         setPageKey("users");
     }, [setPageKey]);
 
     const handleTabChange = (val: string) => {
+        if (!allowedKeys.includes(val)) return;
         setSearchParams({ tab: val });
     };
+
+    if (allowedKeys.length === 0) {
+        return (
+            <div className="p-8">
+                <p className="text-sm text-muted-foreground">You do not have permission to view Users.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground animate-in fade-in duration-500">
@@ -67,14 +89,20 @@ export default function UsersPage() {
                         </TabsList>
                     </div>
 
-                    <TabsContent value="users" className="flex-1 overflow-auto pt-4 min-h-0">
-                        <UsersListTab />
-                    </TabsContent>
-                    <TabsContent value="curators" className="flex-1 overflow-auto pt-4 min-h-0">
-                        <CuratorsListTab />
-                    </TabsContent>
+                    {/* SAP-GRADE: Only render ALLOWED TabsContent */}
+                    {allowedKeys.includes('users') && (
+                        <TabsContent value="users" className="flex-1 overflow-auto pt-4 min-h-0">
+                            <UsersListTab />
+                        </TabsContent>
+                    )}
+                    {allowedKeys.includes('curators') && (
+                        <TabsContent value="curators" className="flex-1 overflow-auto pt-4 min-h-0">
+                            <CuratorsListTab />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
         </div>
     );
 }
+

@@ -1,5 +1,4 @@
-
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
 import {
     flexRender,
@@ -60,10 +59,9 @@ import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { getAllowedSubTabs } from "@/app/security/navigationResolver"
-import { useMemo } from "react"
 
 export function DictionariesTab() {
-    // Get permissions and allowed subTabs from resolver
+    const [searchParams, setSearchParams] = useSearchParams();
     const { permissions } = usePermissions();
 
     // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
@@ -71,23 +69,36 @@ export function DictionariesTab() {
         return getAllowedSubTabs('admin.settings', 'dictionaries', permissions, 'admin');
     }, [permissions]);
 
-    // Read subTab from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlSubTab = urlParams.get('subTab');
+    const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
 
-    // Clamp to allowed subTab
-    const initialSubTab = urlSubTab && allowedSubTabs.some(st => st.key === urlSubTab)
-        ? urlSubTab
-        : (allowedSubTabs[0]?.key || 'sectors');
-    const [currentSubTab, setCurrentSubTab] = useState(initialSubTab);
+    // URL clamp
+    const currentParam = searchParams.get('subTab');
+    const currentSubTab = currentParam && allowedKeys.includes(currentParam)
+        ? currentParam
+        : allowedKeys[0] || '';
 
-    // Handler for subTab change - update state AND URL
+    // Sync URL if clamped
+    useEffect(() => {
+        if (currentSubTab && currentSubTab !== currentParam) {
+            const currentTab = searchParams.get('tab') || 'dictionaries';
+            setSearchParams({ tab: currentTab, subTab: currentSubTab }, { replace: true });
+        }
+    }, [currentSubTab, currentParam, searchParams, setSearchParams]);
+
+    // Handler for subTab change
     const handleSubTabChange = (value: string) => {
-        setCurrentSubTab(value);
-        const currentTab = urlParams.get('tab') || 'dictionaries';
-        const newUrl = `${window.location.pathname}?tab=${currentTab}&subTab=${value}`;
-        window.history.replaceState(null, '', newUrl);
+        if (!allowedKeys.includes(value)) return;
+        const currentTab = searchParams.get('tab') || 'dictionaries';
+        setSearchParams({ tab: currentTab, subTab: value });
     };
+
+    if (allowedKeys.length === 0) {
+        return (
+            <div className="p-8">
+                <p className="text-sm text-muted-foreground">You do not have permission to view Dictionaries.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
@@ -103,29 +114,36 @@ export function DictionariesTab() {
                     </TabsList>
                 </div>
 
-                <TabsContent value="sectors" className="space-y-4 mt-4">
-                    <SectorsManager />
-                </TabsContent>
-
-                <TabsContent value="units" className="space-y-4 mt-4">
-                    <UnitsManager />
-                </TabsContent>
-
-                <TabsContent value="currency" className="space-y-4 mt-4">
-                    <CurrenciesManager />
-                </TabsContent>
-
-                <TabsContent value="timezones" className="space-y-4 mt-4">
-                    <TimezoneSettingsTab />
-                </TabsContent>
-
-                <TabsContent value="address" className="space-y-4 mt-4">
-                    <div className="space-y-2 mb-4">
-                        <h3 className="text-lg font-medium">Ünvanlar</h3>
-                        <p className="text-sm text-muted-foreground">Ölkə, Şəhər və Rayon məlumatlarının idarə olunması.</p>
-                    </div>
-                    <AddressSettingsTab />
-                </TabsContent>
+                {/* SAP-GRADE: Only render ALLOWED TabsContent */}
+                {allowedKeys.includes('sectors') && (
+                    <TabsContent value="sectors" className="space-y-4 mt-4">
+                        <SectorsManager />
+                    </TabsContent>
+                )}
+                {allowedKeys.includes('units') && (
+                    <TabsContent value="units" className="space-y-4 mt-4">
+                        <UnitsManager />
+                    </TabsContent>
+                )}
+                {allowedKeys.includes('currency') && (
+                    <TabsContent value="currency" className="space-y-4 mt-4">
+                        <CurrenciesManager />
+                    </TabsContent>
+                )}
+                {allowedKeys.includes('timezones') && (
+                    <TabsContent value="timezones" className="space-y-4 mt-4">
+                        <TimezoneSettingsTab />
+                    </TabsContent>
+                )}
+                {allowedKeys.includes('address') && (
+                    <TabsContent value="address" className="space-y-4 mt-4">
+                        <div className="space-y-2 mb-4">
+                            <h3 className="text-lg font-medium">Ünvanlar</h3>
+                            <p className="text-sm text-muted-foreground">Ölkə, Şəhər və Rayon məlumatlarının idarə olunması.</p>
+                        </div>
+                        <AddressSettingsTab />
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     )

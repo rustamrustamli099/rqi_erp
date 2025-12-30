@@ -339,14 +339,14 @@ export function canAccessPage(
     userPermissions: string[],
     context: 'admin' | 'tenant' = 'admin'
 ): boolean {
-    const normalized = normalizePermissions(userPermissions);
+    const permSet = new Set(userPermissions);
     const pages = context === 'admin' ? ADMIN_PAGES : TENANT_PAGES;
     const page = pages.find(p => p.pageKey === pageKey);
 
     if (!page) return false;
 
     return page.tabs.some(tab =>
-        hasExactPermission(tab.requiredAnyOf, normalized)
+        tab.requiredAnyOf.some(req => permSet.has(req))
     );
 }
 
@@ -359,18 +359,20 @@ export function getFirstAllowedTab(
     userPermissions: string[],
     context: 'admin' | 'tenant' = 'admin'
 ): { tab: string; subTab?: string } | null {
-    const normalized = normalizePermissions(userPermissions);
+    const permSet = new Set(userPermissions);
     const pages = context === 'admin' ? ADMIN_PAGES : TENANT_PAGES;
     const page = pages.find(p => p.pageKey === pageKey);
 
     if (!page) return null;
 
     for (const tab of page.tabs) {
-        if (hasExactPermission(tab.requiredAnyOf, normalized)) {
+        const hasTabAccess = tab.requiredAnyOf.some(req => permSet.has(req));
+        if (hasTabAccess) {
             // Check subTabs if exist
             if (tab.subTabs && tab.subTabs.length > 0) {
                 for (const subTab of tab.subTabs) {
-                    if (hasExactPermission(subTab.requiredAnyOf, normalized)) {
+                    const hasSubTabAccess = subTab.requiredAnyOf.some(req => permSet.has(req));
+                    if (hasSubTabAccess) {
                         return { tab: tab.key, subTab: subTab.key };
                     }
                 }
@@ -382,19 +384,6 @@ export function getFirstAllowedTab(
     }
 
     return null;
-}
-
-/**
- * EXACT permission check helper - NO startsWith
- */
-function hasExactPermission(requiredAnyOf: string[], normalizedPerms: string[]): boolean {
-    return requiredAnyOf.some(required => {
-        const reqBase = required.replace(/\.(read|create|update|delete|approve|export)$/, '');
-        return normalizedPerms.some(perm => {
-            const permBase = perm.replace(/\.(read|create|update|delete|approve|export)$/, '');
-            return permBase === reqBase;
-        });
-    });
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { Inline403 } from "@/shared/components/security/Inline403"
@@ -27,6 +27,7 @@ import {
     ListOrdered
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useSearchParams } from "react-router-dom"
 
 // Existing Components
 import RolesPage from "./RolesPage"
@@ -54,7 +55,6 @@ const timezones = [
 
 import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
 import { getAllowedTabs } from "@/app/security/navigationResolver";
-import { useMemo } from "react";
 
 // --- Sidebar Navigation Items ---
 // Single Source of Truth from TAB_SUBTAB_REGISTRY
@@ -63,19 +63,39 @@ const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI();
 export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
     const { isLoading, permissions } = usePermissions()
+    const [searchParams, setSearchParams] = useSearchParams()
 
-    // Read initial tab from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlTab = urlParams.get('tab') || 'general';
-    const [activeTab, setActiveTab] = useState(urlTab);
+    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
+    const allowedTabs = useMemo(() => {
+        return getAllowedTabs('admin.settings', permissions, 'admin');
+    }, [permissions]);
 
-    // Handler for tab change - update local state AND URL
+    // Filter Menu based on resolver output
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+    const visibleSidebarGroups = useMemo(() => {
+        return ALL_SIDEBAR_ITEMS.map(group => ({
+            ...group,
+            items: group.items.filter(item => allowedKeys.includes(item.id))
+        })).filter(group => group.items.length > 0);
+    }, [allowedKeys]);
+
+    // URL clamp
+    const currentParam = searchParams.get('tab');
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
+        ? currentParam
+        : allowedKeys[0] || '';
+
+    // Sync URL if clamped
+    useEffect(() => {
+        if (activeTab && activeTab !== currentParam) {
+            setSearchParams({ tab: activeTab }, { replace: true });
+        }
+    }, [activeTab, currentParam, setSearchParams]);
+
+    // Handler for tab change
     const handleTabChange = (tabId: string) => {
-        console.log('[SettingsPage] Tab changing to:', tabId);
-        setActiveTab(tabId);
-        // Also update URL for bookmarkability
-        const newUrl = `${window.location.pathname}?tab=${tabId}`;
-        window.history.replaceState(null, '', newUrl);
+        if (!allowedKeys.includes(tabId)) return;
+        setSearchParams({ tab: tabId });
     };
 
     if (isLoading) {
@@ -89,45 +109,7 @@ export default function SettingsPage() {
         )
     }
 
-    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
-    const allowedTabs = useMemo(() => {
-        return getAllowedTabs('admin.settings', permissions, 'admin');
-    }, [permissions]);
-
-    // Filter Menu based on resolver output
-    const visibleSidebarGroups = useMemo(() => {
-        const allowedKeys = allowedTabs.map(t => t.key);
-        return ALL_SIDEBAR_ITEMS.map(group => ({
-            ...group,
-            items: group.items.filter(item => allowedKeys.includes(item.id))
-        })).filter(group => group.items.length > 0);
-    }, [allowedTabs]);
-
-    const allVisibleItems = visibleSidebarGroups.flatMap(g => g.items);
-    const visibleIds = allVisibleItems.map(i => i.id);
-
-    // After permissions load, validate URL tab and sync if needed
-    useEffect(() => {
-        const currentUrlTab = new URLSearchParams(window.location.search).get('tab');
-
-        // If URL has a tab, check if it's valid (user has permission)
-        if (currentUrlTab && visibleIds.includes(currentUrlTab)) {
-            // URL tab is valid - use it
-            if (activeTab !== currentUrlTab) {
-                console.log('[SettingsPage] Syncing valid URL tab:', currentUrlTab);
-                setActiveTab(currentUrlTab);
-            }
-        } else if (currentUrlTab && !visibleIds.includes(currentUrlTab) && visibleIds.length > 0) {
-            // URL tab exists but user has no permission - fallback to first visible
-            const fallback = visibleIds[0];
-            console.log('[SettingsPage] URL tab not permitted, falling back to:', fallback);
-            setActiveTab(fallback);
-            // Update URL to reflect actual tab
-            window.history.replaceState(null, '', `${window.location.pathname}?tab=${fallback}`);
-        }
-    }, [visibleIds.join(',')]); // Re-run when visible tabs change
-
-    if (allVisibleItems.length === 0) {
+    if (allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <Inline403 message="You do not have permission to view Settings." />
@@ -135,8 +117,6 @@ export default function SettingsPage() {
         )
     }
 
-    // Debug log
-    console.log('[SettingsPage] Tab State:', { activeTab, visibleIds });
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">
