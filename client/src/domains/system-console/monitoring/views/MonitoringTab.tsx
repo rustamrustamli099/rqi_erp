@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "react-router-dom";
 import { Zap, FileText, Activity, AlertTriangle } from "lucide-react";
@@ -15,9 +15,9 @@ import { Inline403 } from "@/shared/components/security/Inline403";
  * 
  * Rules:
  * - ONLY allowed subTabs render (resolver-driven allowlist)
- * - URL subTab clamped to first allowed if unauthorized
+ * - NO URL mutation - ProtectedRoute is sole canonicalizer
+ * - Reads subTab from URL (already canonicalized by ProtectedRoute)
  * - No unauthorized triggers/content in DOM
- * - No /access-denied flash
  */
 
 // SubTab component mapping
@@ -42,30 +42,21 @@ export default function MonitoringPage() {
 
     // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
     const allowedSubTabs = useMemo(() => {
+        if (isLoading) return [];
         return getAllowedSubTabs('admin.console', 'monitoring', permissions, 'admin');
-    }, [permissions]);
+    }, [permissions, isLoading]);
 
     const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
 
-    // Clamp URL subTab to allowed list
-    const urlSubTab = searchParams.get('subTab');
-    const currentSubTab = urlSubTab && allowedKeys.includes(urlSubTab)
-        ? urlSubTab
-        : allowedKeys[0] || '';
+    // SAP-GRADE: Read subTab from URL (already canonicalized by ProtectedRoute)
+    // NO URL SYNC EFFECT - ProtectedRoute handles canonicalization
+    const urlSubTab = searchParams.get('subTab') || '';
+    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || '';
 
-    // Sync URL if clamped (replace to avoid history pollution)
-    useEffect(() => {
-        if (!isLoading && currentSubTab && currentSubTab !== urlSubTab) {
-            const newParams = new URLSearchParams(searchParams);
-            newParams.set('subTab', currentSubTab);
-            setSearchParams(newParams, { replace: true });
-        }
-    }, [currentSubTab, urlSubTab, searchParams, setSearchParams, isLoading]);
-
+    // User-initiated tab change (onClick only, not auto-sync)
     const handleTabChange = (value: string) => {
-        // SAP-GRADE: Only allow navigation to allowed subTabs
         if (!allowedKeys.includes(value)) return;
-        
+
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             newParams.set('subTab', value);

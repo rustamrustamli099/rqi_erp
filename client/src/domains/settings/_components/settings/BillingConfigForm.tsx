@@ -1,11 +1,12 @@
 /**
  * SAP-Grade BillingConfigForm — Resolver-Driven
  * 
- * NO URL-derived access decisions.
- * Uses getAllowedSubTabs() from navigationResolver.
+ * NO URL mutations from components.
+ * ProtectedRoute is sole URL canonicalizer.
+ * This component READS URL (already canonicalized) and handles user clicks only.
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,43 +23,22 @@ import { usePermissions } from "@/app/auth/hooks/usePermissions";
 import { getAllowedSubTabs } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
 
-// Static sub-tab config (should match registry)
-const BILLING_SUBTABS = [
-    { key: 'pricing', label: 'Qiymət Qaydaları' },
-    { key: 'limits', label: 'Limitlər və Kvotalar' },
-    { key: 'overuse', label: 'Limit Aşıldıqda' },
-    { key: 'grace', label: 'Güzəşt Müddəti' },
-    { key: 'currency', label: 'Valyuta və Vergi' },
-    { key: 'invoice', label: 'Faktura Qaydaları' },
-    { key: 'events', label: 'Hadisələr' },
-    { key: 'security', label: 'Giriş və Təhlükəsizlik' }
-];
-
 export function BillingConfigForm() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { permissions, isLoading } = usePermissions();
 
-    // SAP-GRADE: Get allowed subTabs from resolver (NOT from URL)
+    // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
     const allowedSubTabs = useMemo(() => {
+        if (isLoading) return [];
         return getAllowedSubTabs('admin.settings', 'billing_config', permissions, 'admin');
-    }, [permissions]);
+    }, [permissions, isLoading]);
 
     const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
 
-    // URL clamp to allowed
-    const urlSubTab = searchParams.get('subTab');
-    const currentSubTab = urlSubTab && allowedKeys.includes(urlSubTab)
-        ? urlSubTab
-        : allowedKeys[0] || '';
-
-    // Sync URL if clamped
-    useEffect(() => {
-        if (!isLoading && currentSubTab && currentSubTab !== urlSubTab) {
-            const newParams = new URLSearchParams(searchParams);
-            newParams.set('subTab', currentSubTab);
-            setSearchParams(newParams, { replace: true });
-        }
-    }, [currentSubTab, urlSubTab, setSearchParams, isLoading, searchParams]);
+    // SAP-GRADE: Read subTab from URL (already canonicalized by ProtectedRoute)
+    // NO URL SYNC EFFECT - ProtectedRoute handles canonicalization
+    const urlSubTab = searchParams.get('subTab') || '';
+    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || '';
 
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
@@ -67,6 +47,7 @@ export function BillingConfigForm() {
         setSearchParams(newParams, { replace: true });
     };
 
+    // Loading state - show spinner while permissions loading
     if (isLoading) {
         return (
             <div className="flex h-[30vh] w-full items-center justify-center">
