@@ -1,35 +1,32 @@
-import { Routes, Route, Navigate } from "react-router-dom"
-import { ProtectedRoute } from "@/app/routing/ProtectedRoute"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
-import { PermissionSlugs } from "@/app/security/permission-slugs"
-import TenantDashboard from "@/domains/dashboard/views/TenantDashboard"
-
 /**
- * Workspace Routes
+ * SAP-Grade Workspace Routes
  * 
  * Default portal for Tenant Users (Non-Admin).
  * Mounted at: /dashboard/* or /workspace/*
+ * 
+ * NO hook-based permission checks in route body.
+ * Context switching handled by auth layer.
  */
-export default function WorkspaceRoutes() {
-    // STRICT SEPARATION: If user has Platform access, force them to Admin Panel
-    // This prevents Admins from accessing the Tenant Dashboard manually via URL
-    const { can } = usePermissions()
 
-    if (can(PermissionSlugs.PLATFORM.DASHBOARD.VIEW)) {
-        return <Navigate to="/admin/dashboard" replace />
-    }
+import { Routes, Route, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "@/app/routing/ProtectedRoute";
+import TenantDashboard from "@/domains/dashboard/views/TenantDashboard";
+
+export default function WorkspaceRoutes() {
+    // SAP-GRADE: NO can() calls in route body
+    // ProtectedRoute + evaluateRoute handles all authorization
 
     return (
         <Routes>
             <Route index element={
-                <ProtectedRoute requiredPermission={PermissionSlugs.TENANT.DASHBOARD.VIEW}>
+                <ProtectedRoute>
                     <TenantDashboard />
                 </ProtectedRoute>
             } />
 
-            {/* Add other tenant module routes here later (e.g. My Profile, My Tasks) */}
+            {/* Add other tenant module routes here later */}
 
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-    )
+    );
 }
