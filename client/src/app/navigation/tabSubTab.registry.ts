@@ -45,29 +45,15 @@ export interface TabSubTabRegistry {
 }
 
 // =============================================================================
-// PERMISSION NORMALIZATION
+// PERMISSION NORMALIZATION (EXACT, FROZEN)
 // =============================================================================
 
 /**
- * SAP-GRADE: If user has write/manage action, READ is implied
- * This ensures entry to list pages when user has create/update/delete
+ * SAP-GRADE: NO inference, NO verb stripping.
+ * Returns a deduped list of the original permissions only.
  */
 export function normalizePermissions(permissions: string[]): string[] {
-    const normalized = new Set(permissions);
-
-    permissions.forEach(perm => {
-        // Extract base and action
-        const parts = perm.split('.');
-        const action = parts[parts.length - 1];
-        const base = parts.slice(0, -1).join('.');
-
-        // If write action exists, add read
-        if (['create', 'update', 'delete', 'manage', 'approve', 'export'].includes(action)) {
-            normalized.add(`${base}.read`);
-        }
-    });
-
-    return Array.from(normalized);
+    return Array.from(new Set(permissions));
 }
 
 // =============================================================================

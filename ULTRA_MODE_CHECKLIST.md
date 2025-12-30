@@ -1,23 +1,24 @@
-# SAP RBAC A-L Tasks ✅
+# SAP RBAC Critical Bug Fixes ✅
 
-## STATUS: MOSTLY COMPLETE
+## Bugs Fixed
 
----
+### 1. Settings 403 for Communication/Security ✅
+- Removed inline can() checks
+- Registry slugs different from PermissionSlugs
 
-## A) Registry ✅
-## B) Resolver ✅ (navigationResolver.ts)
-## C) ProtectedRoute ✅
-## D) RootRedirect ✅
-## E) UsersPage ✅
-## F) BillingPage - Needs full refactor
-## G) SettingsPage ✅ (DictionariesTab)
-## H) ConsolePage ✅
-## I) AccessDenied ✅
-## J) Sidebar ✅
-## K) Delete competing ✅
-## L) E2E Tests ✅
+### 2. Unauthorized Flash ✅
+- ProtectedRoute direct redirects
 
----
+### 3. Sub-subTab Sticks ✅
+- DictionariesTab resolver-driven
 
-**STATUS: A-E, G-L COMPLETE ✅**
-**F (BillingPage) needs separate fix**
+## Files Changed
+- SettingsPage.tsx - can() removed
+- DictionariesTab.tsx - resolver subTabs
+- BillingPage.tsx - resolver tabs
+- navigationResolver.ts
+
+## Docs
+- RBAC_ROOT_CAUSE_AND_FIX.md
+
+**COMPLETE ✅**

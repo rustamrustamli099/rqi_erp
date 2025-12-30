@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
-import { PermissionSlugs } from "@/app/security/permission-slugs"
 import { Inline403 } from "@/shared/components/security/Inline403"
 // ...
 import { WorkflowConfigTab } from "@/shared/components/ui/WorkflowConfigTab"
@@ -54,6 +53,8 @@ const timezones = [
 ]
 
 import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
+import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { useMemo } from "react";
 
 // --- Sidebar Navigation Items ---
 // Single Source of Truth from TAB_SUBTAB_REGISTRY
@@ -61,7 +62,7 @@ const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI();
 
 export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
-    const { can, isLoading } = usePermissions()
+    const { isLoading, permissions } = usePermissions()
 
     // Read initial tab from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -88,23 +89,19 @@ export default function SettingsPage() {
         )
     }
 
-    // Filter Menu based on Permissions
-    const visibleSidebarGroups = ALL_SIDEBAR_ITEMS.map(group => ({
-        ...group,
-        items: group.items.filter(item => {
-            if (!item.permission) return true;
-            const hasPermission = can(item.permission);
-            // Debug dictionaries specifically
-            if (item.id === 'dictionaries') {
-                console.log('[SettingsPage] DICTIONARIES check:', {
-                    id: item.id,
-                    permission: item.permission,
-                    hasPermission
-                });
-            }
-            return hasPermission;
-        })
-    })).filter(group => group.items.length > 0);
+    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
+    const allowedTabs = useMemo(() => {
+        return getAllowedTabs('admin.settings', permissions, 'admin');
+    }, [permissions]);
+
+    // Filter Menu based on resolver output
+    const visibleSidebarGroups = useMemo(() => {
+        const allowedKeys = allowedTabs.map(t => t.key);
+        return ALL_SIDEBAR_ITEMS.map(group => ({
+            ...group,
+            items: group.items.filter(item => allowedKeys.includes(item.id))
+        })).filter(group => group.items.length > 0);
+    }, [allowedTabs]);
 
     const allVisibleItems = visibleSidebarGroups.flatMap(g => g.items);
     const visibleIds = allVisibleItems.map(i => i.id);
@@ -254,37 +251,17 @@ export default function SettingsPage() {
 
 
                         {/* 2. SMTP SETTINGS */}
-                        {activeTab === 'smtp' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ) ? (
-                                <EmailSettingsTab />
-                            ) : <Inline403 />
-                        )}
+                        {activeTab === 'smtp' && <EmailSettingsTab />}
 
                         {/* 3. NOTIFICATIONS */}
-                        {activeTab === 'notifications' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.NOTIFICATIONS.READ) ? (
-                                <NotificationsTab />
-                            ) : <Inline403 />
-                        )}
+                        {activeTab === 'notifications' && <NotificationsTab />}
 
                         {/* 5. SMS GATEWAY */}
-                        {activeTab === 'sms' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.COMMUNICATION.READ) ? (
-                                <SmsSettingsTab />
-                            ) : <Inline403 />
-                        )}
+                        {activeTab === 'sms' && <SmsSettingsTab />}
 
                         {/* 6. SECURITY */}
-                        {activeTab === 'security' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ) ? (
-                                <SecuritySettingsTab />
-                            ) : <Inline403 />
-                        )}
-                        {activeTab === 'sso' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.READ) ? (
-                                <SSOSettingsTab />
-                            ) : <Inline403 />
-                        )}
+                        {activeTab === 'security' && <SecuritySettingsTab />}
+                        {activeTab === 'sso' && <SSOSettingsTab />}
 
 
                         {/* 7. APPROVALS HUB */}
@@ -327,32 +304,11 @@ export default function SettingsPage() {
 
 
                         {/* --- EXISTING TABS MIGRATED --- */}
-                        {activeTab === 'billing_config' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.READ) ? (
-                                <BillingConfigTab />
-                            ) : <Inline403 />
-                        )}
-                        {/* UPDATE: Ensure CONFIG.DICTIONARIES.READ matches strict key */}
-                        {activeTab === 'dictionaries' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.DICTIONARIES.READ) ? (
-                                <DictionariesTab />
-                            ) : <Inline403 />
-                        )}
-                        {activeTab === 'templates' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.TEMPLATES.READ) ? (
-                                <DocumentTemplatesTab />
-                            ) : <Inline403 />
-                        )}
-                        {activeTab === 'workflow' && (
-                            can(PermissionSlugs.SYSTEM.SETTINGS.CONFIG.WORKFLOW.READ) ? (
-                                <WorkflowConfigTab />
-                            ) : <Inline403 />
-                        )}
-                        {activeTab === 'roles' && (
-                            can(PermissionSlugs.SYSTEM.ROLES.READ) ? (
-                                <RolesPage />
-                            ) : <Inline403 />
-                        )}
+                        {activeTab === 'billing_config' && <BillingConfigTab />}
+                        {activeTab === 'dictionaries' && <DictionariesTab />}
+                        {activeTab === 'templates' && <DocumentTemplatesTab />}
+                        {activeTab === 'workflow' && <WorkflowConfigTab />}
+                        {activeTab === 'roles' && <RolesPage />}
 
                     </div>
                 </main>

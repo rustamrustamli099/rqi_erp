@@ -311,7 +311,7 @@ import { PageHeader } from "@/shared/components/ui/page-header";
 import { useSearchParams } from "react-router-dom";
 import { useMemo } from "react";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs, normalizePermissions } from "@/app/security/rbacResolver";
+import { getAllowedTabs } from "@/app/security/navigationResolver";
 
 // Tab configuration for filtering
 const BILLING_TABS = [
@@ -326,20 +326,16 @@ export default function BillingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { permissions } = usePermissions();
 
-    // SAP-GRADE: Get allowed tabs from resolver
-    const allowedTabKeys = useMemo(() => {
-        const permSet = normalizePermissions(permissions);
-        return getAllowedTabs({
-            pageKey: 'admin.billing',
-            perms: permSet,
-            context: 'admin'
-        });
+    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
+    const allowedTabs = useMemo(() => {
+        return getAllowedTabs('admin.billing', permissions, 'admin');
     }, [permissions]);
 
-    // Filter visible tabs
+    // Filter visible tabs using resolver output
     const visibleTabs = useMemo(() => {
-        return BILLING_TABS.filter(tab => allowedTabKeys.includes(tab.key));
-    }, [allowedTabKeys]);
+        const allowedKeys = allowedTabs.map(t => t.key);
+        return BILLING_TABS.filter(tab => allowedKeys.includes(tab.key));
+    }, [allowedTabs]);
 
     const activeTab = searchParams.get("tab") || (visibleTabs[0]?.key || "marketplace");
 
