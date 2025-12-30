@@ -74,13 +74,25 @@ let AuthService = class AuthService {
                 const isMatch = assignmentsTenantId === contextTenantId;
                 if (isMatch && ur.role && ur.role.permissions) {
                     ur.role.permissions.forEach((rp) => {
-                        if (rp.permission)
-                            permissions.add(rp.permission.slug);
+                        if (rp.permission) {
+                            const slug = rp.permission.slug;
+                            permissions.add(slug);
+                            const canonical = this.canonicalizePermission(slug);
+                            if (canonical !== slug) {
+                                permissions.add(canonical);
+                            }
+                        }
                     });
                 }
             });
         }
         return Array.from(permissions);
+    }
+    canonicalizePermission(slug) {
+        if (slug.startsWith('admin_panel.')) {
+            return slug.replace('admin_panel.', 'system.');
+        }
+        return slug;
     }
     async validateUser(email, pass) {
         const user = await this.identityUseCase.findUserByEmail(email);

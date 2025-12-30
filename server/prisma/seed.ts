@@ -197,7 +197,7 @@ const ADMIN_MENU_TREE = [{
             id: 'billing_config',
             label: 'Bilinq Ayarları',
             path: '/admin/settings?tab=billing_config',
-            permission: 'system.settings.system_configurations.billing_configurations.price_rules.view'
+            permission: 'system.settings.system_configurations.billing_configurations.pricing.read'
         },
         {
             id: 'dictionaries',

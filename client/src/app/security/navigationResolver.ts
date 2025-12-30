@@ -42,8 +42,8 @@ export interface AllowedSubTab {
  * Check if user has ANY of the required permissions (EXACT match)
  * NO inference, NO normalization
  */
-function hasAnyPermission(userPerms: string[], requiredAnyOf: string[]): boolean {
-    if (!requiredAnyOf || requiredAnyOf.length === 0) return true;
+export function hasAnyPermission(userPerms: string[], requiredAnyOf: string[]): boolean {
+    if (!requiredAnyOf || requiredAnyOf.length === 0) return false;
     return requiredAnyOf.some(perm => userPerms.includes(perm));
 }
 
@@ -63,6 +63,7 @@ export function resolvePageByPath(
 
 /**
  * Get allowed tabs for a page (EXACT permission match)
+ * SAP-GRADE: Parent visible if self.allowed OR ANY(child.allowed)
  */
 export function getAllowedTabs(
     pageKey: string,
@@ -75,7 +76,23 @@ export function getAllowedTabs(
     if (!page?.tabs) return [];
 
     return page.tabs
-        .filter(tab => hasAnyPermission(userPerms, tab.requiredAnyOf))
+        .filter(tab => {
+            // SAP-GRADE: Tab visible if:
+            // 1. Tab's own requiredAnyOf matches, OR
+            // 2. ANY subTab's requiredAnyOf matches
+            const selfAllowed = hasAnyPermission(userPerms, tab.requiredAnyOf);
+            if (selfAllowed) return true;
+
+            // Check children recursively
+            if (tab.subTabs && tab.subTabs.length > 0) {
+                const anyChildAllowed = tab.subTabs.some(subTab =>
+                    hasAnyPermission(userPerms, subTab.requiredAnyOf)
+                );
+                return anyChildAllowed;
+            }
+
+            return false;
+        })
         .map(tab => ({ key: tab.key, label: tab.label }));
 }
 

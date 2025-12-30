@@ -11,6 +11,7 @@ export declare class AuthService {
     private refreshTokenService;
     constructor(identityUseCase: IdentityUseCase, jwtService: JwtService, permissionCache: PermissionCacheService, redisService: RedisService, refreshTokenService: RefreshTokenService);
     getEffectivePermissions(userId: string, contextTenantId: string | null): Promise<string[]>;
+    private canonicalizePermission;
     validateUser(email: string, pass: string): Promise<any>;
     login(user: any, rememberMe?: boolean, ip?: string, agent?: string): Promise<{
         access_token: string;

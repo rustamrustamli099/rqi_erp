@@ -98,31 +98,28 @@ export declare const admin_panel_permissions: {
         };
         system_configurations: {
             billing_configurations: {
-                price_rules: {
+                pricing: {
                     perms: string[];
                 };
-                limits_quotas: {
+                limits: {
                     perms: string[];
                 };
-                limit_overshoot: {
+                overuse: {
                     perms: string[];
                 };
-                grace_period: {
-                    perms: string[];
-                };
-                grace_requirements: {
+                grace: {
                     perms: string[];
                 };
                 currency_tax: {
                     perms: string[];
                 };
-                invoice_rules: {
+                invoice: {
                     perms: string[];
                 };
                 events: {
                     perms: string[];
                 };
-                login_and_security: {
+                security: {
                     perms: string[];
                 };
             };

@@ -23,6 +23,7 @@ export class AuthService {
 
 
     // [RBAC] Centralized Permission Calculation
+    // SAP-GRADE: Canonicalizes legacy slugs to frontend-expected format
     async getEffectivePermissions(userId: string, contextTenantId: string | null): Promise<string[]> {
         const userWithRole = await this.identityUseCase.findUserWithPermissions(userId);
         if (!userWithRole) return [];
@@ -39,12 +40,36 @@ export class AuthService {
                 // Permissions Logic (Owner bypass removed)
                 if (isMatch && ur.role && ur.role.permissions) {
                     ur.role.permissions.forEach((rp: any) => {
-                        if (rp.permission) permissions.add(rp.permission.slug);
+                        if (rp.permission) {
+                            const slug = rp.permission.slug;
+                            permissions.add(slug);
+
+                            // SAP-GRADE: Also add canonical version if mapping exists
+                            // This ensures legacy slugs work with new registry
+                            const canonical = this.canonicalizePermission(slug);
+                            if (canonical !== slug) {
+                                permissions.add(canonical);
+                            }
+                        }
                     });
                 }
             });
         }
         return Array.from(permissions);
+    }
+
+    /**
+     * SAP-GRADE: Canonicalize permission slug
+     * Maps legacy/variant slugs to canonical format expected by frontend registry.
+     * NO inference - explicit 1:1 mapping only.
+     */
+    private canonicalizePermission(slug: string): string {
+        // Prefix normalization: admin_panel.* -> system.*
+        if (slug.startsWith('admin_panel.')) {
+            return slug.replace('admin_panel.', 'system.');
+        }
+        // Already canonical
+        return slug;
     }
 
     async validateUser(email: string, pass: string): Promise<any> {

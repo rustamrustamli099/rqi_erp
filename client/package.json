@@ -8,7 +8,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "test:visibility": "vitest run src/tests/navigation/parent-visibility.spec.ts",
+    "ci:visibility": "powershell -Command \"Get-ChildItem -Path src -Recurse -Include *.ts,*.tsx | Where-Object { $_.Name -notmatch 'navigationResolver|spec|test' } | Select-String -Pattern 'children\\[0\\]|firstAllowed|allowedTabs\\[0\\]' | ForEach-Object { Write-Error \\\"SAP Violation: $_\\\"; exit 1 }\"",
+    "ci:all": "npm run lint && npm run test:visibility"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
