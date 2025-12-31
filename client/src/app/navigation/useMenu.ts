@@ -1,94 +1,126 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SAP-Grade Menu Hook (SINGLE DECISION CENTER)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * RULES:
+ * 1. navigationResolver is the ONLY authority for visibility
+ * 2. Backend menu used for STRUCTURE only
+ * 3. Leaf nodes: visible via hasAnyVisibleTab, route via getFirstAllowedTarget
+ * 4. Container nodes: visible if ANY child visible (order-independent)
+ * 5. NO custom filtering logic
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 
 import { useMemo } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
 import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { PLATFORM_MENU, TENANT_MENU, type AdminMenuItem } from '@/app/navigation/menu.definitions';
-import { TAB_SUBTAB_REGISTRY } from '@/app/navigation/tabSubTab.registry';
-import { getAllowedTabs, getFirstAllowedTarget } from '@/app/security/navigationResolver';
+import { hasAnyVisibleTab, getFirstAllowedTarget } from '@/app/security/navigationResolver';
 import { usePendingApprovals } from '@/domains/approvals/hooks/useApprovals';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 
 /**
- * Fetch menu from backend (SAP-filtered)
+ * SAP-Grade: Recursively compute visibility using navigationResolver
+ * 
+ * - Leaf pages: visible = hasAnyVisibleTab(pageKey, perms)
+ * - Containers: visible = ANY(child.visible), order-independent
  */
-const fetchBackendMenu = async (token: string | null): Promise<AdminMenuItem[] | null> => {
-    if (!token) return null;
-    try {
-        const response = await axios.get('/api/v1/me/menu', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        // Handle wrapped response
-        const data = response.data?.data || response.data;
-        return Array.isArray(data) ? data : null;
-    } catch {
-        return null;
+function computeVisibleTree(
+    items: AdminMenuItem[],
+    permissions: string[],
+    context: 'admin' | 'tenant'
+): AdminMenuItem[] {
+    return items
+        .map(item => computeItemVisibility(item, permissions, context))
+        .filter((item): item is AdminMenuItem => item !== null);
+}
+
+function computeItemVisibility(
+    item: AdminMenuItem,
+    permissions: string[],
+    context: 'admin' | 'tenant'
+): AdminMenuItem | null {
+    // Process children first (ORDER-INDEPENDENT visibility check)
+    let visibleChildren: AdminMenuItem[] = [];
+    if ('children' in item && Array.isArray((item as any).children)) {
+        visibleChildren = computeVisibleTree(
+            (item as any).children,
+            permissions,
+            context
+        );
     }
-};
+
+    // Leaf node (has pageKey, no children): use resolver for visibility
+    const isLeaf = item.pageKey && visibleChildren.length === 0;
+    if (isLeaf) {
+        // SAP: Delegate to resolver for visibility
+        const hasVisibleTabs = hasAnyVisibleTab(item.pageKey, permissions, context);
+        if (!hasVisibleTabs) {
+            return null; // Not visible
+        }
+        // Get resolved route
+        const resolvedRoute = getFirstAllowedTarget(item.pageKey, permissions, context);
+        return {
+            ...item,
+            route: resolvedRoute || item.route || item.path,
+            path: resolvedRoute || item.path
+        };
+    }
+
+    // Container node: visible if ANY child visible (SAP Law)
+    const anyChildVisible = visibleChildren.length > 0;
+    if (!anyChildVisible && !item.pageKey) {
+        return null; // Container with no visible children
+    }
+
+    // Container with visible children OR pageKey
+    if (item.pageKey) {
+        const hasVisibleTabs = hasAnyVisibleTab(item.pageKey, permissions, context);
+        if (!hasVisibleTabs && !anyChildVisible) {
+            return null;
+        }
+    }
+
+    // Build result with filtered children
+    const result: AdminMenuItem = {
+        ...item,
+        route: item.route || item.path
+    };
+
+    // Add visible children if any
+    if (anyChildVisible) {
+        (result as any).children = visibleChildren;
+        // Default route: use first visible child's route
+        const firstVisibleChild = visibleChildren.find(c => c.route);
+        if (firstVisibleChild?.route && !item.pageKey) {
+            result.route = firstVisibleChild.route;
+        }
+    }
+
+    return result;
+}
 
 /**
  * Enterprise Menu Hook - SAP Grade
  * 
- * PRIORITY:
- * 1. Backend /me/menu (SAP-filtered, includes parent visibility from children)
- * 2. Fallback to static menu with resolver filtering
+ * Uses navigationResolver as SINGLE DECISION CENTER
  */
-
 export const useMenu = () => {
-    const { activeTenantType, isLoading, authState, token } = useAuth();
+    const { activeTenantType, isLoading, authState } = useAuth();
     const { permissions } = usePermissions();
 
     const { data: approvalData } = usePendingApprovals();
     const pendingCount = approvalData?.count || 0;
 
     const isStable = authState === 'STABLE';
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+    const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
     const rawMenu = activeTenantType === 'SYSTEM' ? PLATFORM_MENU : TENANT_MENU;
-    const registry = context === 'admin' ? TAB_SUBTAB_REGISTRY.admin : TAB_SUBTAB_REGISTRY.tenant;
-
-    // Fetch backend menu
-    const { data: backendMenu } = useQuery({
-        queryKey: ['menu', context, token],
-        queryFn: () => fetchBackendMenu(token),
-        enabled: isStable && !!token,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1
-    });
 
     const filteredMenu = useMemo(() => {
-        if (!isStable) return [];
+        if (!isStable || permissions.length === 0) return [];
 
-        // SAP-GRADE: Use backend menu if available (already filtered with SAP rule)
-        if (backendMenu && backendMenu.length > 0) {
-            // Backend returns already-filtered tree
-            return backendMenu.map(item => ({
-                ...item,
-                pageKey: item.pageKey || item.id
-            }));
-        }
-
-        // FALLBACK: Client-side filtering with resolver
-        const filtered = rawMenu.filter(item => {
-            if (!item.pageKey) return true;
-
-            // Check if page has any allowed tabs
-            const allowedTabs = getAllowedTabs(item.pageKey, permissions, context);
-            return allowedTabs.length > 0;
-        });
-
-        // Set each item's path to first allowed target
-        const withResolvedPaths = filtered.map(item => {
-            if (!item.pageKey) return item;
-
-            const page = registry.find(p => p.pageKey === item.pageKey);
-            if (!page) return item;
-
-            const target = getFirstAllowedTarget(item.pageKey, permissions, context);
-            if (target) {
-                return { ...item, path: target, route: target };
-            }
-            return item;
-        });
+        // SAP-GRADE: Compute visibility using navigationResolver
+        const visibleMenu = computeVisibleTree(rawMenu, permissions, context);
 
         // Approvals injection (only if has permission)
         const hasApprovalsPermission = permissions.includes('system.approvals.read');
@@ -104,23 +136,23 @@ export const useMenu = () => {
                 pageKey: 'admin.approvals',
             };
 
-            const dashboardIndex = withResolvedPaths.findIndex(i => i.id === 'dashboard');
+            const dashboardIndex = visibleMenu.findIndex(i => i.id === 'dashboard');
             if (dashboardIndex !== -1) {
-                withResolvedPaths.splice(dashboardIndex + 1, 0, approvalsItem);
+                visibleMenu.splice(dashboardIndex + 1, 0, approvalsItem);
             } else {
-                withResolvedPaths.unshift(approvalsItem);
+                visibleMenu.unshift(approvalsItem);
             }
         }
 
-        return withResolvedPaths;
-    }, [rawMenu, permissions, activeTenantType, pendingCount, isStable, context, registry, backendMenu]);
+        return visibleMenu;
+    }, [rawMenu, permissions, pendingCount, isStable, context]);
 
     const getFirstAllowedRoute = () => {
         if (filteredMenu.length === 0) {
             return '/access-denied';
         }
         const first = filteredMenu[0];
-        return first.path || first.route || '/access-denied';
+        return first.route || first.path || '/access-denied';
     };
 
     return {
@@ -129,4 +161,3 @@ export const useMenu = () => {
         getFirstAllowedRoute
     };
 };
-
