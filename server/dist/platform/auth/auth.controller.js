@@ -16,15 +16,18 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const mfa_service_1 = require("./mfa.service");
+const effective_permissions_service_1 = require("./effective-permissions.service");
 const passport_1 = require("@nestjs/passport");
 const client_1 = require("@prisma/client");
 const jwt_auth_guard_1 = require("./jwt-auth.guard");
 let AuthController = class AuthController {
     authService;
     mfaService;
-    constructor(authService, mfaService) {
+    effectivePermissionsService;
+    constructor(authService, mfaService, effectivePermissionsService) {
         this.authService = authService;
         this.mfaService = mfaService;
+        this.effectivePermissionsService = effectivePermissionsService;
     }
     async login(req, response) {
         if (req.user.isMfaEnabled) {
@@ -115,7 +118,12 @@ let AuthController = class AuthController {
         return req.user;
     }
     async getMe(req) {
-        const effectivePermissions = await this.authService.getEffectivePermissions(req.user.userId || req.user.sub, req.user.tenantId || null);
+        const { userId, scopeType, scopeId } = req.user;
+        const effectivePermissions = await this.effectivePermissionsService.computeEffectivePermissions({
+            userId,
+            scopeType: scopeType || 'SYSTEM',
+            scopeId: scopeId || null
+        });
         return {
             ...req.user,
             permissions: effectivePermissions
@@ -223,6 +231,7 @@ __decorate([
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
-        mfa_service_1.MfaService])
+        mfa_service_1.MfaService,
+        effective_permissions_service_1.EffectivePermissionsService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

@@ -14,7 +14,11 @@ export class RefreshTokenService {
      * Generates a new refresh token family or rotates within one.
      * Returns: { token: string (id.secret), familyId: string, expiresAt: Date }
      */
-    async generateToken(userId: string, ip?: string, agent?: string, familyId?: string) {
+    /**
+     * Generates a new refresh token family or rotates within one.
+     * Returns: { token: string (id.secret.scopeType.scopeId), familyId: string, expiresAt: Date }
+     */
+    async generateToken(userId: string, ip?: string, agent?: string, scopeType: string = 'SYSTEM', scopeId: string | null = null, familyId?: string) {
         const id = crypto.randomUUID();
         const secret = crypto.randomBytes(32).toString('hex');
         const tokenHash = await bcrypt.hash(secret, 10);
@@ -37,8 +41,12 @@ export class RefreshTokenService {
             },
         });
 
+        // Embed scope in token string: ID.Secret.ScopeType.ScopeId
+        const safeScopeId = scopeId || 'null';
+        const tokenString = `${id}.${secret}.${scopeType}.${safeScopeId}`;
+
         return {
-            token: `${id}.${secret}`, // Format: ID.Secret
+            token: tokenString,
             familyId: newFamilyId,
             expiresAt,
             userId,
@@ -47,13 +55,25 @@ export class RefreshTokenService {
 
     /**
      * Rotates a token: Verifies old, checks reuse, issues new.
+     * Returns: { token, familyId, expiresAt, userId, scopeType, scopeId }
      */
     async rotateToken(incomingToken: string, ip?: string, agent?: string) {
         // 1. Parse Token
         if (!incomingToken || !incomingToken.includes('.')) {
             throw new UnauthorizedException('Invalid Token Format');
         }
-        const [id, secret] = incomingToken.split('.');
+
+        // Parsing: ID.Secret.ScopeType.ScopeId
+        const parts = incomingToken.split('.');
+        if (parts.length < 2) throw new UnauthorizedException('Invalid Token Format');
+
+        const id = parts[0];
+        const secret = parts[1];
+
+        // Scope Preservation (Backwards compatibility for old tokens: Default to SYSTEM)
+        const scopeType = parts[2] || 'SYSTEM';
+        const rawScopeId = parts[3] || 'null';
+        const scopeId = rawScopeId === 'null' ? null : rawScopeId;
 
         // 2. Find Record
         const record = await this.prisma.refreshToken.findUnique({
@@ -95,7 +115,13 @@ export class RefreshTokenService {
             }
         });
 
-        return this.generateToken(record.userId, ip, agent, record.familyId);
+        const newTok = await this.generateToken(record.userId, ip, agent, scopeType, scopeId, record.familyId);
+
+        return {
+            ...newTok,
+            scopeType,
+            scopeId
+        };
     }
 
     async revokeByToken(incomingToken: string) {

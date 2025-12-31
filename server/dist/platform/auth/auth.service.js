@@ -48,51 +48,17 @@ const identity_usecase_1 = require("../identity/application/identity.usecase");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
 const redis_service_1 = require("../redis/redis.service");
-const permission_cache_service_1 = require("./permission-cache.service");
 const refresh_token_service_1 = require("./refresh-token.service");
 let AuthService = class AuthService {
     identityUseCase;
     jwtService;
-    permissionCache;
     redisService;
     refreshTokenService;
-    constructor(identityUseCase, jwtService, permissionCache, redisService, refreshTokenService) {
+    constructor(identityUseCase, jwtService, redisService, refreshTokenService) {
         this.identityUseCase = identityUseCase;
         this.jwtService = jwtService;
-        this.permissionCache = permissionCache;
         this.redisService = redisService;
         this.refreshTokenService = refreshTokenService;
-    }
-    async getEffectivePermissions(userId, contextTenantId) {
-        const userWithRole = await this.identityUseCase.findUserWithPermissions(userId);
-        if (!userWithRole)
-            return [];
-        const permissions = new Set();
-        if (userWithRole?.roles) {
-            userWithRole.roles.forEach((ur) => {
-                const assignmentsTenantId = ur.tenantId || null;
-                const isMatch = assignmentsTenantId === contextTenantId;
-                if (isMatch && ur.role && ur.role.permissions) {
-                    ur.role.permissions.forEach((rp) => {
-                        if (rp.permission) {
-                            const slug = rp.permission.slug;
-                            permissions.add(slug);
-                            const canonical = this.canonicalizePermission(slug);
-                            if (canonical !== slug) {
-                                permissions.add(canonical);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-        return Array.from(permissions);
-    }
-    canonicalizePermission(slug) {
-        if (slug.startsWith('admin_panel.')) {
-            return slug.replace('admin_panel.', 'system.');
-        }
-        return slug;
     }
     async validateUser(email, pass) {
         const user = await this.identityUseCase.findUserByEmail(email);
@@ -104,28 +70,24 @@ let AuthService = class AuthService {
     }
     async issueTokenForScope(user, scopeType, scopeId) {
         const payload = {
-            email: user.email,
             sub: user.id,
             scopeType: scopeType,
             scopeId: scopeId,
-            tenantId: scopeId,
-            isOwner: user.isOwner,
         };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
         return {
             access_token: accessToken,
             user: {
                 id: user.id,
-                email: user.email,
                 scopeType,
                 scopeId
             }
         };
     }
     async login(user, rememberMe = false, ip, agent) {
-        const targetScopeType = user.tenantId ? 'TENANT' : 'SYSTEM';
-        const targetScopeId = user.tenantId || null;
-        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
+        const targetScopeType = 'SYSTEM';
+        const targetScopeId = null;
+        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent, targetScopeType, targetScopeId);
         const refreshToken = rtResult.token;
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
         const tokenResult = await this.issueTokenForScope(user, targetScopeType, targetScopeId);
@@ -138,7 +100,6 @@ let AuthService = class AuthService {
                 id: user.id,
                 email: user.email,
                 fullName: user.fullName,
-                roles: [],
                 isOwner: user.isOwner,
                 permissions: []
             }
@@ -153,21 +114,14 @@ let AuthService = class AuthService {
             throw new common_1.ForbiddenException('Invalid or Expired Refresh Token');
         }
         const userId = rtResult.userId;
-        const user = await this.identityUseCase.findUserWithPermissions(userId);
+        const user = await this.identityUseCase.findUserById(userId);
         if (!user)
             throw new common_1.ForbiddenException('User Not Found');
-        const roleNames = user.roles?.map((ur) => ur.role?.name) || [];
-        const payload = {
-            email: user.email,
-            sub: user.id,
-            tenantId: user.tenantId,
-            roles: roleNames,
-            isOwner: user.isOwner,
-        };
-        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+        const { scopeType, scopeId, token: newRefreshToken } = rtResult;
+        const tokenResult = await this.issueTokenForScope(user, scopeType, scopeId);
         return {
-            access_token: accessToken,
-            refresh_token: rtResult.token,
+            access_token: tokenResult.access_token,
+            refresh_token: newRefreshToken,
         };
     }
     async logout(refreshToken) {
@@ -198,7 +152,6 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [identity_usecase_1.IdentityUseCase,
         jwt_1.JwtService,
-        permission_cache_service_1.PermissionCacheService,
         redis_service_1.RedisService,
         refresh_token_service_1.RefreshTokenService])
 ], AuthService);

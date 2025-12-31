@@ -15,14 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.IdentityUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const user_repository_interface_1 = require("../domain/user.repository.interface");
-const permission_cache_service_1 = require("../../auth/permission-cache.service");
-const common_2 = require("@nestjs/common");
 let IdentityUseCase = class IdentityUseCase {
     userRepository;
-    permissionCache;
-    constructor(userRepository, permissionCache) {
+    constructor(userRepository) {
         this.userRepository = userRepository;
-        this.permissionCache = permissionCache;
     }
     async findUserByEmail(email) {
         return this.userRepository.findByEmail(email);
@@ -47,20 +43,15 @@ let IdentityUseCase = class IdentityUseCase {
     }
     async assignRole(userId, roleId, tenantId) {
         await this.userRepository.assignRole(userId, roleId, tenantId);
-        const scope = tenantId ? 'TENANT' : 'SYSTEM';
-        await this.permissionCache.clearPermissions(userId, tenantId, scope);
     }
     async revokeRole(userId, roleId, tenantId) {
         await this.userRepository.revokeRole(userId, roleId, tenantId);
-        const scope = tenantId ? 'TENANT' : 'SYSTEM';
-        await this.permissionCache.clearPermissions(userId, tenantId, scope);
     }
 };
 exports.IdentityUseCase = IdentityUseCase;
 exports.IdentityUseCase = IdentityUseCase = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(user_repository_interface_1.IUserRepository)),
-    __param(1, (0, common_1.Inject)((0, common_2.forwardRef)(() => permission_cache_service_1.PermissionCacheService))),
-    __metadata("design:paramtypes", [Object, permission_cache_service_1.PermissionCacheService])
+    __metadata("design:paramtypes", [Object])
 ], IdentityUseCase);
 //# sourceMappingURL=identity.usecase.js.map

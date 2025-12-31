@@ -32,8 +32,8 @@ import { MenuModule } from '../menu/menu.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, PermissionCacheService, RefreshTokenService, EffectivePermissionsService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, RefreshTokenService, EffectivePermissionsService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, PermissionsService, PermissionCacheService, RefreshTokenService, EffectivePermissionsService],
+  exports: [AuthService, JwtModule, PermissionsService, RefreshTokenService, EffectivePermissionsService],
 })
 export class AuthModule { }

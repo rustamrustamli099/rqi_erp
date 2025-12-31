@@ -13,18 +13,18 @@ exports.RequirePermissions = exports.PermissionsGuard = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const prisma_service_1 = require("../../prisma.service");
-const permission_cache_service_1 = require("./permission-cache.service");
+const effective_permissions_service_1 = require("./effective-permissions.service");
 const audit_service_1 = require("../../system/audit/audit.service");
 const dry_run_engine_1 = require("../../common/utils/dry-run.engine");
 let PermissionsGuard = class PermissionsGuard {
     reflector;
     prisma;
-    permissionCache;
+    effectivePermissionsService;
     auditService;
-    constructor(reflector, prisma, permissionCache, auditService) {
+    constructor(reflector, prisma, effectivePermissionsService, auditService) {
         this.reflector = reflector;
         this.prisma = prisma;
-        this.permissionCache = permissionCache;
+        this.effectivePermissionsService = effectivePermissionsService;
         this.auditService = auditService;
     }
     async canActivate(context) {
@@ -37,9 +37,9 @@ let PermissionsGuard = class PermissionsGuard {
         if (!user)
             return false;
         const auditContext = {
-            userId: user.sub || user.userId,
-            tenantId: user.tenantId,
-            branchId: user.branchId || null,
+            userId: user.userId || user.sub,
+            scopeType: user.scopeType,
+            scopeId: user.scopeId,
             module: 'ACCESS_CONTROL',
             method: request.method,
             endpoint: request.url,
@@ -47,46 +47,11 @@ let PermissionsGuard = class PermissionsGuard {
             details: { required: requiredPermissions }
         };
         try {
-            const userRole = user.role;
-            const scope = user.tenantId ? 'TENANT' : 'SYSTEM';
-            let userPermissionSlugs = await this.permissionCache.getPermissions(user.sub, user.tenantId, scope);
-            if (!userPermissionSlugs) {
-                const userWithRoles = await this.prisma.user.findUnique({
-                    where: { id: user.sub },
-                    include: {
-                        roles: {
-                            include: {
-                                role: {
-                                    include: {
-                                        permissions: {
-                                            include: { permission: true }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-                if (!userWithRoles) {
-                    await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED_USER_NOT_FOUND' });
-                    return false;
-                }
-                const dbPermissions = [];
-                const contextTenantId = user.tenantId || null;
-                if (userWithRoles.roles) {
-                    userWithRoles.roles.forEach(ur => {
-                        const isMatch = ur.tenantId === contextTenantId;
-                        if (isMatch && ur.role && ur.role.permissions) {
-                            ur.role.permissions.forEach(rp => {
-                                if (rp.permission)
-                                    dbPermissions.push(rp.permission.slug);
-                            });
-                        }
-                    });
-                }
-                userPermissionSlugs = dbPermissions;
-                await this.permissionCache.setPermissions(user.sub, userPermissionSlugs, user.tenantId, scope);
-            }
+            const userPermissionSlugs = await this.effectivePermissionsService.computeEffectivePermissions({
+                userId: auditContext.userId,
+                scopeType: auditContext.scopeType,
+                scopeId: auditContext.scopeId
+            });
             const validation = dry_run_engine_1.PermissionDryRunEngine.evaluate(userPermissionSlugs, requiredPermissions);
             if (!validation.allowed) {
                 await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED', details: { ...auditContext.details, reason: 'Insufficient Permissions' } });
@@ -108,7 +73,7 @@ exports.PermissionsGuard = PermissionsGuard = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [core_1.Reflector,
         prisma_service_1.PrismaService,
-        permission_cache_service_1.PermissionCacheService,
+        effective_permissions_service_1.EffectivePermissionsService,
         audit_service_1.AuditService])
 ], PermissionsGuard);
 const RequirePermissions = (...permissions) => {

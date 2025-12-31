@@ -39,8 +39,10 @@ let SessionService = class SessionService {
         }));
     }
     async switchContext(userId, target) {
+        console.log('DEBUG switchContext target:', JSON.stringify(target));
         if (target.scopeType === 'SYSTEM' && target.scopeId) {
-            throw new common_1.ForbiddenException('SYSTEM scope cannot have a scopeId');
+            console.log('DEBUG SYSTEM CHECK HIT');
+            throw new common_1.BadRequestException('SYSTEM scope cannot have a scopeId');
         }
         if (target.scopeType === 'TENANT' && !target.scopeId) {
             throw new common_1.ForbiddenException('TENANT scope requires a scopeId');

@@ -1,6 +1,7 @@
 import { Controller, Request, Post, UseGuards, Body, Get, Res, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MfaService } from './mfa.service';
+import { EffectivePermissionsService } from './effective-permissions.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
@@ -11,7 +12,8 @@ import { LocalAuthGuard } from './local-auth.guard'; // Assuming this exists or 
 export class AuthController {
     constructor(
         private authService: AuthService,
-        private mfaService: MfaService
+        private mfaService: MfaService,
+        private effectivePermissionsService: EffectivePermissionsService
     ) { }
 
     @UseGuards(AuthGuard('local'))
@@ -147,12 +149,14 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     @Get('me')
     async getMe(@Request() req) {
-        // [RBAC] Hydrate Permissions strictly from DB
-        // Token only contains roles/ids. Frontend needs actual permission slugs.
-        const effectivePermissions = await this.authService.getEffectivePermissions(
-            req.user.userId || req.user.sub,
-            req.user.tenantId || null
-        );
+        // [RBAC] Hydrate Permissions strictly via EffectivePermissionsService
+        const { userId, scopeType, scopeId } = req.user;
+
+        const effectivePermissions = await this.effectivePermissionsService.computeEffectivePermissions({
+            userId,
+            scopeType: scopeType || 'SYSTEM', // Default safe fallback
+            scopeId: scopeId || null
+        });
 
         return {
             ...req.user,

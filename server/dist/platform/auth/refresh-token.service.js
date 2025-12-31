@@ -55,7 +55,7 @@ let RefreshTokenService = RefreshTokenService_1 = class RefreshTokenService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async generateToken(userId, ip, agent, familyId) {
+    async generateToken(userId, ip, agent, scopeType = 'SYSTEM', scopeId = null, familyId) {
         const id = crypto.randomUUID();
         const secret = crypto.randomBytes(32).toString('hex');
         const tokenHash = await bcrypt.hash(secret, 10);
@@ -73,8 +73,10 @@ let RefreshTokenService = RefreshTokenService_1 = class RefreshTokenService {
                 userAgent: agent,
             },
         });
+        const safeScopeId = scopeId || 'null';
+        const tokenString = `${id}.${secret}.${scopeType}.${safeScopeId}`;
         return {
-            token: `${id}.${secret}`,
+            token: tokenString,
             familyId: newFamilyId,
             expiresAt,
             userId,
@@ -84,7 +86,14 @@ let RefreshTokenService = RefreshTokenService_1 = class RefreshTokenService {
         if (!incomingToken || !incomingToken.includes('.')) {
             throw new common_1.UnauthorizedException('Invalid Token Format');
         }
-        const [id, secret] = incomingToken.split('.');
+        const parts = incomingToken.split('.');
+        if (parts.length < 2)
+            throw new common_1.UnauthorizedException('Invalid Token Format');
+        const id = parts[0];
+        const secret = parts[1];
+        const scopeType = parts[2] || 'SYSTEM';
+        const rawScopeId = parts[3] || 'null';
+        const scopeId = rawScopeId === 'null' ? null : rawScopeId;
         const record = await this.prisma.refreshToken.findUnique({
             where: { id }
         });
@@ -110,7 +119,12 @@ let RefreshTokenService = RefreshTokenService_1 = class RefreshTokenService {
                 revokedReason: 'Rotated'
             }
         });
-        return this.generateToken(record.userId, ip, agent, record.familyId);
+        const newTok = await this.generateToken(record.userId, ip, agent, scopeType, scopeId, record.familyId);
+        return {
+            ...newTok,
+            scopeType,
+            scopeId
+        };
     }
     async revokeByToken(incomingToken) {
         if (!incomingToken || !incomingToken.includes('.'))

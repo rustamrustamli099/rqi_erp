@@ -43,22 +43,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         }
 
         // 3. TENANT scope validation
+        // Strictly require scopeId for TENANT.
         if (payload.scopeType === 'TENANT' && !payload.scopeId) {
             throw new UnauthorizedException('Invalid Token: TENANT scope requires valid scopeId');
         }
 
-        const user = await this.identityUseCase.findUserByEmail(payload.email);
+        // 4. Validate Identity Only (IdentityUseCase might fetch other things, but we just verify existence)
+        // Note: we can optimize this to just check if user exists via ID if needed, but existing method is fine.
+        const user = await this.identityUseCase.findUserById(payload.sub);
         if (!user) {
             throw new UnauthorizedException();
         }
 
+        // RETURN: Strict SAP-Grade Context Object
         return {
             userId: payload.sub,
-            email: payload.email,
-            tenantId: payload.scopeId, // Forward compatibility
-            scopeId: payload.scopeId,
             scopeType: payload.scopeType,
-            isOwner: payload.isOwner
+            scopeId: payload.scopeId || null
         };
     }
 }

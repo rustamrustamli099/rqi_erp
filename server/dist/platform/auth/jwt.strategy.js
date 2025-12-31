@@ -45,17 +45,14 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (payload.scopeType === 'TENANT' && !payload.scopeId) {
             throw new common_1.UnauthorizedException('Invalid Token: TENANT scope requires valid scopeId');
         }
-        const user = await this.identityUseCase.findUserByEmail(payload.email);
+        const user = await this.identityUseCase.findUserById(payload.sub);
         if (!user) {
             throw new common_1.UnauthorizedException();
         }
         return {
             userId: payload.sub,
-            email: payload.email,
-            tenantId: payload.scopeId,
-            scopeId: payload.scopeId,
             scopeType: payload.scopeType,
-            isOwner: payload.isOwner
+            scopeId: payload.scopeId || null
         };
     }
 };

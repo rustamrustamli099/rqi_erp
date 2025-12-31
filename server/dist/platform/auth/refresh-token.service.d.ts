@@ -3,13 +3,15 @@ export declare class RefreshTokenService {
     private prisma;
     private readonly logger;
     constructor(prisma: PrismaService);
-    generateToken(userId: string, ip?: string, agent?: string, familyId?: string): Promise<{
+    generateToken(userId: string, ip?: string, agent?: string, scopeType?: string, scopeId?: string | null, familyId?: string): Promise<{
         token: string;
         familyId: string;
         expiresAt: Date;
         userId: string;
     }>;
     rotateToken(incomingToken: string, ip?: string, agent?: string): Promise<{
+        scopeType: string;
+        scopeId: string | null;
         token: string;
         familyId: string;
         expiresAt: Date;

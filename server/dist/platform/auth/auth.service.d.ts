@@ -1,23 +1,18 @@
 import { IdentityUseCase } from '../identity/application/identity.usecase';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '../redis/redis.service';
-import { PermissionCacheService } from './permission-cache.service';
 import { RefreshTokenService } from './refresh-token.service';
 export declare class AuthService {
     private identityUseCase;
     private jwtService;
-    private permissionCache;
     private redisService;
     private refreshTokenService;
-    constructor(identityUseCase: IdentityUseCase, jwtService: JwtService, permissionCache: PermissionCacheService, redisService: RedisService, refreshTokenService: RefreshTokenService);
-    getEffectivePermissions(userId: string, contextTenantId: string | null): Promise<string[]>;
-    private canonicalizePermission;
+    constructor(identityUseCase: IdentityUseCase, jwtService: JwtService, redisService: RedisService, refreshTokenService: RefreshTokenService);
     validateUser(email: string, pass: string): Promise<any>;
     issueTokenForScope(user: any, scopeType: string, scopeId: string | null): Promise<{
         access_token: string;
         user: {
             id: any;
-            email: any;
             scopeType: string;
             scopeId: string | null;
         };
@@ -30,7 +25,6 @@ export declare class AuthService {
             id: any;
             email: any;
             fullName: any;
-            roles: never[];
             isOwner: any;
             permissions: never[];
         };
@@ -48,7 +42,6 @@ export declare class AuthService {
             id: any;
             email: any;
             fullName: any;
-            roles: never[];
             isOwner: any;
             permissions: never[];
         };
@@ -61,7 +54,6 @@ export declare class AuthService {
             id: any;
             email: any;
             fullName: any;
-            roles: never[];
             isOwner: any;
             permissions: never[];
         };

@@ -3,7 +3,6 @@ import { IdentityUseCase } from '../identity/application/identity.usecase';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RedisService } from '../redis/redis.service';
-import { PermissionCacheService } from './permission-cache.service';
 import * as crypto from 'crypto';
 import { RefreshTokenService } from './refresh-token.service';
 
@@ -12,65 +11,10 @@ export class AuthService {
     constructor(
         private identityUseCase: IdentityUseCase,
         private jwtService: JwtService,
-        private permissionCache: PermissionCacheService,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         private redisService: RedisService, // Injected for revocation
         private refreshTokenService: RefreshTokenService,
     ) { }
-
-    // Fix permissionsCache usage to use redisService if needed, or just use redisService directly in revokeSessions.
-    // I will update revokeSessions from previous step to use this.redisService.
-
-
-    // [RBAC] Centralized Permission Calculation
-    // SAP-GRADE: Canonicalizes legacy slugs to frontend-expected format
-    async getEffectivePermissions(userId: string, contextTenantId: string | null): Promise<string[]> {
-        const userWithRole = await this.identityUseCase.findUserWithPermissions(userId);
-        if (!userWithRole) return [];
-
-        const permissions = new Set<string>();
-
-        // Support Multi-Role
-        if ((userWithRole as any)?.roles) {
-            (userWithRole as any).roles.forEach((ur: any) => {
-                // [RBAC] Strict Context Filter
-                const assignmentsTenantId = ur.tenantId || null;
-                const isMatch = assignmentsTenantId === contextTenantId;
-
-                // Permissions Logic (Owner bypass removed)
-                if (isMatch && ur.role && ur.role.permissions) {
-                    ur.role.permissions.forEach((rp: any) => {
-                        if (rp.permission) {
-                            const slug = rp.permission.slug;
-                            permissions.add(slug);
-
-                            // SAP-GRADE: Also add canonical version if mapping exists
-                            // This ensures legacy slugs work with new registry
-                            const canonical = this.canonicalizePermission(slug);
-                            if (canonical !== slug) {
-                                permissions.add(canonical);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-        return Array.from(permissions);
-    }
-
-    /**
-     * SAP-GRADE: Canonicalize permission slug
-     * Maps legacy/variant slugs to canonical format expected by frontend registry.
-     * NO inference - explicit 1:1 mapping only.
-     */
-    private canonicalizePermission(slug: string): string {
-        // Prefix normalization: admin_panel.* -> system.*
-        if (slug.startsWith('admin_panel.')) {
-            return slug.replace('admin_panel.', 'system.');
-        }
-        // Already canonical
-        return slug;
-    }
 
     async validateUser(email: string, pass: string): Promise<any> {
         const user = await this.identityUseCase.findUserByEmail(email);
@@ -94,17 +38,10 @@ export class AuthService {
         // Validation of "User has role in scope" MUST be done by caller (SessionService / Login)
 
         const payload = {
-            email: user.email,
             sub: user.id,
             // SAP-GRADE: Explicit Context Only
             scopeType: scopeType,     // REQUIRED
             scopeId: scopeId,         // SYSTEM -> null, TENANT -> string
-            // Legacy/Convenience fields can remain if strict validation allows, 
-            // but strict Phase 7 says "JWT MUST contain ONLY ...".
-            // We keep 'tenantId' mapping to 'scopeId' for backward compatibility if needed, 
-            // but rely on scopeType/scopeId for logic.
-            tenantId: scopeId,
-            isOwner: (user as any).isOwner,
         };
 
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
@@ -113,7 +50,6 @@ export class AuthService {
             access_token: accessToken,
             user: {
                 id: user.id,
-                email: user.email,
                 scopeType,
                 scopeId
             }
@@ -121,24 +57,19 @@ export class AuthService {
     }
 
     async login(user: any, rememberMe: boolean = false, ip?: string, agent?: string) {
-        // [STRICT] PHASE 7: LOGIN - NO PERMISSION CALCULATION
-        // Authenticate User -> Select Default Scope -> Issue Token
+        // [STRICT] PHASE 7: LOGIN - SYSTEM SCOPE ONLY
+        // Authenticate User -> Default to SYSTEM -> Issue Token
+        // User must explicitly switch to TENANT context later if needed.
 
-        // Default Scope Logic (For backward compatibility / initial login)
-        // If user has tenantId -> TENANT, else -> SYSTEM
-        // Note: Strict rules might require explicit selection, but 'login' implies bootstrapping.
-        // We do NOT check userRoleAssignment here (Token Issuance is separated).
-        // However, issueTokenForScope doesn't validate assignment either. 
-        // We assume 'validateUser' (caller) confirmed identity.
-
-        const targetScopeType = user.tenantId ? 'TENANT' : 'SYSTEM';
-        const targetScopeId = user.tenantId || null;
+        const targetScopeType = 'SYSTEM';
+        const targetScopeId = null;
 
         // 1. Generate Opaque Refresh Token (Bank-Grade)
-        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
+        // Embed SYSTEM scope in the RT for consistency
+        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent, targetScopeType, targetScopeId);
         const refreshToken = rtResult.token;
 
-        // Legacy/Backup
+        // Legacy/Backup (Optional: remove if not needed by legacy code, keeping strictly for safety)
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
 
         // 2. Issue Access Token via Scope
@@ -154,7 +85,6 @@ export class AuthService {
                 id: user.id,
                 email: user.email,
                 fullName: user.fullName,
-                roles: [],         // Deprecated in token
                 isOwner: (user as any).isOwner,
                 permissions: []    // REMOVED from Token/Login. Must fetch via Context.
             }
@@ -171,23 +101,21 @@ export class AuthService {
         }
 
         const userId = rtResult.userId;
-        const user = await this.identityUseCase.findUserWithPermissions(userId);
+
+        // Use Identity UseCase to get fresh user details (e.g. email, status)
+        const user = await this.identityUseCase.findUserById(userId);
         if (!user) throw new ForbiddenException('User Not Found');
 
-        // Regenerate Access Token
-        const roleNames = (user as any).roles?.map((ur: any) => ur.role?.name) || [];
-        const payload = {
-            email: user.email,
-            sub: user.id,
-            tenantId: user.tenantId,
-            roles: roleNames,
-            isOwner: (user as any).isOwner,
-        };
-        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+        // Regenerate Access Token using PRESERVED Scope
+        // scopeType and scopeId come from the rotated refresh token
+        // @ts-ignore
+        const { scopeType, scopeId, token: newRefreshToken } = rtResult;
+
+        const tokenResult = await this.issueTokenForScope(user, scopeType, scopeId);
 
         return {
-            access_token: accessToken,
-            refresh_token: rtResult.token,
+            access_token: tokenResult.access_token,
+            refresh_token: newRefreshToken,
         };
     }
 

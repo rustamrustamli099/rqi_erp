@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../prisma.service';
 import { AuthService } from '../auth.service';
 import { ScopeType, SwitchContextDto } from './dto/switch-context.dto';
@@ -38,9 +38,11 @@ export class SessionService {
      * Context Switching Logic (The "Login" to a specific context)
      */
     async switchContext(userId: string, target: SwitchContextDto) {
-        // [VALIDATION] SAP-Grade Scope Rules
+        console.log('DEBUG switchContext target:', JSON.stringify(target));
+        // [VALIDATION] SAP-Grade Scope Rules (400 Bad Request)
         if (target.scopeType === 'SYSTEM' && target.scopeId) {
-            throw new ForbiddenException('SYSTEM scope cannot have a scopeId');
+            console.log('DEBUG SYSTEM CHECK HIT');
+            throw new BadRequestException('SYSTEM scope cannot have a scopeId');
         }
         if (target.scopeType === 'TENANT' && !target.scopeId) {
             throw new ForbiddenException('TENANT scope requires a scopeId');

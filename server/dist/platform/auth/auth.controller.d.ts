@@ -1,11 +1,13 @@
 import { AuthService } from './auth.service';
 import { MfaService } from './mfa.service';
+import { EffectivePermissionsService } from './effective-permissions.service';
 import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
 export declare class AuthController {
     private authService;
     private mfaService;
-    constructor(authService: AuthService, mfaService: MfaService);
+    private effectivePermissionsService;
+    constructor(authService: AuthService, mfaService: MfaService, effectivePermissionsService: EffectivePermissionsService);
     login(req: any, response: Response): Promise<{
         mfaRequired: boolean;
         userId: any;
@@ -52,7 +54,6 @@ export declare class AuthController {
             id: any;
             email: any;
             fullName: any;
-            roles: never[];
             isOwner: any;
             permissions: never[];
         };

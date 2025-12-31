@@ -10,12 +10,14 @@ exports.MenuModule = void 0;
 const common_1 = require("@nestjs/common");
 const menu_controller_1 = require("./menu.controller");
 const menu_service_1 = require("./menu.service");
+const auth_module_1 = require("../auth/auth.module");
 let MenuModule = class MenuModule {
 };
 exports.MenuModule = MenuModule;
 exports.MenuModule = MenuModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
+        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
         controllers: [menu_controller_1.MenuController],
         providers: [menu_service_1.MenuService],
         exports: [menu_service_1.MenuService],

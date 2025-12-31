@@ -18,20 +18,23 @@ const menu_service_1 = require("./menu.service");
 const menu_definition_1 = require("./menu.definition");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const tenant_context_guard_1 = require("../tenant-context/tenant-context.guard");
-const permission_cache_service_1 = require("../auth/permission-cache.service");
+const effective_permissions_service_1 = require("../auth/effective-permissions.service");
 let MenuController = class MenuController {
     menuService;
-    permissionCache;
-    constructor(menuService, permissionCache) {
+    effectivePermissionsService;
+    constructor(menuService, effectivePermissionsService) {
         this.menuService = menuService;
-        this.permissionCache = permissionCache;
+        this.effectivePermissionsService = effectivePermissionsService;
     }
     async getMyMenu(req) {
-        const tenantId = req.tenantId || req.user?.tenantId || 'system';
-        const userId = req.user.id;
+        const { userId, scopeType, scopeId } = req.user;
         let userPermissions = [];
         if (userId) {
-            userPermissions = await this.permissionCache.getPermissions(userId, tenantId) || [];
+            userPermissions = await this.effectivePermissionsService.computeEffectivePermissions({
+                userId,
+                scopeType: scopeType || 'SYSTEM',
+                scopeId: scopeId || null
+            });
         }
         return this.menuService.filterMenu(menu_definition_1.ADMIN_MENU_TREE, userPermissions);
     }
@@ -48,6 +51,6 @@ exports.MenuController = MenuController = __decorate([
     (0, common_1.Controller)('me/menu'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, tenant_context_guard_1.TenantContextGuard),
     __metadata("design:paramtypes", [menu_service_1.MenuService,
-        permission_cache_service_1.PermissionCacheService])
+        effective_permissions_service_1.EffectivePermissionsService])
 ], MenuController);
 //# sourceMappingURL=menu.controller.js.map

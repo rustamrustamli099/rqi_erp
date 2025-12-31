@@ -1,8 +1,8 @@
 import { MenuService } from './menu.service';
-import { PermissionCacheService } from '../auth/permission-cache.service';
+import { EffectivePermissionsService } from '../auth/effective-permissions.service';
 export declare class MenuController {
     private readonly menuService;
-    private readonly permissionCache;
-    constructor(menuService: MenuService, permissionCache: PermissionCacheService);
+    private readonly effectivePermissionsService;
+    constructor(menuService: MenuService, effectivePermissionsService: EffectivePermissionsService);
     getMyMenu(req: any): Promise<import("./menu.definition").MenuItem[]>;
 }

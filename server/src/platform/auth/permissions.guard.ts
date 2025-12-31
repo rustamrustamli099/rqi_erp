@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
-import { PermissionCacheService } from './permission-cache.service';
+import { EffectivePermissionsService } from './effective-permissions.service';
 import { AuditService } from '../../system/audit/audit.service';
 import { PermissionDryRunEngine } from '../../common/utils/dry-run.engine';
 
@@ -10,7 +10,7 @@ export class PermissionsGuard implements CanActivate {
     constructor(
         private reflector: Reflector,
         private prisma: PrismaService,
-        private permissionCache: PermissionCacheService,
+        private effectivePermissionsService: EffectivePermissionsService,
         private auditService: AuditService
     ) { }
 
@@ -27,9 +27,9 @@ export class PermissionsGuard implements CanActivate {
 
         // [AUDIT] Context
         const auditContext = {
-            userId: user.sub || user.userId,
-            tenantId: user.tenantId,
-            branchId: (user as any).branchId || null,
+            userId: user.userId || user.sub,
+            scopeType: user.scopeType,
+            scopeId: user.scopeId,
             module: 'ACCESS_CONTROL',
             method: request.method,
             endpoint: request.url,
@@ -38,62 +38,13 @@ export class PermissionsGuard implements CanActivate {
         };
 
         try {
-            // 1. OWNER BYPASS - REMOVED for Strict DB Enforcement
-            // isOwner flag is no longer a magic pass. Permissions must be in DB.
+            // [STRICT] Permissions via EffectivePermissionsService
+            const userPermissionSlugs = await this.effectivePermissionsService.computeEffectivePermissions({
+                userId: auditContext.userId,
+                scopeType: auditContext.scopeType,
+                scopeId: auditContext.scopeId
+            });
 
-            const userRole = (user as any).role;
-            // 2. CACHE LOOKUP (Redis First)
-            const scope = user.tenantId ? 'TENANT' : 'SYSTEM';
-            let userPermissionSlugs: string[] | null = await this.permissionCache.getPermissions(user.sub, user.tenantId, scope);
-
-            if (!userPermissionSlugs) {
-                // 3. DB FALLBACK (Cache Miss)
-                // 3. DB FALLBACK (Cache Miss) - Strict Multi-Role + Context
-                const userWithRoles = await this.prisma.user.findUnique({
-                    where: { id: user.sub },
-                    include: {
-                        roles: { // Use valid UserRole relation
-                            include: {
-                                role: {
-                                    include: {
-                                        permissions: {
-                                            include: { permission: true }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                if (!userWithRoles) {
-                    await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED_USER_NOT_FOUND' });
-                    return false;
-                }
-
-                const dbPermissions: string[] = [];
-                const contextTenantId = user.tenantId || null;
-
-                if (userWithRoles.roles) {
-                    userWithRoles.roles.forEach(ur => {
-                        // Strict Context Filter (Must match AuthService logic)
-                        // Include if assignment matches context
-                        const isMatch = ur.tenantId === contextTenantId;
-
-                        if (isMatch && ur.role && ur.role.permissions) {
-                            ur.role.permissions.forEach(rp => {
-                                if (rp.permission) dbPermissions.push(rp.permission.slug);
-                            });
-                        }
-                    });
-                }
-                userPermissionSlugs = dbPermissions;
-
-                // Hydrate Cache
-                await this.permissionCache.setPermissions(user.sub, userPermissionSlugs, user.tenantId, scope);
-            }
-
-            // 4. CHECK
             // 4. CHECK (Using centralized Dry-Run Engine)
             const validation = PermissionDryRunEngine.evaluate(userPermissionSlugs!, requiredPermissions);
 

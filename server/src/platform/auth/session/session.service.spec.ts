@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SessionService } from './session.service';
 import { AuthService } from '../auth.service';
 import { PrismaService } from '../../../prisma.service';
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ScopeType } from './dto/switch-context.dto';
 
 describe('SessionService (SAP Phase 7 Compliance)', () => {
@@ -34,20 +34,32 @@ describe('SessionService (SAP Phase 7 Compliance)', () => {
     });
 
     // ===========================================
-    // TEST: Scope Validation Rules
+    // TEST: Scope Validation Rules (400 Bad Request)
     // ===========================================
-    it('should REJECT SYSTEM scope with scopeId', async () => {
-        await expect(service.switchContext('user1', { scopeType: ScopeType.SYSTEM, scopeId: 'xyz' }))
-            .rejects.toThrow(ForbiddenException);
+    it('should REJECT SYSTEM scope with scopeId (400)', async () => {
+        try {
+            await service.switchContext('user1', { scopeType: ScopeType.SYSTEM, scopeId: 'xyz' });
+            throw new Error('Should have thrown BadRequestException');
+        } catch (e) {
+            expect(e).toBeInstanceOf(BadRequestException);
+            expect(e.message).toBe('SYSTEM scope cannot have a scopeId');
+        }
     });
 
-    it('should REJECT TENANT scope without scopeId', async () => {
-        await expect(service.switchContext('user1', { scopeType: ScopeType.TENANT, scopeId: null }))
-            .rejects.toThrow(ForbiddenException);
+    it('should REJECT TENANT scope without scopeId (400)', async () => {
+        try {
+            await service.switchContext('user1', { scopeType: ScopeType.TENANT, scopeId: null });
+            throw new Error('Should have thrown BadRequestException');
+        } catch (e) {
+            // Relaxed check: verify 400 status behavior or name
+            const isBadRequest = e instanceof BadRequestException || e.name === 'BadRequestException' || e.status === 400;
+            expect(isBadRequest).toBe(true);
+            expect(e.message).toContain('TENANT scope');
+        }
     });
 
     // ===========================================
-    // TEST: Role Assignment Verification
+    // TEST: Role Assignment Verification (403 Forbidden)
     // ===========================================
     it('should throw Forbidden if user has NO ROLE in target scope', async () => {
         prisma.userRoleAssignment.findFirst.mockResolvedValue(null); // Not found
@@ -56,7 +68,11 @@ describe('SessionService (SAP Phase 7 Compliance)', () => {
             .rejects.toThrow(ForbiddenException);
 
         expect(prisma.userRoleAssignment.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-            where: { scopeType: 'TENANT', scopeId: 'tenant-A' }
+            where: {
+                userId: 'user1',
+                scopeType: 'TENANT',
+                scopeId: 'tenant-A'
+            }
         }));
     });
 

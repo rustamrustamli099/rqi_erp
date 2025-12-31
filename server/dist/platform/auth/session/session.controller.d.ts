@@ -13,7 +13,6 @@ export declare class SessionController {
         access_token: string;
         user: {
             id: any;
-            email: any;
             scopeType: string;
             scopeId: string | null;
         };

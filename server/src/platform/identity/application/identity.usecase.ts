@@ -3,14 +3,11 @@ import { Injectable, Inject } from '@nestjs/common';
 import { IUserRepository } from '../domain/user.repository.interface';
 import { User } from '../domain/user.entity';
 // import { DomainEventBus } from '../../../core/events/event-bus.service';
-import { PermissionCacheService } from '../../auth/permission-cache.service';
-import { forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class IdentityUseCase {
     constructor(
         @Inject(IUserRepository) private readonly userRepository: IUserRepository,
-        @Inject(forwardRef(() => PermissionCacheService)) private readonly permissionCache: PermissionCacheService,
         // private readonly eventBus: DomainEventBus,
     ) { }
 
@@ -51,8 +48,8 @@ export class IdentityUseCase {
         await this.userRepository.assignRole(userId, roleId, tenantId);
 
         // 2. Invalidate Cache [CRITICAL]
-        const scope = tenantId ? 'TENANT' : 'SYSTEM';
-        await this.permissionCache.clearPermissions(userId, tenantId, scope);
+        // [SAP-GRADE] Stateless Session - No Cache to Invalidate for now.
+        // If EffectivePermissionsService adds caching later, we will emit an event here.
 
         // 3. Audit (Should trigger event or call AuditService)
         // this.eventBus.emit(new RoleAssignedEvent(userId, roleName));
@@ -63,7 +60,6 @@ export class IdentityUseCase {
         await this.userRepository.revokeRole(userId, roleId, tenantId);
 
         // 2. Invalidate Cache
-        const scope = tenantId ? 'TENANT' : 'SYSTEM';
-        await this.permissionCache.clearPermissions(userId, tenantId, scope);
+        // [SAP-GRADE] Stateless Session - No Cache to Invalidate for now.
     }
 }
