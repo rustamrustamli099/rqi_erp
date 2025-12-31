@@ -217,7 +217,7 @@ export function WorkflowConfigTab({ tabNode }: WorkflowConfigTabProps) {
                 onValueChange={handleTabChange}
                 contentMap={contentMap}
                 iconMap={iconMap}
-                variant="underline"
+                variant="default"
             />
         </div>
     );

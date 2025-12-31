@@ -160,7 +160,15 @@ export default function SettingsPage() {
                                             activeTab === item.id ? "bg-secondary font-medium text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                         )}
                                         onClick={() => {
-                                            handleTabChange(item.id);
+                                            // SAP-GRADE: Use canonical path from resolver (includes default subTab)
+                                            const resolvedNode = allowedTabs.find(t => (t.tabKey || t.id) === item.id);
+                                            if (resolvedNode?.path) {
+                                                // Extract params from canonical path
+                                                const url = new URL(resolvedNode.path, window.location.origin);
+                                                setSearchParams(url.searchParams);
+                                            } else {
+                                                handleTabChange(item.id);
+                                            }
                                         }}
                                         title={item.label}
                                     >

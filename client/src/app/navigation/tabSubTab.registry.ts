@@ -245,7 +245,7 @@ const ADMIN_PAGES: PageConfig[] = [
                 requiredAnyOf: [],
                 subTabs: [
                     { key: 'config', label: 'Konfiqurasiya', requiredAnyOf: ['system.settings.system_configurations.workflow.configuration.read'] },
-                    { key: 'monitor', label: 'Nəzarət', requiredAnyOf: ['system.settings.system_configurations.workflow.configuration.read'] }
+                    { key: 'monitor', label: 'Nəzarət', requiredAnyOf: ['system.settings.system_configurations.workflow.monitoring.read'] }
                 ]
             }
         ]
