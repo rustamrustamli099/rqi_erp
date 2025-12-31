@@ -396,7 +396,7 @@ function isTabAllowed(tab: TabConfig, permSet: Set<string>): boolean {
 
 /**
  * Get first allowed tab for a page
- * EXACT base match only - NO startsWith
+ * SAP LAW: Tab allowed if self.allowed OR ANY(subTab.allowed)
  */
 export function getFirstAllowedTab(
     pageKey: string,
@@ -410,9 +410,9 @@ export function getFirstAllowedTab(
     if (!page) return null;
 
     for (const tab of page.tabs) {
-        const hasTabAccess = tab.requiredAnyOf.some(req => permSet.has(req));
-        if (hasTabAccess) {
-            // Check subTabs if exist
+        // SAP: Check if tab is allowed (self OR any subTab)
+        if (isTabAllowed(tab, permSet)) {
+            // Find first allowed subTab if exists
             if (tab.subTabs && tab.subTabs.length > 0) {
                 for (const subTab of tab.subTabs) {
                     const hasSubTabAccess = subTab.requiredAnyOf.some(req => permSet.has(req));
@@ -420,10 +420,14 @@ export function getFirstAllowedTab(
                         return { tab: tab.key, subTab: subTab.key };
                     }
                 }
-                // If no subTab accessible, still return tab
+                // Tab visible via subTab but couldn't find specific one - shouldn't happen
+            }
+            // Tab has self permission (no subTabs or has direct access)
+            const selfAllowed = tab.requiredAnyOf.length > 0 &&
+                tab.requiredAnyOf.some(req => permSet.has(req));
+            if (selfAllowed || (tab.requiredAnyOf.length === 0 && (!tab.subTabs || tab.subTabs.length === 0))) {
                 return { tab: tab.key };
             }
-            return { tab: tab.key };
         }
     }
 
