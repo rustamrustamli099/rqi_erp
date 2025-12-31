@@ -35,7 +35,8 @@ function PermissionRow({
     searchTerm?: string
 }) {
     // Determine if we should be open by default
-    const [isOpen, setIsOpen] = useState(level < 1 || !!searchTerm)
+    // SAP-GRADE: All accordions CLOSED by default for better UX
+    const [isOpen, setIsOpen] = useState(!!searchTerm)
 
     const hasChildren = node.children && node.children.length > 0
     // A node is a "Leaf Cluster" if it has children, but those children are the actual leaves (no grandchildren)
