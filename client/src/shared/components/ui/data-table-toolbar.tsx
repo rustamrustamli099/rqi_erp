@@ -29,7 +29,6 @@ interface DataTableToolbarProps<TData> {
     onSearchChange?: (value: string) => void
     // Export Support
     onExportClick?: () => void
-    canExport?: boolean
 }
 
 export function DataTableToolbar<TData>({
@@ -46,7 +45,6 @@ export function DataTableToolbar<TData>({
     searchValue,
     onSearchChange,
     onExportClick,
-    canExport
 }: DataTableToolbarProps<TData>) {
     const isFiltered = table.getState().columnFilters.length > 0
     const placeholder = searchPlaceholder || filterPlaceholder || "Filter...";
@@ -126,7 +124,7 @@ export function DataTableToolbar<TData>({
                 {children}
 
                 {/* Export Button */}
-                {canExport && onExportClick && (
+                {onExportClick && (
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>

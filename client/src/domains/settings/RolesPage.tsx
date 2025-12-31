@@ -131,7 +131,6 @@ const RoleTable = ({
                     searchValue={searchTerm}
                     onSearchChange={setSearch}
                     onExportClick={onExportClick}
-                    canExport={!!onExportClick}
                 >
                     <FilterDrawer
                         resetFilters={reset}
@@ -260,19 +259,25 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     const subTabs = tabNode?.children ?? [];
     const allowedKeys = subTabs.map(st => st.subTabKey || st.id);
     const urlSubTab = searchParams.get('subTab') || '';
-    const currentTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || 'roles';
+
+    // SAP LAW: No implicit default (e.g. allowedKeys[0]). 
+    // If URL param matches allowed key, use it. Otherwise, rely on parent node or nothing.
+    // However, if we are at the root TAB, and no subtab is selected, activeNode is just the tabNode.
+    const currentTab = allowedKeys.includes(urlSubTab) ? urlSubTab : undefined;
 
     // 2. Locate Node in Tree
-    const activeNode = subTabs.find(n => (n.subTabKey || n.id) === currentTab) || tabNode;
+    const activeNode = currentTab
+        ? subTabs.find(n => (n.subTabKey || n.id) === currentTab)
+        : tabNode;
 
     // 3. Read Actions (Pure Property Access)
     const actions = activeNode?.actions;
     const toolbarActions = actions?.byContext.toolbar || [];
     const rowActions = actions?.byContext.row || [];
 
-    // Check visibility for actions (SAP: Exact match required)
-    const canCreate = toolbarActions.some(a => a.actionKey === 'create' && a.state !== 'hidden');
-    const canExport = toolbarActions.some(a => a.actionKey === 'export' && a.state !== 'hidden');
+    // SAP LAW: Use Action Objects directly. No boolean compute.
+    const createAction = toolbarActions.find(a => a.actionKey === 'create');
+    const exportAction = toolbarActions.find(a => a.actionKey === 'export');
 
     const handleTabChange = (value: string) => {
         console.log('[RolesPage] handleTabChange:', value);
@@ -366,7 +371,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
     const [isDiffOpen, setIsDiffOpen] = useState(false) // For review dialog
     const [isPreviewOpen, setIsPreviewOpen] = useState(false) // For Simulator
-    // const [currentTab, setCurrentTab] = useState("list") // Duplicate removed
+
 
     // SoD State
     const [sodModalOpen, setSodModalOpen] = useState(false)
@@ -590,38 +595,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     // Previous logic was overwriting the permissions fetched in handleRoleSelect with incomplete data from the 'roles' list.
     // Now handleRoleSelect is the single source of truth for setting current role and permissions.
 
-    // Trigger review dialog
-    // const handlePermissionsSaveClick = () => {
-    //     setIsDiffOpen(true);
-    // }
 
-    // Actually save after confirmation
-    // Actually save after confirmation
-    const confirmPermissionsSave = async () => {
-        if (!currentRole) return;
-
-        try {
-            await systemApi.updateRole(currentRole.id, {
-                // We only update permissions here. Name/Desc/Scope preserve old values or are undefined (Partial Update).
-                // API expects full DTO or Partial? Client contract says UpdateRoleRequest with all fields? 
-                // Let's check client contract. It demands "name, description, scope, permissionIds".
-                // Ideally I should send current values for others, or update contract to allow partial.
-                // For now, I'll send current values to be safe.
-                name: currentRole.name,
-                description: currentRole.description,
-                scope: currentRole.scope,
-                permissionIds: selectedPermissions
-            });
-
-            toast.success("İcazələr uğurla yeniləndi! Rol təsdiq üçün 'Draft' statusuna keçirildi.");
-            fetchRoles(); // Refresh to see status change
-        } catch (e: any) {
-            console.error(e);
-            toast.error(e.message || "İcazələri yadda saxlayarkən xəta baş verdi.");
-        } finally {
-            setIsDiffOpen(false);
-        }
-    }
 
     // UI Helpers for opening modals
     const openCreateModal = () => {
@@ -679,7 +653,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 setRowSelection={setRowSelection}
                 setColumnFilters={setColumnFilters}
                 onRowClick={handleRoleSelect}
-                onAddClick={canCreate ? () => setWizardOpen(true) : undefined}
+                onAddClick={createAction?.state !== 'hidden' ? () => setWizardOpen(true) : undefined}
                 isLoading={loading}
                 searchTerm={searchTerm}
                 setSearch={setSearch}
@@ -689,7 +663,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 query={query}
                 setFilter={setFilter}
                 reset={reset}
-                onExportClick={canExport ? () => {
+                onExportClick={exportAction?.state !== 'hidden' ? () => {
                     const headers = ['Ad', 'Təsvir', 'Növ', 'Scope', 'İstifadəçi Sayı', 'İcazə Sayı', 'Status'];
                     const csvRows = [
                         headers.join(','),
