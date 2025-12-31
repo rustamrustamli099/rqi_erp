@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import {
-    type ColumnDef,
     type ColumnFiltersState,
     type SortingState,
     getCoreRowModel,
@@ -13,32 +12,11 @@ import {
     flexRender,
 } from "@tanstack/react-table"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
-import {
-    Command,
-    CommandEmpty,
-    CommandInput,
-    CommandList,
-    CommandGroup,
-    CommandItem,
-} from "@/shared/components/ui/command"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/shared/components/ui/popover"
 import { Badge } from "@/shared/components/ui/badge"
-import { MoreHorizontal, Eye, Edit, Trash, Shield, Check, ChevronsUpDown, LayoutGrid, List, History, CheckCircle2, XCircle, FileText, Download, Building2, Terminal, Loader2, Info, Play } from "lucide-react"
+import { Shield, LayoutGrid, List, FileText, Download, Info, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
-
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
 import {
     Accordion,
     AccordionContent,
@@ -53,7 +31,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/components/ui/tabs"
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination"
 import { DataTableToolbar } from "@/shared/components/ui/data-table-toolbar"
 import { PageHeader } from "@/shared/components/ui/page-header"
@@ -66,8 +43,6 @@ import { systemApi, type SystemPermission } from "@/domains/system-console/api/s
 import { useGetRolesQuery, useCreateRoleMutation, useUpdateRoleMutation, useDeleteRoleMutation, useGetRoleByIdQuery, type Role } from "@/store/api";
 import { PermissionMatrix } from "@/domains/system-console/feature-flags/PermissionMatrix";
 import { PermissionTreeEditor } from "./_components/PermissionTreeEditor"
-import type { PermissionNode } from "./_components/permission-utils"
-import { PermissionSlugs } from "@/app/security/permission-slugs"
 import { permissionsStructure } from "@/app/security/permission-structure"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
 import { PermissionPreviewSimulator } from "./_components/PermissionPreviewSimulator"
@@ -77,10 +52,11 @@ import { SoDValidationService, type SoDValidationResult } from "@/app/security/s
 import { SoDConflictModal } from "@/shared/components/security/SoDConflictModal"
 
 import { Skeleton } from "@/shared/components/ui/skeleton"
-import { Input } from "@/shared/components/ui/input"
+import { Modal } from "@/shared/components/ui/modal"
 import { FilterDrawer } from "@/shared/components/ui/filter-drawer"
 import { Label } from "@/shared/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { ROLE_SCOPES, ROLE_STATUSES, getStatusColor, createRoleColumns, useRoleWorkflow } from "./_components/roles"
 
 // Helper Role Table Component to reduce duplication
 const RoleTable = ({
@@ -170,9 +146,9 @@ const RoleTable = ({
                                         <SelectValue placeholder="Bütün Scope-lar" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ALL">Hamısı</SelectItem>
-                                        <SelectItem value="TENANT">Tenant</SelectItem>
-                                        <SelectItem value="SYSTEM">System</SelectItem>
+                                        {ROLE_SCOPES.map(s => (
+                                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -186,10 +162,9 @@ const RoleTable = ({
                                         <SelectValue placeholder="Bütün Statuslar" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ALL">Hamısı</SelectItem>
-                                        <SelectItem value="ACTIVE">Aktiv</SelectItem>
-                                        <SelectItem value="DRAFT">Qaralama (Draft)</SelectItem>
-                                        <SelectItem value="ARCHIVED">Arxiv</SelectItem>
+                                        {ROLE_STATUSES.map(s => (
+                                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -385,21 +360,8 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     const [sodValidationResult, setSodValidationResult] = useState<SoDValidationResult | null>(null)
     const [pendingRoleValues, setPendingRoleValues] = useState<RoleFormValues | null>(null)
 
-    // Reject Dialog State
-    const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
-    const [rejectReason, setRejectReason] = useState("")
-    const [roleToReject, setRoleToReject] = useState<string | null>(null)
-    const [isRejectLoading, setIsRejectLoading] = useState(false)
-
-    // Approve Dialog State
-    const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
-    const [roleToApprove, setRoleToApprove] = useState<string | null>(null)
-    const [isApproveLoading, setIsApproveLoading] = useState(false)
-
-    // Submit Dialog State
-    const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
-    const [roleToSubmit, setRoleToSubmit] = useState<string | null>(null)
-    const [isSubmitLoading, setIsSubmitLoading] = useState(false)
+    // Workflow Hook (Submit/Approve/Reject)
+    const workflow = useRoleWorkflow({ onSuccess: refetchRoles });
 
     // Handlers
     const handleCreateRole = async (values: any) => {
@@ -438,111 +400,29 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         }
     }
 
-    const columns = useMemo<ColumnDef<Role>[]>(() => [
-        {
-            accessorKey: "name",
-            header: "Rol Adı",
-            cell: ({ row }) => (
-                <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{row.getValue("name")}</span>
-                    {row.original.type === "system" && <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">Sistem</span>}
-                </div>
-            ),
+    // Column definitions - extracted to separate file
+    const columns = useMemo(() => createRoleColumns({
+        onView: (role) => {
+            setCurrentRole(role);
+            setDialogMode("view");
+            setDialogOpen(true);
         },
-        { accessorKey: "description", header: "Təsvir" },
-        {
-            accessorKey: "scope",
-            header: "Əhatə",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px]">{row.getValue("scope")}</Badge>
+        onEdit: (role) => {
+            setCurrentRole(role);
+            setDialogMode("edit");
+            fetchAllPermissions();
+            setDialogOpen(true);
         },
-        {
-            accessorKey: "status",
-            header: "Status",
-            cell: ({ row }) => {
-                const status = row.original.status || "ACTIVE"; // Default to ACTIVE for legacy
-                const colors: Record<string, string> = {
-                    "DRAFT": "text-slate-500 bg-slate-100 border-slate-200",
-                    "PENDING_APPROVAL": "text-amber-600 bg-amber-50 border-amber-200",
-                    "APPROVED": "text-green-600 bg-green-50 border-green-200",
-                    "ACTIVE": "text-green-600 bg-green-50 border-green-200",
-                    "REJECTED": "text-red-600 bg-red-50 border-red-200",
-                };
-                return <Badge variant="outline" className={cn("text-[10px]", colors[status])}>{status}</Badge>
-            }
+        onDelete: (role) => {
+            setCurrentRole(role);
+            setIsDeleteOpen(true);
         },
-        {
-            id: "permissions_count",
-            header: "İcazə Sayı",
-            cell: ({ row }) => {
-                // Use explicit count property mapped in fetchRoles, or fallback
-                const count = (row.original as any).permissionsCount ?? (row.original as any)._count?.permissions ?? (row.original.permissions || []).length;
-                return <div className="text-center font-medium text-muted-foreground w-12">{count}</div>
-            },
-        },
-        { accessorKey: "usersCount", header: "İstifadəçilər", cell: ({ row }) => <div className="text-center w-12">{row.getValue("usersCount")}</div> },
-        {
-            id: "actions",
-            header: "Əməliyyatlar",
-            cell: ({ row }) => {
-                const role = row.original
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                                setCurrentRole(role)
-                                setDialogMode("view")
-                                setDialogOpen(true)
-                            }}><Eye className="mr-2 h-4 w-4" /> Bax</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                                toast.info("Audit tarixçəsi tezliklə hazır olacaq");
-                            }}><History className="mr-2 h-4 w-4" /> Tarixçə</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSelectedRole(role.name)}><Check className="mr-2 h-4 w-4" /> İcazələri Seç</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-
-                            {/* Workflow Actions */}
-                            {role.status === "DRAFT" && (
-                                <DropdownMenuItem onClick={() => handleSubmitRole(role.id)}>
-                                    <CheckCircle2 className="mr-2 h-4 w-4 text-blue-600" /> Təsdiqə Göndər
-                                </DropdownMenuItem>
-                            )}
-                            {role.status === "PENDING_APPROVAL" && (
-                                <>
-                                    <DropdownMenuItem onClick={() => handleApproveRole(role.id)}>
-                                        <Check className="mr-2 h-4 w-4 text-green-600" /> Təsdiqlə
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleRejectRole(role.id)}>
-                                        <XCircle className="mr-2 h-4 w-4 text-red-600" /> İmtina Et
-                                    </DropdownMenuItem>
-                                </>
-                            )}
-
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem disabled={role.type === "system"} onClick={() => {
-                                setCurrentRole(role)
-                                setDialogMode("edit")
-                                fetchAllPermissions() // Lazy load
-                                setDialogOpen(true)
-                            }}><Edit className="mr-2 h-4 w-4" /> Düzəliş Et</DropdownMenuItem>
-                            {role.type !== "system" && (
-                                <DropdownMenuItem className="text-red-600" onClick={() => {
-                                    setCurrentRole(role)
-                                    setIsDeleteOpen(true)
-                                }}>
-                                    <Trash className="mr-2 h-4 w-4" /> Sil
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )
-            },
-        },
-    ], [])
-    // END MOVED COLUMNS DEFINITION
+        onSelectPermissions: (role) => setSelectedRole(role.name),
+        onSubmit: workflow.handleSubmit,
+        onApprove: workflow.handleApprove,
+        onReject: workflow.handleReject,
+        onHistory: () => toast.info("Audit tarixçəsi tezliklə hazır olacaq"),
+    }), [workflow.handleSubmit, workflow.handleApprove, workflow.handleReject]);
 
     // Fetch Logic
     // ... imports
@@ -687,78 +567,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         }
     };
 
-    // WORKFLOW HANDLERS - Now open confirmation modals instead of direct API calls
-    const handleSubmitRole = (id: string) => {
-        setRoleToSubmit(id);
-        setIsSubmitDialogOpen(true);
-    }
-
-    const confirmSubmitRole = async () => {
-        if (!roleToSubmit) return;
-        setIsSubmitLoading(true);
-        try {
-            await systemApi.submitRole(roleToSubmit);
-            toast.success("Rol təsdiqə göndərildi");
-            setIsSubmitDialogOpen(false);
-            setRoleToSubmit(null);
-            fetchRoles();
-        } catch (e) {
-            toast.error("Xəta baş verdi");
-        } finally {
-            setIsSubmitLoading(false);
-        }
-    }
-
-    const handleApproveRole = (id: string) => {
-        setRoleToApprove(id);
-        setIsApproveDialogOpen(true);
-    }
-
-    const confirmApproveRole = async () => {
-        if (!roleToApprove) return;
-        setIsApproveLoading(true);
-        try {
-            await systemApi.approveRole(roleToApprove);
-            toast.success("Rol təsdiqləndi və aktiv edildi");
-            setIsApproveDialogOpen(false);
-            setRoleToApprove(null);
-            fetchRoles();
-        } catch (e: any) {
-            if (e.response && e.response.status === 403) {
-                toast.error("Siz öz təsdiqə göndərdiyiniz rolu təsdiqləyə bilməzsiniz (4-Eyes Principle).");
-            } else {
-                toast.error("Təsdiqləmə xətası");
-            }
-        } finally {
-            setIsApproveLoading(false);
-        }
-    }
-
-    const handleRejectRole = (id: string) => {
-        setRoleToReject(id);
-        setRejectReason("");
-        setIsRejectDialogOpen(true);
-    }
-
-    const confirmRejectRole = async () => {
-        if (!roleToReject || !rejectReason.trim()) {
-            toast.error("İmtina səbəbi yazılmalıdır");
-            return;
-        }
-        setIsRejectLoading(true);
-        try {
-            await systemApi.rejectRole(roleToReject, rejectReason);
-            toast.info("Rol imtina edildi");
-            setIsRejectDialogOpen(false);
-            setRoleToReject(null);
-            setRejectReason("");
-            fetchRoles();
-        } catch (e) {
-            toast.error("Xəta baş verdi");
-        } finally {
-            setIsRejectLoading(false);
-        }
-    }
+    // Workflow handlers used directly from workflow hook in columns and dialogs
 
     // ... (rest of render logic, ensuring `data` is replaced by `roles` in table definition)
     // Old Table Definition Removed - Logic moved to RoleTable component
@@ -1116,74 +925,65 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 </DialogContent>
             </Dialog>
 
-            {/* Reject Role Dialog */}
-            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Rolu İmtina Et</DialogTitle>
-                        <DialogDescription>
-                            Bu rolu imtina etmək üçün səbəb qeyd edin. Bu məlumat sorğuçuya göndəriləcək.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <textarea
-                            className="w-full min-h-[100px] p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
-                            placeholder="İmtina səbəbi..."
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            disabled={isRejectLoading}
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)} disabled={isRejectLoading}>Ləğv et</Button>
-                        <Button variant="destructive" onClick={confirmRejectRole} disabled={isRejectLoading}>
-                            {isRejectLoading ? (
-                                <><span className="animate-spin mr-2">⏳</span>Gözləyin...</>
-                            ) : "İmtina Et"}
+            {/* Reject Role Modal */}
+            <Modal
+                isOpen={workflow.isRejectOpen}
+                onClose={workflow.cancelReject}
+                title="Rolu İmtina Et"
+                description="Bu rolu imtina etmək üçün səbəb qeyd edin."
+                footer={
+                    <>
+                        <Button variant="outline" onClick={workflow.cancelReject} disabled={workflow.isRejectLoading}>Ləğv et</Button>
+                        <Button variant="destructive" onClick={workflow.confirmReject} disabled={workflow.isRejectLoading}>
+                            {workflow.isRejectLoading ? "Gözləyin..." : "İmtina Et"}
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </>
+                }
+            >
+                <textarea
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
+                    placeholder="İmtina səbəbi..."
+                    value={workflow.rejectReason}
+                    onChange={(e) => workflow.setRejectReason(e.target.value)}
+                    disabled={workflow.isRejectLoading}
+                />
+            </Modal>
 
-            {/* Approve Role Dialog */}
-            <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Rolu Təsdiqlə</DialogTitle>
-                        <DialogDescription>
-                            Bu rolu təsdiqləmək istədiyinizə əminsiniz? Rol aktivləşdiriləcək.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)} disabled={isApproveLoading}>Ləğv et</Button>
-                        <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApproveRole} disabled={isApproveLoading}>
-                            {isApproveLoading ? (
-                                <><span className="animate-spin mr-2">⏳</span>Gözləyin...</>
-                            ) : "Təsdiqlə"}
+            {/* Approve Role Modal */}
+            <Modal
+                isOpen={workflow.isApproveOpen}
+                onClose={workflow.cancelApprove}
+                title="Rolu Təsdiqlə"
+                description="Bu rolu təsdiqləmək istədiyinizə əminsiniz? Rol aktivləşdiriləcək."
+                footer={
+                    <>
+                        <Button variant="outline" onClick={workflow.cancelApprove} disabled={workflow.isApproveLoading}>Ləğv et</Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={workflow.confirmApprove} disabled={workflow.isApproveLoading}>
+                            {workflow.isApproveLoading ? "Gözləyin..." : "Təsdiqlə"}
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </>
+                }
+            >
+                <p className="text-muted-foreground">Bu əməliyyatı geri qaytarmaq mümkün deyil.</p>
+            </Modal>
 
-            {/* Submit Role Dialog */}
-            <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Təsdiqə Göndər</DialogTitle>
-                        <DialogDescription>
-                            Bu rolu təsdiqə göndərmək istədiyinizə əminsiniz? Rolun statusu "Təsdiq Gözləyir" olacaq.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)} disabled={isSubmitLoading}>Ləğv et</Button>
-                        <Button onClick={confirmSubmitRole} disabled={isSubmitLoading}>
-                            {isSubmitLoading ? (
-                                <><span className="animate-spin mr-2">⏳</span>Gözləyin...</>
-                            ) : "Göndər"}
+            {/* Submit Role Modal */}
+            <Modal
+                isOpen={workflow.isSubmitOpen}
+                onClose={workflow.cancelSubmit}
+                title="Təsdiqə Göndər"
+                description="Bu rolu təsdiqə göndərmək istədiyinizə əminsiniz?"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={workflow.cancelSubmit} disabled={workflow.isSubmitLoading}>Ləğv et</Button>
+                        <Button onClick={workflow.confirmSubmit} disabled={workflow.isSubmitLoading}>
+                            {workflow.isSubmitLoading ? "Gözləyin..." : "Göndər"}
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </>
+                }
+            >
+                <p className="text-muted-foreground">Rolun statusu "Təsdiq Gözləyir" olacaq.</p>
+            </Modal>
 
         </div >
     )

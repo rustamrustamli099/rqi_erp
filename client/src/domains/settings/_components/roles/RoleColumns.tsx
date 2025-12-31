@@ -1,0 +1,174 @@
+/**
+ * SAP-GRADE Role Table Columns
+ * 
+ * Column definitions for roles table.
+ * Handlers are passed as callbacks for flexibility.
+ */
+
+import { type ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import {
+    MoreHorizontal, Eye, Edit, Trash, Shield,
+    Check, History, CheckCircle2, XCircle
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getStatusColor } from "./constants";
+import type { Role } from "@/store/api";
+
+// Column Action Handlers Interface
+export interface RoleColumnHandlers {
+    onView: (role: Role) => void;
+    onEdit: (role: Role) => void;
+    onDelete: (role: Role) => void;
+    onSelectPermissions: (role: Role) => void;
+    onSubmit: (roleId: string) => void;
+    onApprove: (roleId: string) => void;
+    onReject: (roleId: string) => void;
+    onHistory: (role: Role) => void;
+}
+
+/**
+ * Creates role table columns with provided handlers
+ */
+export function createRoleColumns(handlers: RoleColumnHandlers): ColumnDef<Role>[] {
+    return [
+        {
+            accessorKey: "name",
+            header: "Rol Adı",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{row.getValue("name")}</span>
+                    {row.original.type === "system" && (
+                        <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                            Sistem
+                        </span>
+                    )}
+                </div>
+            ),
+        },
+        {
+            accessorKey: "description",
+            header: "Təsvir"
+        },
+        {
+            accessorKey: "scope",
+            header: "Əhatə",
+            cell: ({ row }) => (
+                <Badge variant="outline" className="text-[10px]">
+                    {row.getValue("scope")}
+                </Badge>
+            )
+        },
+        {
+            accessorKey: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.original.status || "ACTIVE";
+                return (
+                    <Badge
+                        variant="outline"
+                        className={cn("text-[10px]", getStatusColor(status))}
+                    >
+                        {status}
+                    </Badge>
+                );
+            }
+        },
+        {
+            id: "permissions_count",
+            header: "İcazə Sayı",
+            cell: ({ row }) => {
+                const count = (row.original as any).permissionsCount ??
+                    (row.original as any)._count?.permissions ??
+                    (row.original.permissions || []).length;
+                return (
+                    <div className="text-center font-medium text-muted-foreground w-12">
+                        {count}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "usersCount",
+            header: "İstifadəçilər",
+            cell: ({ row }) => (
+                <div className="text-center w-12">{row.getValue("usersCount")}</div>
+            )
+        },
+        {
+            id: "actions",
+            header: "Əməliyyatlar",
+            cell: ({ row }) => {
+                const role = row.original;
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handlers.onView(role)}>
+                                <Eye className="mr-2 h-4 w-4" /> Bax
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlers.onHistory(role)}>
+                                <History className="mr-2 h-4 w-4" /> Tarixçə
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlers.onSelectPermissions(role)}>
+                                <Check className="mr-2 h-4 w-4" /> İcazələri Seç
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+
+                            {/* Workflow Actions */}
+                            {role.status === "DRAFT" && (
+                                <DropdownMenuItem onClick={() => handlers.onSubmit(role.id)}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4 text-blue-600" />
+                                    Təsdiqə Göndər
+                                </DropdownMenuItem>
+                            )}
+                            {role.status === "PENDING_APPROVAL" && (
+                                <>
+                                    <DropdownMenuItem onClick={() => handlers.onApprove(role.id)}>
+                                        <Check className="mr-2 h-4 w-4 text-green-600" />
+                                        Təsdiqlə
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlers.onReject(role.id)}>
+                                        <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                                        İmtina Et
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                                disabled={role.type === "system"}
+                                onClick={() => handlers.onEdit(role)}
+                            >
+                                <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
+                            </DropdownMenuItem>
+                            {role.type !== "system" && (
+                                <DropdownMenuItem
+                                    className="text-red-600"
+                                    onClick={() => handlers.onDelete(role)}
+                                >
+                                    <Trash className="mr-2 h-4 w-4" /> Sil
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                );
+            },
+        },
+    ];
+}
