@@ -26,6 +26,7 @@ interface FilterDrawerProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     onApply?: () => void;
+    resetFilters?: () => void;
 }
 
 export function FilterDrawer({ children, open, onOpenChange, resetFilters, onApply }: FilterDrawerProps) {

@@ -313,7 +313,7 @@ export default function SettingsPage() {
                         {activeTab === 'dictionaries' && currentTabNode && <DictionariesTab tabNode={currentTabNode} />}
                         {activeTab === 'templates' && <DocumentTemplatesTab />}
                         {activeTab === 'workflow' && currentTabNode && <WorkflowConfigTab tabNode={currentTabNode} />}
-                        {activeTab === 'roles' && <RolesPage />}
+                        {activeTab === 'user_rights' && currentTabNode && <RolesPage tabNode={currentTabNode} />}
 
                     </div>
                 </main>

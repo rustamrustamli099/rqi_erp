@@ -7,7 +7,7 @@
  * İstifadə:
  * const { canExport, isExporting, openModal, exportData } = useExport({
  *     endpoint: '/api/v1/admin/roles/export',
- *     permissionSlug: 'system.settings.security.user_rights.role.export',
+ *     permissionSlug: 'system.settings.security.user_rights.roles_permissions.export_to_excel',
  *     query: query
  * });
  * ═══════════════════════════════════════════════════════════════════════════

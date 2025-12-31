@@ -32,11 +32,22 @@ const SYSTEM_SLUGS = {
         UPDATE: 'system.users.curators.update',
         DELETE: 'system.users.curators.delete',
     },
-    ROLES: {
-        READ: 'system.settings.security.user_rights.role.read',
-        CREATE: 'system.settings.security.user_rights.role.create',
-        UPDATE: 'system.settings.security.user_rights.role.update',
-        DELETE: 'system.settings.security.user_rights.role.delete',
+    // User Rights - SEPARATED SubTabs
+    USER_RIGHTS: {
+        ROLES: {
+            READ: 'system.settings.security.user_rights.roles.read',
+            CREATE: 'system.settings.security.user_rights.roles.create',
+            UPDATE: 'system.settings.security.user_rights.roles.update',
+            DELETE: 'system.settings.security.user_rights.roles.delete',
+        },
+        MATRIX_VIEW: {
+            READ: 'system.settings.security.user_rights.matrix_view.read',
+            UPDATE: 'system.settings.security.user_rights.matrix_view.update',
+        },
+        COMPLIANCE: {
+            READ: 'system.settings.security.user_rights.compliance.read',
+            DOWNLOAD_REPORT: 'system.settings.security.user_rights.compliance.download_report',
+        }
     },
     AUDIT: {
         READ: 'system.audit_logs.read',
@@ -181,10 +192,6 @@ const SYSTEM_SLUGS = {
     APPROVALS: {
         READ: 'system.approvals.read',
         APPROVE: 'system.approvals.approve',
-    },
-    COMPLIANCE: {
-        READ: 'system.settings.security.user_rights.compliance.read',
-        DOWNLOAD_REPORT: 'system.settings.security.user_rights.compliance.download_report',
     }
 } as const;
 
@@ -201,6 +208,12 @@ const TENANT_SLUGS = {
     ROLES: {
         READ: 'tenant.roles.read',
         CREATE: 'tenant.roles.create',
+        UPDATE: 'tenant.roles.update', // Match structure
+        DELETE: 'tenant.roles.delete', // Match structure
+    },
+    PERMISSION_MATRIX: {
+        READ: 'tenant.permission_matrix.read',
+        UPDATE: 'tenant.permission_matrix.update'
     },
     SETTINGS: {
         READ: 'tenant.settings.read',
@@ -220,9 +233,9 @@ const TENANT_SLUGS = {
 // --- IAM (Shared/System) ---
 const IAM_SLUGS = {
     ROLE: {
-        SUBMIT: 'system.user_rights.role.submit',
-        APPROVE: 'system.user_rights.role.approve',
-        REJECT: 'system.user_rights.role.reject'
+        SUBMIT: 'system.user_rights.roles_permissions.submit',
+        APPROVE: 'system.user_rights.roles_permissions.approve',
+        REJECT: 'system.user_rights.roles_permissions.reject'
     }
 } as const;
 

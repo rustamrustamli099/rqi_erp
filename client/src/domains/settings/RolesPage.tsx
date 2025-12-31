@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import {
     type ColumnDef,
@@ -58,6 +59,7 @@ import { DataTableToolbar } from "@/shared/components/ui/data-table-toolbar"
 import { PageHeader } from "@/shared/components/ui/page-header"
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog"
 import { toast } from "sonner"
+import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { RoleCreationWizard } from "./_components/RoleCreationWizard"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
 import { systemApi, type Role, type SystemPermission } from "@/domains/system-console/api/system.contract";
@@ -262,8 +264,36 @@ const RoleTable = ({
     )
 }
 
-export default function RolesPage({ context = "admin" }: RolesPageProps) {
+// Import ResolvedNavNode type
+import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { ScrollableSubTabsFromResolver } from "@/shared/components/ui/ScrollableSubTabs";
+
+interface RolesPageProps {
+    tabNode?: ResolvedNavNode;
+    context?: "admin" | "tenant";
+}
+
+export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps) {
     useTranslation()
+    const { can } = usePermissions();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // SAP-GRADE: Read subTab from URL (Managed by ProtectedRoute)
+    const subTabs = tabNode?.children ?? [];
+    const allowedKeys = subTabs.map(st => st.subTabKey || st.id);
+
+    const urlSubTab = searchParams.get('subTab') || '';
+    const currentTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || 'roles';
+
+    const handleTabChange = (value: string) => {
+        console.log('[RolesPage] handleTabChange:', value);
+        if (!allowedKeys.includes(value)) return;
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('subTab', value);
+        setSearchParams(newParams, { replace: true });
+    };
+
+
     const [roles, setRoles] = useState<Role[]>([])
     const [allPermissions, setAllPermissions] = useState<SystemPermission[]>([])
     // Loading States
@@ -272,7 +302,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
 
     // SAP-Grade List Query Engine
     const defaultFilters = useMemo(() => ({
-        scope: context === 'admin' ? undefined : 'TENANT'
+        scope: context === 'admin' ? '' : 'TENANT'
     }), [context]);
 
     const {
@@ -320,7 +350,7 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
     const [isDiffOpen, setIsDiffOpen] = useState(false) // For review dialog
     const [isPreviewOpen, setIsPreviewOpen] = useState(false) // For Simulator
-    const [currentTab, setCurrentTab] = useState("list")
+    // const [currentTab, setCurrentTab] = useState("list") // Duplicate removed
 
     // SoD State
     const [sodModalOpen, setSodModalOpen] = useState(false)
@@ -810,6 +840,98 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
         setSelectedPermissions(newSlugs);
     };
 
+    // Content and icon maps for ScrollableSubTabsFromResolver
+    const contentMap: Record<string, React.ReactNode> = {
+        roles: (
+            <RoleTable
+                data={roles}
+                columns={columns}
+                sorting={sortingState}
+                columnVisibility={columnVisibility}
+                rowSelection={rowSelection}
+                columnFilters={columnFilters}
+                setSorting={(updaterOrValue: any) => {
+                    const newState = typeof updaterOrValue === 'function' ? updaterOrValue(sortingState) : updaterOrValue;
+                    const first = newState[0];
+                    if (first) setSort(first.id);
+                }}
+                setColumnVisibility={setColumnVisibility}
+                setRowSelection={setRowSelection}
+                setColumnFilters={setColumnFilters}
+                onRowClick={handleRoleSelect}
+                onAddClick={() => setWizardOpen(true)}
+                isLoading={loading}
+                searchTerm={searchTerm}
+                setSearch={setSearch}
+                setPage={setPage}
+                setPageSize={setPageSize}
+                pagination={pagination}
+                query={query}
+                setFilter={setFilter}
+                reset={reset}
+                onExportClick={can('system.settings.security.user_rights.roles.read') ? () => {
+                    const headers = ['Ad', 'Təsvir', 'Növ', 'Scope', 'İstifadəçi Sayı', 'İcazə Sayı', 'Status'];
+                    const csvRows = [
+                        headers.join(','),
+                        ...roles.map((r: any) => [
+                            `"${r.name || ''}"`,
+                            `"${(r.description || '').replace(/"/g, '""')}"`,
+                            r.type,
+                            r.scope,
+                            r.usersCount || 0,
+                            r.permissionsCount || 0,
+                            r.status || 'N/A'
+                        ].join(','))
+                    ];
+                    const csvContent = csvRows.join('\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `roles_export_${new Date().toISOString().slice(0, 10)}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Rollar CSV olaraq ixrac edildi');
+                } : undefined}
+            />
+        ),
+        matrix_view: <PermissionMatrix roles={roles} />,
+        compliance: (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Uyğunluq və Audit Sənədləri (Compliance & Audit)</CardTitle>
+                    <CardDescription>Sistem auditə tam hazırdır. Aşağıdakı düymələr vasitəsilə lazımi sübutları yükləyə bilərsiniz.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 className="font-semibold text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-blue-600" /> SOC2 Type II Evidence</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Avtomatik log analizi, rol təsdiqləmə tarixçəsi və sistem konfiqurasiyası.</p>
+                        </div>
+                        <Button className="w-full" variant="outline" onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/soc2', '_blank')}>
+                            <Download className="mr-2 h-4 w-4" /> Yüklə (JSON)
+                        </Button>
+                    </div>
+                    <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 className="font-semibold text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-green-600" /> ISO 27001 SoA</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Tətbiq Bəyanatı (SoA) - RBAC və Təhlükəsizlik kontrollarının statusu.</p>
+                        </div>
+                        <Button className="w-full" variant="outline" onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/iso27001', '_blank')}>
+                            <Download className="mr-2 h-4 w-4" /> Yüklə (JSON)
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    };
+
+    const iconMap: Record<string, React.ReactNode> = {
+        roles: <List className="w-4 h-4" />,
+        matrix_view: <LayoutGrid className="w-4 h-4" />,
+        compliance: <FileText className="w-4 h-4" />
+    };
+
     return (
         <div className="space-y-4">
 
@@ -818,134 +940,18 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 text="İstifadəçi hüquqlarını idarə edin."
             />
 
-            {/* TABS ARCHITECTURE */}
-            {/* TABS ARCHITECTURE */}
-            <Tabs defaultValue="list" value={currentTab} onValueChange={(val) => {
-                setCurrentTab(val);
-                // When switching to Matrix, fetch ALL roles (or a large page) to show complete picture
-                if (val === 'matrix') {
-                    setPageSize(100); // 100 roles should cover most cases for a matrix view for now.
-                    // Ideally we'd have a separate "getAll" query, but this works for MVP.
-                } else {
-                    setPageSize(10); // Reset for list view
-                }
-            }} className="h-full space-y-6">
-                <div className="flex items-center justify-between">
-                    {/* Reusable Scrollable Tabs - Pill Style */}
-                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                        <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
-                            <TabsTrigger value="list" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 gap-2">
-                                <List className="w-4 h-4" />
-                                Rollar Siyahısı
-                            </TabsTrigger>
-                            <TabsTrigger value="matrix" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 gap-2">
-                                <LayoutGrid className="w-4 h-4" />
-                                Matris
-                            </TabsTrigger>
-                            <TabsTrigger value="compliance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 gap-2">
-                                <FileText className="w-4 h-4" />
-                                Compliance
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
-                </div>
+            {/* SAP-GRADE SubTabs using resolver */}
+            <ScrollableSubTabsFromResolver
+                tabNode={tabNode}
+                value={currentTab}
+                onValueChange={handleTabChange}
+                contentMap={contentMap}
+                iconMap={iconMap}
+                variant="default"
+            />
 
-                {/* UNIFIED ROLES LIST TAB */}
-                <TabsContent value="list" className="space-y-4">
-                    <RoleTable
-                        data={roles} // Show ALL roles
-                        columns={columns}
-                        sorting={sortingState}
-                        columnVisibility={columnVisibility}
-                        rowSelection={rowSelection}
-                        columnFilters={columnFilters}
-                        setSorting={(updaterOrValue: any) => {
-                            const newState = typeof updaterOrValue === 'function' ? updaterOrValue(sortingState) : updaterOrValue;
-                            const first = newState[0];
-                            if (first) setSort(first.id);
-                        }}
-                        setColumnVisibility={setColumnVisibility}
-                        setRowSelection={setRowSelection}
-                        setColumnFilters={setColumnFilters}
-                        onRowClick={handleRoleSelect}
-                        onAddClick={() => setWizardOpen(true)}
-                        isLoading={loading}
-                        // Hook Connections
-                        searchTerm={searchTerm}
-                        setSearch={setSearch}
-                        setPage={setPage}
-                        setPageSize={setPageSize}
-                        pagination={pagination}
-                        // Filter Connections
-                        query={query}
-                        setFilter={setFilter}
-                        reset={reset}
-                        // Export Support
-                        onExportClick={() => {
-                            // Export roles to CSV
-                            const headers = ['Ad', 'Təsvir', 'Növ', 'Scope', 'İstifadəçi Sayı', 'İcazə Sayı', 'Status'];
-                            const csvRows = [
-                                headers.join(','),
-                                ...roles.map((r: any) => [
-                                    `"${r.name || ''}"`,
-                                    `"${(r.description || '').replace(/"/g, '""')}"`,
-                                    r.type,
-                                    r.scope,
-                                    r.usersCount || 0,
-                                    r.permissionsCount || 0,
-                                    r.status || 'N/A'
-                                ].join(','))
-                            ];
-                            const csvContent = csvRows.join('\n');
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = `roles_export_${new Date().toISOString().slice(0, 10)}.csv`;
-                            link.click();
-                            URL.revokeObjectURL(url);
-                            toast.success('Rollar CSV olaraq ixrac edildi');
-                        }}
-                    />
-                </TabsContent>
-
-                <TabsContent value="compliance" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Uyğunluq və Audit Sənədləri (Compliance & Audit)</CardTitle>
-                            <CardDescription>Sistem auditə tam hazırdır. Aşağıdakı düymələr vasitəsilə lazımi sübutları yükləyə bilərsiniz.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4">
-                                <div>
-                                    <h3 className="font-semibold text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-blue-600" /> SOC2 Type II Evidence</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">Avtomatik log analizi, rol təsdiqləmə tarixçəsi və sistem konfiqurasiyası.</p>
-                                </div>
-                                <Button className="w-full" variant="outline" onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/soc2', '_blank')}>
-                                    <Download className="mr-2 h-4 w-4" /> Yüklə (JSON)
-                                </Button>
-                            </div>
-
-                            <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4">
-                                <div>
-                                    <h3 className="font-semibold text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-green-600" /> ISO 27001 SoA</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">Tətbiq Bəyanatı (SoA) - RBAC və Təhlükəsizlik kontrollarının statusu.</p>
-                                </div>
-                                <Button className="w-full" variant="outline" onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/iso27001', '_blank')}>
-                                    <Download className="mr-2 h-4 w-4" /> Yüklə (JSON)
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="matrix">
-                    <PermissionMatrix roles={roles} />
-                </TabsContent>
-            </Tabs>
-
-            {/* Permission Editor Section (Visible ONLY in list view) */}
-            {currentTab === 'list' && (
+            {/* Permission Editor Section (Visible ONLY in roles view) */}
+            {currentTab === 'roles' && (
                 <div className="space-y-4 pt-4 border-t">
                     {currentRole ? (
                         <Accordion type="single" collapsible defaultValue="permissions" className="w-full">
@@ -1050,9 +1056,9 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 onOpenChange={setIsDeleteOpen}
                 title="Rolu Sil"
                 description="Bu rolu silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz və bu rola bağlı istifadəçilərin icazələrini ləğv edəcək."
-                onAction={confirmDeleteRole}
+                onConfirm={confirmDeleteRole}
                 variant="destructive"
-                actionLabel="Sil"
+                confirmText="Sil"
             />
 
             {/* SoD Conflict Modal */}

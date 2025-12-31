@@ -83,14 +83,11 @@ export const ADMIN_PERMISSION_HIERARCHY = {
                 perms: ['read', 'create', 'update', 'delete', 'change_status']
             },
             user_rights: {
-                role: {
+                roles: {
                     perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'select_permissions', 'submit', 'approve', 'reject']
                 },
-                permission: {
-                    perms: ['read', 'create', 'update']
-                },
-                permission_matrix: {
-                    perms: ['read']
+                matrix_view: {
+                    perms: ['read', 'update']
                 },
                 compliance: {
                     perms: ['read', 'download_report', 'generate_evidence', 'download_json_soc2', 'download_json_iso']
@@ -209,6 +206,30 @@ export const ADMIN_PERMISSION_HIERARCHY = {
     },
 };
 
+export const TENANT_PERMISSION_HIERARCHY = {
+    dashboard: {
+        perms: ['read']
+    },
+    users: {
+        perms: ['read', 'create', 'update']
+    },
+    roles: {
+        perms: ['read', 'create', 'update', 'delete']
+    },
+    permission_matrix: {
+        perms: ['read', 'update']
+    },
+    settings: {
+        perms: ['read', 'update']
+    },
+    billing: {
+        perms: ['read', 'pay_invoice']
+    },
+    reports: {
+        perms: ['read', 'export']
+    }
+};
+
 // 2. Logic (Formerly permission-data.ts)
 export interface PermissionNode {
     id: string;
@@ -252,9 +273,7 @@ const LABEL_MAP: Record<string, string> = {
     security_policy: "Təhlükəsizlik Siyasəti",
     sso_OAuth: "SSO & OAuth",
     user_rights: "İstifadəçi Hüquqları",
-    role: "Rollar",
-    permission: "İcazələr",
-    permission_matrix: "İcazə Matrisi",
+    roles_permissions: "Rollar və İcazələr",
     compliance: "Uyğunluq (Compliance)",
     billing_configurations: "Bilinq Konfiqurasiyaları",
     dictionary: "Soraqçalar (Dictionaries)",
@@ -367,8 +386,12 @@ const rawTree = Object.keys(ADMIN_PERMISSION_HIERARCHY).map(key =>
     buildNode(key, (ADMIN_PERMISSION_HIERARCHY as any)[key], "system")
 );
 
+const tenantTree = Object.keys(TENANT_PERMISSION_HIERARCHY).map(key =>
+    buildNode(key, (TENANT_PERMISSION_HIERARCHY as any)[key], "tenant")
+);
+
 // Export flattened tree for better filtering
-export const permissionsStructure: PermissionNode[] = rawTree;
+export const permissionsStructure: PermissionNode[] = [...rawTree, ...tenantTree];
 
 // Lookup Helper
 export const getPermissionLabel = (slug: string): string => {

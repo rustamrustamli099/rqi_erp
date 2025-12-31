@@ -194,9 +194,15 @@ const ADMIN_PAGES: PageConfig[] = [
                 requiredAnyOf: ['system.settings.security.sso_OAuth.read']
             },
             {
-                key: 'roles',
+                key: 'user_rights',
                 label: 'İstifadəçi Hüquqları',
-                requiredAnyOf: ['system.settings.security.user_rights.role.read']
+                // SAP-GRADE: Parent is PERMISSIONLESS. Visibility from ANY child.
+                requiredAnyOf: [],
+                subTabs: [
+                    { key: 'roles', label: 'Rollar', requiredAnyOf: ['system.settings.security.user_rights.roles.read'] },
+                    { key: 'matrix_view', label: 'Matris', requiredAnyOf: ['system.settings.security.user_rights.matrix_view.read'] },
+                    { key: 'compliance', label: 'Compliance', requiredAnyOf: ['system.settings.security.user_rights.compliance.read'] }
+                ]
             },
             {
                 key: 'billing_config',
@@ -517,7 +523,7 @@ export function getSettingsTabsForUI(): Array<{
         {
             groupLabel: 'Təhlükəsizlik & Giriş',
             items: settingsPage.tabs.filter(t =>
-                ['security', 'sso', 'roles'].includes(t.key)
+                ['security', 'sso', 'user_rights'].includes(t.key)
             )
         },
         {

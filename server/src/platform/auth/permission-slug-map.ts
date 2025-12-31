@@ -93,6 +93,11 @@ export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
     'settings.security.sso_oauth.view': 'platform.settings.security.read',
     'settings.security.sso_oauth.manage': 'platform.settings.security.manage',
 
+    // User Rights Mapping
+    'settings.security.user_rights.view': 'system.settings.security.user_rights.roles_permissions.read',
+    'settings.security.user_rights.manage': 'system.settings.security.user_rights.roles_permissions.update',
+
+
     'settings.system_configurations.billing_configurations.view': 'platform.settings.config.read',
     'settings.system_configurations.billing_configurations.manage': 'platform.settings.config.manage',
     'settings.system_configurations.dictionary.view': 'platform.settings.config.read',
@@ -122,4 +127,5 @@ export const LEGACY_TO_CANONICAL_MAP: Record<string, string> = {
     'developer_hub.sdk.view': 'platform.dev.sdk.read',
     'developer_hub.webhooks.view': 'platform.dev.webhooks.read',
     'developer_hub.webhooks.manage': 'platform.dev.webhooks.manage',
+    'developer_hub.permission_map.view': 'developer_hub.permission_map.read',
 };
