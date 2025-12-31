@@ -6,18 +6,19 @@ import { MonitoringDashboard } from "./MonitoringDashboard";
 import { AlertRulesTab } from "./AlertRulesTab";
 import { AnomalyDetectionTab } from "./AnomalyDetectionTab";
 import { SystemLogsTab } from "./SystemLogsTab";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedSubTabs } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
+
+// SAP-GRADE: Import ResolvedNavNode type
+import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 
 /**
  * SAP-GRADE MONITORING TAB
  * 
  * Rules:
- * - ONLY allowed subTabs render (resolver-driven allowlist)
- * - NO URL mutation - ProtectedRoute is sole canonicalizer
- * - Reads subTab from URL (already canonicalized by ProtectedRoute)
- * - No unauthorized triggers/content in DOM
+ * - Receives tabNode from parent (ConsolePage)
+ * - ONLY renders subTabs from tabNode.children (resolver output)
+ * - NO getAllowedSubTabs call - UI is pure renderer
+ * - NO prop shadowing
  */
 
 // SubTab component mapping
@@ -36,20 +37,22 @@ const SUBTAB_ICONS: Record<string, React.ReactNode> = {
     logs: <FileText className="mr-2 h-4 w-4" />,
 };
 
-export default function MonitoringPage() {
+interface MonitoringPageProps {
+    tabNode: ResolvedNavNode;
+}
+
+export default function MonitoringPage({ tabNode }: MonitoringPageProps) {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { permissions, isLoading } = usePermissions();
 
-    // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
-    const allowedSubTabs = useMemo(() => {
-        if (isLoading) return [];
-        return getAllowedSubTabs('admin.console', 'monitoring', permissions, 'admin');
-    }, [permissions, isLoading]);
+    // SAP-GRADE: Get subTabs from tabNode.children (NOT from helper call)
+    // This is the SINGLE source of truth - no recomputation
+    const resolvedSubTabs = useMemo(() => {
+        return tabNode?.children ?? [];
+    }, [tabNode]);
 
-    const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
+    const allowedKeys = useMemo(() => resolvedSubTabs.map(st => st.subTabKey || st.id), [resolvedSubTabs]);
 
     // SAP-GRADE: Read subTab from URL (already canonicalized by ProtectedRoute)
-    // NO URL SYNC EFFECT - ProtectedRoute handles canonicalization
     const urlSubTab = searchParams.get('subTab') || '';
     const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || '';
 
@@ -64,18 +67,6 @@ export default function MonitoringPage() {
         }, { replace: true });
     };
 
-    // Loading state
-    if (isLoading) {
-        return (
-            <div className="flex h-[50vh] w-full items-center justify-center">
-                <div className="flex flex-col items-center gap-2">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                    <p className="text-sm text-muted-foreground">İcazələr yoxlanılır...</p>
-                </div>
-            </div>
-        );
-    }
-
     // SAP-GRADE: Terminal 403 if no allowed subTabs
     if (allowedKeys.length === 0) {
         return (
@@ -85,35 +76,49 @@ export default function MonitoringPage() {
         );
     }
 
+    // DEV assertion: verify all subTabs are rendered
+    if (import.meta.env?.DEV && resolvedSubTabs.length > 0) {
+        const uniqueKeys = new Set(allowedKeys);
+        if (uniqueKeys.size !== resolvedSubTabs.length) {
+            console.error('[MonitoringPage] SAP VIOLATION: Duplicate subTab keys detected! Keys:', allowedKeys);
+        }
+    }
+
     return (
         <div className="flex flex-col space-y-6 h-full">
             <Tabs value={currentSubTab} onValueChange={handleTabChange} className="space-y-4 flex-1 flex flex-col min-h-0">
-                {/* SAP-GRADE: ONLY allowed triggers render */}
+                {/* SAP-GRADE: Render ALL allowed triggers from resolver output */}
                 <TabsList className="shrink-0 w-full justify-start bg-transparent p-0 gap-2">
-                    {allowedSubTabs.map(subTab => (
-                        <TabsTrigger
-                            key={subTab.key}
-                            value={subTab.key}
-                            data-subtab={subTab.key}
-                            className="data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-4 pb-2 pt-1 font-semibold"
-                        >
-                            {SUBTAB_ICONS[subTab.key]}
-                            {subTab.label}
-                        </TabsTrigger>
-                    ))}
+                    {resolvedSubTabs.map(subTab => {
+                        const subTabKey = subTab.subTabKey || subTab.id;
+                        return (
+                            <TabsTrigger
+                                key={subTabKey}
+                                value={subTabKey}
+                                data-subtab={subTabKey}
+                                className="data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-4 pb-2 pt-1 font-semibold"
+                            >
+                                {SUBTAB_ICONS[subTabKey]}
+                                {subTab.label}
+                            </TabsTrigger>
+                        );
+                    })}
                 </TabsList>
 
-                {/* SAP-GRADE: ONLY allowed content panes render */}
+                {/* SAP-GRADE: Render ALL allowed content panes */}
                 <div className="flex-1 overflow-auto min-h-0">
-                    {allowedSubTabs.map(subTab => (
-                        <TabsContent
-                            key={subTab.key}
-                            value={subTab.key}
-                            className="space-y-4 h-full m-0 p-1"
-                        >
-                            {SUBTAB_COMPONENTS[subTab.key]}
-                        </TabsContent>
-                    ))}
+                    {resolvedSubTabs.map(subTab => {
+                        const subTabKey = subTab.subTabKey || subTab.id;
+                        return (
+                            <TabsContent
+                                key={subTabKey}
+                                value={subTabKey}
+                                className="space-y-4 h-full m-0 p-1"
+                            >
+                                {SUBTAB_COMPONENTS[subTabKey]}
+                            </TabsContent>
+                        );
+                    })}
                 </div>
             </Tabs>
         </div>

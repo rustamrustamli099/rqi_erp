@@ -6,8 +6,10 @@ import { useSearchParams } from "react-router-dom";
 import { ShieldAlert, Server as ServerIcon, Activity, Database, Flag, MessageSquare, Wrench, LayoutDashboard } from "lucide-react";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { SystemHealthWidget, CacheManager, MaintenanceControls } from "./components/SystemDashboardWidgets";
+
+// SAP-GRADE: Import resolver and ResolvedNavNode type
+import { resolveNavigationTree, type ResolvedNavNode } from "@/app/security/navigationResolver";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
 
 // Lazy load components
 const MonitoringPage = lazy(() => import("@/domains/system-console/monitoring/views/MonitoringPage"));
@@ -41,19 +43,33 @@ export default function SystemCorePage() {
         setPageKey("sys-admin");
     }, [setPageKey]);
 
-    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
-    const allowedTabs = useMemo(() => {
-        return getAllowedTabs('admin.console', permissions, 'admin');
+    // SAP-GRADE: Build tree ONCE using resolveNavigationTree
+    const tree = useMemo(() => {
+        return resolveNavigationTree('admin', permissions);
     }, [permissions]);
 
-    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+    // SAP-GRADE: Find console page node from tree
+    const consolePageNode = useMemo(() => {
+        return tree.find(node => node.pageKey === 'admin.console');
+    }, [tree]);
+
+    // SAP-GRADE: Get allowed tabs from node children (NOT from helper call)
+    const allowedTabs = useMemo(() => {
+        return consolePageNode?.children ?? [];
+    }, [consolePageNode]);
+
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
     // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
-    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
     const currentParam = searchParams.get("tab");
     const currentTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : allowedKeys[0] || "";
+
+    // Get current tab node for passing to child components
+    const currentTabNode = useMemo(() => {
+        return allowedTabs.find(t => (t.tabKey || t.id) === currentTab);
+    }, [allowedTabs, currentTab]);
 
     // SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (value: string) => {
@@ -87,13 +103,14 @@ export default function SystemCorePage() {
                 <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
                     <ScrollableTabs className="w-full border-b">
                         <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent space-x-6 border-b-0">
-                            {/* SAP-GRADE: Only render ALLOWED tabs */}
+                            {/* SAP-GRADE: Only render ALLOWED tabs from tree node */}
                             {allowedTabs.map(tab => {
-                                const Icon = TAB_ICONS[tab.key] || LayoutDashboard;
+                                const tabKey = tab.tabKey || tab.id;
+                                const Icon = TAB_ICONS[tabKey] || LayoutDashboard;
                                 return (
                                     <TabsTrigger
-                                        key={tab.key}
-                                        value={tab.key}
+                                        key={tabKey}
+                                        value={tabKey}
                                         className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
                                     >
                                         <Icon className="w-4 h-4 mr-2" /> {tab.label}
@@ -103,7 +120,7 @@ export default function SystemCorePage() {
                         </TabsList>
                     </ScrollableTabs>
 
-                    {/* Content Area - SAP-GRADE: Only render ALLOWED content */}
+                    {/* Content Area - SAP-GRADE: Pass tabNode to children */}
                     <div className="pt-4">
                         <Suspense fallback={<div className="p-8 text-center">Yüklənir...</div>}>
                             {currentTab === 'dashboard' && allowedKeys.includes('dashboard') && (
@@ -117,7 +134,7 @@ export default function SystemCorePage() {
                                     </div>
                                 </div>
                             )}
-                            {currentTab === 'monitoring' && allowedKeys.includes('monitoring') && <MonitoringPage />}
+                            {currentTab === 'monitoring' && currentTabNode && <MonitoringPage tabNode={currentTabNode} />}
                             {currentTab === 'audit' && allowedKeys.includes('audit') && <AuditLogsPage />}
                             {currentTab === 'jobs' && allowedKeys.includes('jobs') && <JobRegistryPage />}
                             {currentTab === 'retention' && allowedKeys.includes('retention') && <RetentionPolicyPage />}
