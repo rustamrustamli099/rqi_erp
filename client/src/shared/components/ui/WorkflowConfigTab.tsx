@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Settings2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import {
     Plus, Trash2, Edit,
     CheckCircle2, User, Users, ArrowRight, Check, ChevronsUpDown,
-    XCircle, FileText, Activity, MoreHorizontal, UserPlus, AlertOctagon, RefreshCw, ShieldCheck, UserCheck, AlertTriangle
+    XCircle, FileText, Activity, MoreHorizontal, UserPlus, AlertOctagon, RefreshCw, ShieldCheck, UserCheck, AlertTriangle, Lock
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -110,7 +110,7 @@ interface ApprovalRule {
     model: string
     action: string
     stages: ApprovalStage[]
-    isEnabled: boolean
+    isActive: boolean
     description: string
 }
 
@@ -119,7 +119,7 @@ const INITIAL_RULES: ApprovalRule[] = [
         id: "rule_1",
         model: "tenant",
         action: "create",
-        isEnabled: true,
+        isActive: true,
         description: "Yeni Tenat Yaradılması",
         stages: [
             { id: "stg_1", level: 1, roleIds: ["role_finance"], userIds: [], method: "SEQUENTIAL", name: "Maliyyə Təsdiqi" },
@@ -159,175 +159,135 @@ const MOCK_REQUESTS: ApprovalRequest[] = [
     }
 ]
 
-export function WorkflowConfigTab() {
+import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { ScrollableSubTabsFromResolver, ScrollableSubTabs, type SubTabItem } from "@/shared/components/ui/ScrollableSubTabs";
+import { useSearchParams } from "react-router-dom";
+import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
+
+// ... (imports remain)
+
+// =============================================================================
+// MAIN COMPONENT (SAP-GRADE ROUTING)
+// =============================================================================
+
+interface WorkflowConfigTabProps {
+    tabNode: ResolvedNavNode;
+}
+
+export function WorkflowConfigTab({ tabNode }: WorkflowConfigTabProps) {
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // SAP-GRADE: Read subTab from URL (Managed by ProtectedRoute)
+    const subTabs = tabNode?.children ?? [];
+    const allowedKeys = subTabs.map(st => st.subTabKey || st.id);
+
+    const urlSubTab = searchParams.get('subTab') || '';
+    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : '';
+
+    const handleTabChange = (value: string) => {
+        if (!allowedKeys.includes(value)) return;
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('subTab', value);
+        setSearchParams(newParams, { replace: true });
+    };
+
+    // CONTENT MAPPING
+    const contentMap = {
+        config: <WorkflowRulesView />,
+        monitor: <WorkflowMonitorView />
+    };
+
+    const iconMap = {
+        config: <Settings2 className="w-4 h-4" />,
+        monitor: <Activity className="w-4 h-4" />
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Workflow Engine</h2>
+                    <p className="text-muted-foreground">Təsdiqləmə proseslərinin idarə edilməsi və monitorinqi.</p>
+                </div>
+            </div>
+
+            <ScrollableSubTabsFromResolver
+                tabNode={tabNode}
+                value={currentSubTab}
+                onValueChange={handleTabChange}
+                contentMap={contentMap}
+                iconMap={iconMap}
+                variant="underline"
+            />
+        </div>
+    );
+}
+
+// =============================================================================
+// SUB-VIEWS (Extracted Logic)
+// =============================================================================
+
+function WorkflowRulesView() {
     const [rules, setRules] = useState<ApprovalRule[]>(INITIAL_RULES)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingRule, setEditingRule] = useState<ApprovalRule | null>(null)
-
-    // Form State
     const [formModel, setFormModel] = useState("tenant")
     const [formAction, setFormAction] = useState("create")
     const [formDesc, setFormDesc] = useState("")
     const [formStages, setFormStages] = useState<ApprovalStage[]>([])
+    const [activeStageIdx, setActiveStageIdx] = useState(0)
+    const [isSecurityConfirmOpen, setIsSecurityConfirmOpen] = useState(false)
+    const [pendingSecurityChange, setPendingSecurityChange] = useState<{ idx: number, values: ('2FA' | 'SMS' | 'EMAIL')[], added: string } | null>(null)
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+    const [ruleToDelete, setRuleToDelete] = useState<string | null>(null)
 
-    const [activeTab, setActiveTab] = useState("config")
-    const [requests, setRequests] = useState<ApprovalRequest[]>(MOCK_REQUESTS)
+    // --- Handlers ---
 
-    // UI Helpers
-    const [activeStageIdx, setActiveStageIdx] = useState<number>(0)
-    const [assignmentType, setAssignmentType] = useState<"ROLE" | "USER">("ROLE")
-    const [openCombobox, setOpenCombobox] = useState(false)
-    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
-    const [selectedRequestForLog, setSelectedRequestForLog] = useState<ApprovalRequest | null>(null)
-
-    // --- Actions ---
-    const handleApprove = (reqId: string) => {
-        setRequests(prev => prev.map(req => {
-            if (req.id !== reqId) return req
-            const isFinal = req.currentLevel >= 2
-            return {
-                ...req,
-                currentLevel: isFinal ? req.currentLevel : req.currentLevel + 1,
-                status: isFinal ? 'APPROVED' : 'PENDING',
-                currentStageName: isFinal ? 'Bitmişdir' : 'Final Təsdiq',
-                logs: [...req.logs, { id: `log_${Date.now()}`, action: 'APPROVE', actorId: 'me', actorName: 'Cari İstifadəçi', timestamp: new Date().toLocaleString("az-AZ"), stageName: req.currentStageName, comment: 'Təsdiq edildi' }]
-            }
-        }))
-        toast.success("Müraciət təsdiqləndi")
-    }
-
-    const handleReject = (reqId: string) => {
-        setRequests(prev => prev.map(req => {
-            if (req.id !== reqId) return req
-            return {
-                ...req, status: 'REJECTED',
-                logs: [...req.logs, { id: `log_${Date.now()}`, action: 'REJECT', actorId: 'me', actorName: 'Cari İstifadəçi', timestamp: new Date().toLocaleString("az-AZ"), stageName: req.currentStageName, comment: 'İmtina edildi' }]
-            }
-        }))
-        toast.error("Müraciət imtina edildi")
-    }
-
-    // --- DataTable Columns Configuration ---
-    const columns = useMemo<ColumnDef<ApprovalRequest>[]>(() => [
-        {
-            accessorKey: "id",
-            header: "Müraciət ID",
-            cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue("id")}</span>,
-        },
-        {
-            accessorKey: "entityName",
-            header: "Obyekt (Tenant/Doc)",
-            cell: ({ row }) => (
-                <div className="flex flex-col">
-                    <span className="font-medium text-sm">{row.getValue("entityName")}</span>
-                    <span className="text-[10px] text-muted-foreground font-mono">{row.original.entityId}</span>
-                </div>
-            )
-        },
-        {
-            accessorKey: "currentStageName",
-            header: "Cari Mərhələ",
-            cell: ({ row }) => <Badge variant="outline">{row.getValue("currentStageName")}</Badge>,
-        },
-        {
-            accessorKey: "status",
-            header: "Status",
-            cell: ({ row }) => {
-                const status = row.getValue("status") as string
-                const variant = status === 'APPROVED' ? 'default' : status === 'REJECTED' ? 'destructive' : 'secondary'
-                const className = status === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : ''
-                return <Badge variant={variant} className={className}>{status}</Badge>
-            },
-            filterFn: (row, id, value) => value.includes(row.getValue(id)),
-        },
-        {
-            accessorKey: "createdAt",
-            header: "Tarix",
-            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.getValue("createdAt")}</span>,
-        },
-        {
-            id: "actions",
-            header: "Əməliyyatlar",
-            cell: ({ row }) => (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem onClick={() => toast.info(`Viewing details for ${row.original.id}`)}>
-                            <FileText className="mr-2 h-4 w-4" /> Detallı Bax (Display)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSelectedRequestForLog(row.original)}>
-                            <Activity className="mr-2 h-4 w-4" /> Audit Tarixçəsi (Logs)
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {row.original.status === 'PENDING' && (
-                            <>
-                                <DropdownMenuItem onClick={() => handleApprove(row.original.id)} className="text-green-600 focus:text-green-700 focus:bg-green-50">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Təsdiqlə (Approve)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleReject(row.original.id)} className="text-red-600 focus:text-red-700 focus:bg-red-50">
-                                    <XCircle className="mr-2 h-4 w-4" /> İmtina (Reject)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => toast.warning("Deleqasiya dialoqu açılacaq...")}>
-                                    <UserPlus className="mr-2 h-4 w-4 text-blue-500" /> Delegasiya (Delegate)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => toast.error("Eskalasiya edildi!")}>
-                                    <AlertTriangle className="mr-2 h-4 w-4 text-orange-500" /> Eskalasiya (Escalate)
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => toast.error("Proses admin tərəfindən ləğv edildi.")}>
-                            <AlertOctagon className="mr-2 h-4 w-4 text-destructive" /> Ləğv Et (Cancel Process)
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        }
-    ], [])
-
-    // ... handlers existing ...
     const openCreateDialog = () => {
         setEditingRule(null)
-        setFormModel("tenant")
-        setFormAction("create")
-        setFormDesc("")
-        setFormStages([{ id: `stg_${Date.now()}`, level: 1, roleIds: ["role_admin"], userIds: [], method: "SEQUENTIAL", name: "Mərhələ 1" }])
-        setIsDialogOpen(true)
+        setFormModel('tenant')
+        setFormAction('create')
+        setFormDesc('')
+        setFormStages([{ id: 'st_1', level: 1, name: 'Mərhələ 1', roleIds: [], userIds: [], method: 'SEQUENTIAL' }])
         setActiveStageIdx(0)
+        setIsDialogOpen(true)
     }
 
-    const openEdit = (rule: ApprovalRule) => {
+    const openEditRule = (rule: ApprovalRule) => {
         setEditingRule(rule)
         setFormModel(rule.model)
         setFormAction(rule.action)
         setFormDesc(rule.description)
-        setFormStages(JSON.parse(JSON.stringify(rule.stages)))
-        setIsDialogOpen(true)
+        setFormStages(JSON.parse(JSON.stringify(rule.stages))) // Deep copy
         setActiveStageIdx(0)
+        setIsDialogOpen(true)
     }
 
-    const addStage = () => {
-        const newStages = [
-            ...formStages,
-            { id: `stg_${Date.now()}`, level: formStages.length + 1, roleIds: [], userIds: [], method: "SEQUENTIAL" as const, minApprovals: 1, name: `Mərhələ ${formStages.length + 1}` }
-        ]
-        setFormStages(newStages)
-        setActiveStageIdx(newStages.length - 1)
-    }
+    const handleSave = () => {
+        if (!formDesc) {
+            toast.error("Təsvir yazılmalıdır")
+            return
+        }
 
-    const toggleRule = (id: string) => {
-        setRules(rules.map(r => r.id === id ? { ...r, isEnabled: !r.isEnabled } : r))
-        toast.success("Qayda statusu dəyişdirildi")
-    }
+        const newRule: ApprovalRule = {
+            id: editingRule ? editingRule.id : `rule_${Date.now()}`,
+            model: formModel as any,
+            action: formAction as any,
+            conditions: {},
+            stages: formStages,
+            isActive: true,
+            description: formDesc,
+            createdAt: editingRule ? editingRule.createdAt : new Date().toISOString()
+        }
 
-    const deleteRule = (id: string) => {
-        setRuleToDelete(id)
-        setIsDeleteConfirmOpen(true)
+        if (editingRule) {
+            setRules(rules.map(r => r.id === editingRule.id ? newRule : r))
+            toast.success("Qayda yeniləndi")
+        } else {
+            setRules([...rules, newRule])
+            toast.success("Yeni qayda yaradıldı")
+        }
+        setIsDialogOpen(false)
     }
 
     const confirmDeleteRule = () => {
@@ -339,45 +299,49 @@ export function WorkflowConfigTab() {
         }
     }
 
+    // --- Status Change Logic ---
+    const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false)
+    const [statusChangeRule, setStatusChangeRule] = useState<{ id: string, makeActive: boolean } | null>(null)
 
-    // Re-implemented helper functions for Form
-    const toggleRole = (idx: number, roleId: string) => {
+    const handleStatusClick = (rule: ApprovalRule) => {
+        setStatusChangeRule({ id: rule.id, makeActive: !rule.isActive })
+        setIsStatusConfirmOpen(true)
+    }
+
+    const confirmStatusChange = () => {
+        if (statusChangeRule) {
+            setRules(rules.map(r => r.id === statusChangeRule.id ? { ...r, isActive: statusChangeRule.makeActive } : r))
+            toast.success(`Qayda ${statusChangeRule.makeActive ? 'aktivləşdirildi' : 'deaktiv edildi'}`)
+            setIsStatusConfirmOpen(false)
+            setStatusChangeRule(null)
+        }
+    }
+
+    const addStage = () => {
+        const newStage: ApprovalStage = {
+            id: `st_${Date.now()}`,
+            level: formStages.length + 1,
+            name: `Mərhələ ${formStages.length + 1}`,
+            roleIds: [],
+            userIds: [],
+            method: 'SEQUENTIAL'
+        }
+        setFormStages([...formStages, newStage])
+        setTimeout(() => setActiveStageIdx(formStages.length), 0)
+    }
+
+    const removeStage = (idx: number) => {
+        if (formStages.length <= 1) return
+        const newStages = formStages.filter((_, i) => i !== idx).map((s, i) => ({ ...s, level: i + 1 }))
+        setFormStages(newStages)
+        setActiveStageIdx(Math.max(0, idx - 1))
+    }
+
+    const setStageMethod = (idx: number, method: 'SEQUENTIAL' | 'PARALLEL') => {
         const newStages = [...formStages]
-        if (newStages[idx].roleIds.includes(roleId)) newStages[idx].roleIds = newStages[idx].roleIds.filter(r => r !== roleId)
-        else newStages[idx].roleIds.push(roleId)
-        checkParallel(newStages, idx)
+        newStages[idx].method = method
         setFormStages(newStages)
     }
-    const toggleUser = (idx: number, userId: string) => {
-        const newStages = [...formStages]
-        if (newStages[idx].userIds.includes(userId)) newStages[idx].userIds = newStages[idx].userIds.filter(u => u !== userId)
-        else newStages[idx].userIds.push(userId)
-        checkParallel(newStages, idx)
-        setFormStages(newStages)
-    }
-    const checkParallel = (stages: ApprovalStage[], index: number) => {
-        const totalApprovers = stages[index].roleIds.length + stages[index].userIds.length
-        if (totalApprovers > 1) { if (!stages[index].method) stages[index].method = 'PARALLEL' }
-        else stages[index].method = 'SEQUENTIAL'
-    }
-    const setStageMethod = (index: number, method: 'SEQUENTIAL' | 'PARALLEL') => {
-        const newStages = [...formStages]; newStages[index].method = method; setFormStages(newStages)
-    }
-    const removeStage = (index: number) => {
-        if (formStages.length <= 1) return;
-        const newStages = formStages.filter((_, i) => i !== index)
-        newStages.forEach((s, i) => s.level = i + 1)
-        setFormStages(newStages)
-        setActiveStageIdx(Math.max(0, index - 1))
-    }
-
-    // Security Confirmation Logic
-    const [isSecurityConfirmOpen, setIsSecurityConfirmOpen] = useState(false)
-    const [pendingSecurityChange, setPendingSecurityChange] = useState<{ idx: number, values: ('2FA' | 'SMS' | 'EMAIL')[], added: string } | null>(null)
-
-    // Delete Confirmation Logic
-    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
-    const [ruleToDelete, setRuleToDelete] = useState<string | null>(null)
 
     const confirmSecurityChange = () => {
         if (pendingSecurityChange) {
@@ -386,216 +350,92 @@ export function WorkflowConfigTab() {
             setFormStages(newStages)
             setPendingSecurityChange(null)
             setIsSecurityConfirmOpen(false)
-            toast.success(`Təhlükəsizlik yeniləndi: +${pendingSecurityChange.added}`)
+            toast.info("Təhlükəsizlik tələbi əlavə edildi")
         }
-    }
-    const handleSave = () => {
-        if (!formDesc) { toast.error("Təsvir yazın"); return }
-        const newRule: ApprovalRule = {
-            id: editingRule ? editingRule.id : `rule_${Date.now()}`,
-            model: formModel, action: formAction, description: formDesc,
-            isEnabled: editingRule ? editingRule.isEnabled : true, stages: formStages
-        }
-        if (editingRule) { setRules(rules.map(r => r.id === editingRule.id ? newRule : r)); toast.success("Qayda yeniləndi") }
-        else { setRules([...rules, newRule]); toast.success("Yeni qayda yaradıldı") }
-        setIsDialogOpen(false)
-    }
-
-    const AssignmentSelector = ({ stageIdx }: { stageIdx: number }) => {
-        const stage = formStages[stageIdx]
-        if (!stage) return null;
-        return (
-            <div className="space-y-4">
-                <RadioGroup value={assignmentType} onValueChange={(v: "ROLE" | "USER") => setAssignmentType(v)} className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2"><RadioGroupItem value="ROLE" id="r-role" /><Label htmlFor="r-role">Rol üzrə</Label></div>
-                    <div className="flex items-center space-x-2"><RadioGroupItem value="USER" id="r-user" /><Label htmlFor="r-user">İstifadəçi üzrə</Label></div>
-                </RadioGroup>
-                <div className="p-4 border rounded-md bg-muted/10 min-h-[200px]">
-                    {assignmentType === 'ROLE' ? (
-                        <div className="space-y-4">
-                            <Label>Rolu Seçin</Label>
-                            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between">Rollar ({stage.roleIds.length})<Plus className="ml-2 h-4 w-4 opacity-50" /></Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[400px] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Rol axtar..." />
-                                        <CommandList>
-                                            <CommandEmpty>Tapılmadı.</CommandEmpty>
-                                            <CommandGroup>{ROLES.map((role) => (<CommandItem key={role.id} value={role.name} onSelect={() => toggleRole(stageIdx, role.id)}><CheckCircle2 className={cn("mr-2 h-4 w-4", stage.roleIds.includes(role.id) ? "opacity-100" : "opacity-0")} />{role.name}</CommandItem>))}</CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex flex-wrap gap-2">{stage.roleIds.map(rid => (<Badge key={rid} variant="secondary" className="pl-1 pr-2 py-1"><Users className="w-3 h-3 mr-1" />{ROLES.find(r => r.id === rid)?.name}<button onClick={() => toggleRole(stageIdx, rid)} className="ml-1 hover:text-red"><Trash2 className="w-3 h-3" /></button></Badge>))}</div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <Label>İstifadəçini Seçin</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between">İstifadəçilər ({stage.userIds.length})<Plus className="ml-2 h-4 w-4 opacity-50" /></Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[400px] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Use axtar..." />
-                                        <CommandList>
-                                            <CommandEmpty>Tapılmadı.</CommandEmpty>
-                                            <CommandGroup>{USERS.map((user) => (<CommandItem key={user.id} value={user.name} onSelect={() => toggleUser(stageIdx, user.id)}><CheckCircle2 className={cn("mr-2 h-4 w-4", stage.userIds.includes(user.id) ? "opacity-100" : "opacity-0")} /><div className="flex flex-col"><span>{user.name}</span><span className="text-[10px] text-muted-foreground">{user.role}</span></div></CommandItem>))}</CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex flex-wrap gap-2">{stage.userIds.map(uid => (<Badge key={uid} variant="secondary" className="pl-1 pr-2 py-1"><User className="w-3 h-3 mr-1" />{USERS.find(u => u.id === uid)?.name}<button onClick={() => toggleUser(stageIdx, uid)} className="ml-1 hover:text-red"><Trash2 className="w-3 h-3" /></button></Badge>))}</div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="flex justify-between items-center mb-4">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Workflow Engine</h2>
-                        <p className="text-muted-foreground">Təsdiqləmə proseslərinin idarə edilməsi və monitorinqi.</p>
-                    </div>
-                    <TabsList>
-                        <TabsTrigger value="config" className="flex items-center gap-2"><Settings2 className="w-4 h-4" /> Konfiqurasiya</TabsTrigger>
-                        <TabsTrigger value="monitor" className="flex items-center gap-2 relative">
-                            <Activity className="w-4 h-4" /> Nəzarət
-                            {requests.filter(r => r.status === 'PENDING').length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                                </span>
-                            )}
-                        </TabsTrigger>
-                    </TabsList>
+        <>
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-lg font-medium">Workflow Qaydaları</h3>
+                    <p className="text-sm text-muted-foreground">Hansı əməliyyatların təsdiq tələb etdiyini təyin edin.</p>
                 </div>
+                <Button onClick={openCreateDialog}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Yeni Workflow
+                </Button>
+            </div>
 
-                <TabsContent value="config">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 className="text-lg font-medium">Workflow Qaydaları</h3>
-                            <p className="text-sm text-muted-foreground">Hansı əməliyyatların təsdiq tələb etdiyini təyin edin.</p>
-                        </div>
-                        <Button onClick={openCreateDialog} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-                            <Plus className="mr-2 h-4 w-4" /> Yeni Qayda
-                        </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {rules.map(rule => (
-                            <Card key={rule.id} className="group relative overflow-hidden border-muted hover:border-primary/50 transition-all hover:shadow-lg">
-                                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    <Switch checked={rule.isEnabled} onCheckedChange={() => toggleRule(rule.id)} />
-                                </div>
-                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                                <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start">
-                                        <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 border-blue-200">
-                                            {rule.model.toUpperCase()} • {rule.action.toUpperCase()}
-                                        </Badge>
-                                    </div>
-                                    <CardTitle className="text-lg">{rule.description}</CardTitle>
-                                    <CardDescription>Created: {new Date().toLocaleDateString()}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <ScrollArea className="w-full whitespace-nowrap pb-4">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-4 ring-background">START</div>
-                                            <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
-                                            {rule.stages.sort((a, b) => a.level - b.level).map((stage) => (
-                                                <div key={stage.id} className="flex items-center space-x-2">
-                                                    <div className="relative group/stage">
-                                                        <div className="bg-card border rounded p-2 min-w-[100px] flex flex-col gap-1 items-center relative group/stage">
-                                                            <span className="text-[10px] font-bold text-muted-foreground">Step {stage.level}</span>
-                                                            <div className="flex -space-x-1">
-                                                                {stage.roleIds.slice(0, 3).map(rid => (<div key={rid} className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[8px] border-2 border-background" title="Role">R</div>))}
-                                                                {stage.userIds.slice(0, 3).map(uid => (<div key={uid} className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[8px] border-2 border-background" title="User">U</div>))}
-                                                                {(stage.roleIds.length + stage.userIds.length) > 3 && (<div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[8px] border-2 border-background">+{(stage.roleIds.length + stage.userIds.length) - 3}</div>)}
-                                                            </div>
-                                                            {stage.method === 'PARALLEL' && <Badge variant="outline" className="text-[8px] h-4 px-1 absolute -top-2 bg-background">Paralel</Badge>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
-                                            <div className="shrink-0 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold">END</div>
-                                        </div>
-                                        <ScrollBar orientation="horizontal" />
-                                    </ScrollArea>
-                                    <div className="flex justify-end gap-2 mt-4">
-                                        <Button variant="ghost" size="sm" onClick={() => openEdit(rule)}><Edit className="w-4 h-4" /></Button>
-                                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteRule(rule.id)}><Trash2 className="w-4 h-4" /></Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        {rules.length === 0 && <div className="col-span-full text-center text-muted-foreground py-10 border border-dashed rounded bg-muted/5">Rule yoxdur</div>}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="monitor">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Müraciət Tarixçəsi</CardTitle>
-                            <CardDescription>Bütün aktiv və tamamlanmış workflow proseslərinə nəzarət.</CardDescription>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {rules.map(rule => (
+                    <Card key={rule.id} className="relative hover:shadow-md transition-all group overflow-hidden">
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${rule.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <CardHeader className="pb-2 pl-6">
+                            <div className="flex justify-between items-start">
+                                <Badge variant="outline" className="mb-2 font-mono text-[10px] uppercase">
+                                    {rule.model} / {rule.action}
+                                </Badge>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleStatusClick(rule)}>
+                                            {rule.isActive ? <div className="flex items-center text-orange-600"><Lock className="w-4 h-4 mr-2" /> Deaktiv Et</div> : <div className="flex items-center text-green-600"><CheckCircle2 className="w-4 h-4 mr-2" /> Aktiv Et</div>}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => openEditRule(rule)}>
+                                            <Edit className="w-4 h-4 mr-2" /> Düzəliş et
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="text-destructive" onClick={() => { setRuleToDelete(rule.id); setIsDeleteConfirmOpen(true) }}>
+                                            <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <CardTitle className="text-base font-semibold leading-tight">{rule.description}</CardTitle>
+                            <CardDescription className="text-xs mt-1">
+                                {rule.stages.length} Təsdiq Mərhələsi
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <DataTable
-                                columns={columns}
-                                data={requests}
-                                searchKey="entityName"
-                                filterPlaceholder="Obyekt adı ilə axtar..."
-                                toolbarContent={(table) => (
-                                    <div className="flex items-center gap-2">
-                                        <FilterDrawer
-                                            open={isFilterDrawerOpen}
-                                            onOpenChange={setIsFilterDrawerOpen}
-                                            resetFilters={() => table.resetColumnFilters()}
-                                        >
-                                            {table.getColumn("status") && (
-                                                <div className="space-y-2">
-                                                    <Label>Status üzrə</Label>
-                                                    <DataTableFacetedFilter
-                                                        column={table.getColumn("status")}
-                                                        title="Status"
-                                                        options={[
-                                                            { label: "Pending", value: "PENDING" },
-                                                            { label: "Approved", value: "APPROVED" },
-                                                            { label: "Rejected", value: "REJECTED" },
-                                                        ]}
-                                                    />
-                                                </div>
-                                            )}
-                                        </FilterDrawer>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="outline" size="icon" className="h-8 w-8 ml-2" onClick={() => toast.success("Məlumatlar yeniləndi")}>
-                                                        <RefreshCw className="h-4 w-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Yenilə</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                        <CardContent className="pl-6 pb-4">
+                            <div className="space-y-3 mt-2">
+                                {rule.stages.map((stage, idx) => (
+                                    <div key={stage.id} className="flex items-center text-sm relative">
+                                        {idx < rule.stages.length - 1 && (
+                                            <div className="absolute left-[11px] top-6 w-[2px] h-4 bg-border" />
+                                        )}
+                                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold mr-3 border shadow-sm z-10 text-muted-foreground">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-medium text-xs">{stage.name || `Mərhələ ${idx + 1}`}</div>
+                                            <div className="text-[10px] text-muted-foreground">
+                                                {stage.roleIds.length > 0 ? `${stage.roleIds.length} Rol` : ''}
+                                                {stage.roleIds.length > 0 && stage.userIds.length > 0 ? ', ' : ''}
+                                                {stage.userIds.length > 0 ? `${stage.userIds.length} İstifadəçi` : ''}
+                                                {stage.roleIds.length === 0 && stage.userIds.length === 0 && <span className="text-destructive">Təyinat yoxdur</span>}
+                                            </div>
+                                        </div>
+                                        {stage.verification && stage.verification.length > 0 && (
+                                            <div className="flex gap-1">
+                                                {stage.verification.includes('2FA') && <Badge variant="outline" className="text-[9px] px-1 h-4 border-orange-200 bg-orange-50 text-orange-700">2FA</Badge>}
+                                                {stage.verification.includes('SMS') && <Badge variant="outline" className="text-[9px] px-1 h-4 border-blue-200 bg-blue-50 text-blue-700">SMS</Badge>}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            />
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
-            </Tabs>
+                ))}
+            </div>
 
-            {/* DIALOG */}
+            {/* Main Rule Editor Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col">
                     <DialogHeader>
@@ -770,7 +610,7 @@ export function WorkflowConfigTab() {
                                     <p className="text-[10px] text-muted-foreground mt-2">DİQQƏT: Çoxsaylı metod seçildikdə, istifadəçi hamısını təsdiqləməlidir (Məcburi).</p>
                                 </div>
 
-                                {formStages[activeStageIdx] && <AssignmentSelector stageIdx={activeStageIdx} />}
+                                {formStages[activeStageIdx] && <AssignmentSelector stageIdx={activeStageIdx} formStages={formStages} setFormStages={setFormStages} />}
                             </div>
                         </div>
                     </div>
@@ -782,9 +622,216 @@ export function WorkflowConfigTab() {
                 </DialogContent>
             </Dialog>
 
+            {/* Security Confirmation Dialog */}
+            <ConfirmationDialog
+                open={isSecurityConfirmOpen}
+                onOpenChange={setIsSecurityConfirmOpen}
+                title="Təhlükəsizlik Siyasətini Dəyişirsiniz"
+                description={(
+                    <span>
+                        Siz bu mərhələyə <b>{pendingSecurityChange?.added}</b> təsdiqləmə tələbi əlavə edirsiniz.
+                        Bu o deməkdir ki, təsdiq edən şəxslər əlavə identifikasiyadan keçməli olacaqlar.
+                        <br /><br />
+                        Davam etmək istədiyinizə əminsiniz?
+                    </span>
+                )}
+                onConfirm={confirmSecurityChange}
+            />
+
+            {/* Status Change Confirmation Dialog */}
+            <ConfirmationDialog
+                open={isStatusConfirmOpen}
+                onOpenChange={setIsStatusConfirmOpen}
+                title={statusChangeRule?.makeActive ? "Qaydanı Aktivləşdir" : "Qaydanı Deaktiv Et"}
+                description={`Siz bu workflow qaydasını ${statusChangeRule?.makeActive ? 'aktivləşdirmək' : 'deaktiv etmək'} istəyirsiniz. Bu dəyişiklik dərhal qüvvəyə minəcək.`}
+                onConfirm={confirmStatusChange}
+                confirmText={statusChangeRule?.makeActive ? "Aktivləşdir" : "Deaktiv et"}
+                variant={statusChangeRule?.makeActive ? "default" : "destructive"}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                open={isDeleteConfirmOpen}
+                onOpenChange={setIsDeleteConfirmOpen}
+                title="Qaydanı Silmək İstəyirsiniz?"
+                description="Bu əməliyyat geri qaytarıla bilməz. Bu workflow qaydası həmişəlik silinəcək və əlaqəli bütün proseslər dayandırılacaq."
+                onConfirm={confirmDeleteRule}
+                variant="destructive"
+                confirmText="Sil"
+                cancelText="Ləğv et"
+            />
+        </>
+    )
+}
+
+function WorkflowMonitorView() {
+    const [requests, setRequests] = useState<ApprovalRequest[]>(MOCK_REQUESTS)
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
+    const [selectedRequestForLog, setSelectedRequestForLog] = useState<ApprovalRequest | null>(null)
+
+    // --- Actions ---
+    const handleApprove = (reqId: string) => {
+        setRequests(prev => prev.map(req => {
+            if (req.id !== reqId) return req
+            const isFinal = req.currentLevel >= 2
+            return {
+                ...req,
+                currentLevel: isFinal ? req.currentLevel : req.currentLevel + 1,
+                status: isFinal ? 'APPROVED' : 'PENDING',
+                currentStageName: isFinal ? 'Bitmişdir' : 'Final Təsdiq',
+                logs: [...req.logs, { id: `log_${Date.now()}`, action: 'APPROVE', actorId: 'me', actorName: 'Cari İstifadəçi', timestamp: new Date().toLocaleString("az-AZ"), stageName: req.currentStageName, comment: 'Təsdiq edildi' }]
+            }
+        }))
+        toast.success("Müraciət təsdiqləndi")
+    }
+
+    const handleReject = (reqId: string) => {
+        setRequests(prev => prev.map(req => {
+            if (req.id !== reqId) return req
+            return {
+                ...req, status: 'REJECTED',
+                logs: [...req.logs, { id: `log_${Date.now()}`, action: 'REJECT', actorId: 'me', actorName: 'Cari İstifadəçi', timestamp: new Date().toLocaleString("az-AZ"), stageName: req.currentStageName, comment: 'İmtina edildi' }]
+            }
+        }))
+        toast.error("Müraciət imtina edildi")
+    }
+
+    // --- DataTable Columns Configuration ---
+    const columns = useMemo<ColumnDef<ApprovalRequest>[]>(() => [
+        {
+            accessorKey: "id",
+            header: "Müraciət ID",
+            cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue("id")}</span>,
+        },
+        {
+            accessorKey: "entityName",
+            header: "Obyekt (Tenant/Doc)",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium text-sm">{row.getValue("entityName")}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{row.original.entityId}</span>
+                </div>
+            )
+        },
+        {
+            accessorKey: "currentStageName",
+            header: "Cari Mərhələ",
+            cell: ({ row }) => <Badge variant="outline">{row.getValue("currentStageName")}</Badge>,
+        },
+        {
+            accessorKey: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.getValue("status") as string
+                const variant = status === 'APPROVED' ? 'default' : status === 'REJECTED' ? 'destructive' : 'secondary'
+                const className = status === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : ''
+                return <Badge variant={variant} className={className}>{status}</Badge>
+            },
+            filterFn: (row, id, value) => value.includes(row.getValue(id)),
+        },
+        {
+            accessorKey: "createdAt",
+            header: "Tarix",
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.getValue("createdAt")}</span>,
+        },
+        {
+            id: "actions",
+            header: "Əməliyyatlar",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => toast.info(`Viewing details for ${row.original.id}`)}>
+                            <FileText className="mr-2 h-4 w-4" /> Detallı Bax (Display)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSelectedRequestForLog(row.original)}>
+                            <Activity className="mr-2 h-4 w-4" /> Audit Tarixçəsi (Logs)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {row.original.status === 'PENDING' && (
+                            <>
+                                <DropdownMenuItem onClick={() => handleApprove(row.original.id)} className="text-green-600 focus:text-green-700 focus:bg-green-50">
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Təsdiqlə (Approve)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleReject(row.original.id)} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                                    <XCircle className="mr-2 h-4 w-4" /> İmtina (Reject)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast.warning("Deleqasiya dialoqu açılacaq...")}>
+                                    <UserPlus className="mr-2 h-4 w-4 text-blue-500" /> Delegasiya (Delegate)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast.error("Eskalasiya edildi!")}>
+                                    <AlertTriangle className="mr-2 h-4 w-4 text-orange-500" /> Eskalasiya (Escalate)
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => toast.error("Proses admin tərəfindən ləğv edildi.")}>
+                            <AlertOctagon className="mr-2 h-4 w-4 text-destructive" /> Ləğv Et (Cancel Process)
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )
+        }
+    ], [])
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Müraciət Tarixçəsi</CardTitle>
+                <CardDescription>Bütün aktiv və tamamlanmış workflow proseslərinə nəzarət.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <DataTable
+                    columns={columns}
+                    data={requests}
+                    searchKey="entityName"
+                    filterPlaceholder="Obyekt adı ilə axtar..."
+                    toolbarContent={(table) => (
+                        <div className="flex items-center gap-2">
+                            <FilterDrawer
+                                open={isFilterDrawerOpen}
+                                onOpenChange={setIsFilterDrawerOpen}
+                                resetFilters={() => table.resetColumnFilters()}
+                            >
+                                {table.getColumn("status") && (
+                                    <div className="space-y-2">
+                                        <Label>Status üzrə</Label>
+                                        <DataTableFacetedFilter
+                                            column={table.getColumn("status")}
+                                            title="Status"
+                                            options={[
+                                                { label: "Pending", value: "PENDING" },
+                                                { label: "Approved", value: "APPROVED" },
+                                                { label: "Rejected", value: "REJECTED" },
+                                            ]}
+                                        />
+                                    </div>
+                                )}
+                            </FilterDrawer>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-8 w-8 ml-2" onClick={() => toast.success("Məlumatlar yeniləndi")}>
+                                            <RefreshCw className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Yenilə</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                    )}
+                />
+            </CardContent>
+
             {/* AUDIT LOG SHEET */}
             <Sheet open={!!selectedRequestForLog} onOpenChange={(open) => !open && setSelectedRequestForLog(null)}>
-                {/* ... existing sheet content ... */}
                 <SheetContent className="sm:max-w-[540px]">
                     <SheetHeader className="mb-6">
                         <SheetTitle className="flex items-center gap-2">
@@ -837,41 +884,106 @@ export function WorkflowConfigTab() {
                     )}
                 </SheetContent>
             </Sheet>
+        </Card>
+    )
+}
 
-            {/* Security Confirmation Dialog */}
-            <AlertDialog open={isSecurityConfirmOpen} onOpenChange={setIsSecurityConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Təhlükəsizlik Siyasətini Dəyişirsiniz</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Siz bu mərhələyə <b>{pendingSecurityChange?.added}</b> təsdiqləmə tələbi əlavə edirsiniz.
-                            Bu o deməkdir ki, təsdiq edən şəxslər əlavə identifikasiyadan keçməli olacaqlar.
-                            <br /><br />
-                            Davam etmək istədiyinizə əminsiniz?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setPendingSecurityChange(null)}>İmtina</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmSecurityChange}>Təsdiqlə</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+function AssignmentSelector({ stageIdx, formStages, setFormStages }: { stageIdx: number, formStages: ApprovalStage[], setFormStages: (s: ApprovalStage[]) => void }) {
+    const [search, setSearch] = useState("")
 
-            {/* Delete Confirmation Dialog */}
-            <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Qaydanı Silmək İstəyirsiniz?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Bu əməliyyat geri qaytarıla bilməz. Bu workflow qaydası həmişəlik silinəcək və əlaqəli bütün proseslər dayandırılacaq.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setRuleToDelete(null)}>Ləğv et</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDeleteRule} className="bg-destructive hover:bg-destructive/90">Sil</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+    const toggleRole = (roleId: string) => {
+        const newStages = [...formStages]
+        const currentRoles = newStages[stageIdx].roleIds
+        if (currentRoles.includes(roleId)) {
+            newStages[stageIdx].roleIds = currentRoles.filter(r => r !== roleId)
+        } else {
+            newStages[stageIdx].roleIds = [...currentRoles, roleId]
+        }
+        setFormStages(newStages)
+    }
+
+    const toggleUser = (userId: string) => {
+        const newStages = [...formStages]
+        const currentUsers = newStages[stageIdx].userIds
+        if (currentUsers.includes(userId)) {
+            newStages[stageIdx].userIds = currentUsers.filter(u => u !== userId)
+        } else {
+            newStages[stageIdx].userIds = [...currentUsers, userId]
+        }
+        setFormStages(newStages)
+    }
+
+    const filteredRoles = ROLES.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
+    const filteredUsers = USERS.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
+
+
+    // Define tab items for ScrollableSubTabs
+    const tabItems: SubTabItem[] = [
+        {
+            key: 'roles',
+            label: 'Rollara Görə',
+            content: (
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                    <div className="space-y-2">
+                        {filteredRoles.map(role => (
+                            <div key={role.id} className="flex items-center space-x-2 hover:bg-muted/50 p-1 rounded">
+                                <Checkbox
+                                    id={`role-${role.id}`}
+                                    checked={formStages[stageIdx]?.roleIds.includes(role.id)}
+                                    onCheckedChange={() => toggleRole(role.id)}
+                                />
+                                <Label htmlFor={`role-${role.id}`} className="cursor-pointer flex-1 text-sm flex items-center justify-between">
+                                    {role.name}
+                                    {['role_admin', 'role_ceo'].includes(role.id) && <Badge variant="secondary" className="text-[10px] h-4">System</Badge>}
+                                </Label>
+                            </div>
+                        ))}
+                        {filteredRoles.length === 0 && <p className="text-xs text-center text-muted-foreground py-4">Nəticə tapılmadı.</p>}
+                    </div>
+                </ScrollArea>
+            )
+        },
+        {
+            key: 'users',
+            label: 'İstifadəçilərə Görə',
+            content: (
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                    <div className="space-y-2">
+                        {filteredUsers.map(user => (
+                            <div key={user.id} className="flex items-center space-x-2 hover:bg-muted/50 p-1 rounded">
+                                <Checkbox
+                                    id={`user-${user.id}`}
+                                    checked={formStages[stageIdx]?.userIds.includes(user.id)}
+                                    onCheckedChange={() => toggleUser(user.id)}
+                                />
+                                <Label htmlFor={`user-${user.id}`} className="cursor-pointer flex-1 text-sm">
+                                    <div className="font-medium">{user.name}</div>
+                                    <div className="text-[10px] text-muted-foreground">{user.email} • {user.role}</div>
+                                </Label>
+                            </div>
+                        ))}
+                        {filteredUsers.length === 0 && <p className="text-xs text-center text-muted-foreground py-4">Nəticə tapılmadı.</p>}
+                    </div>
+                </ScrollArea>
+            )
+        }
+    ];
+
+    return (
+        <div className="flex flex-col h-[350px]">
+            <Label className="text-xs font-semibold uppercase text-muted-foreground mb-4">Təyinatlar (Assignments)</Label>
+
+            <div className="mb-4">
+                <Input placeholder="Axtar..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8" />
+            </div>
+
+            <ScrollableSubTabs
+                tabs={tabItems}
+                value={currentTab}
+                onValueChange={setCurrentTab}
+                variant="default"
+                className="flex-1"
+            />
         </div>
     )
 }

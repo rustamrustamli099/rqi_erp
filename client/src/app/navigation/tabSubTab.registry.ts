@@ -241,7 +241,12 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'workflow',
                 label: 'Workflow',
-                requiredAnyOf: ['system.settings.system_configurations.workflow.configuration.read']
+                // SAP-GRADE: Parent is PERMISSIONLESS. Visibility from ANY child.
+                requiredAnyOf: [],
+                subTabs: [
+                    { key: 'config', label: 'Konfiqurasiya', requiredAnyOf: ['system.settings.system_configurations.workflow.configuration.read'] },
+                    { key: 'monitor', label: 'Nəzarət', requiredAnyOf: ['system.settings.system_configurations.workflow.configuration.read'] }
+                ]
             }
         ]
     },

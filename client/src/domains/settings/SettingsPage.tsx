@@ -304,7 +304,7 @@ export default function SettingsPage() {
                         {activeTab === 'billing_config' && currentTabNode && <BillingConfigTab tabNode={currentTabNode} />}
                         {activeTab === 'dictionaries' && currentTabNode && <DictionariesTab tabNode={currentTabNode} />}
                         {activeTab === 'templates' && <DocumentTemplatesTab />}
-                        {activeTab === 'workflow' && <WorkflowConfigTab />}
+                        {activeTab === 'workflow' && currentTabNode && <WorkflowConfigTab tabNode={currentTabNode} />}
                         {activeTab === 'roles' && <RolesPage />}
 
                     </div>

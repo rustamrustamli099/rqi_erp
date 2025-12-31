@@ -1,40 +1,26 @@
-import { Badge } from "@/shared/components/ui/badge"
+
+import React from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogClose
-} from "@/shared/components/ui/dialog"
-import { Button } from "@/shared/components/ui/button"
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
-// --- Status Badge ---
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
-
-export function StatusBadge({ status }: { status: string }) {
-    let variant: "default" | "secondary" | "destructive" | "outline" = "default";
-
-    switch (status?.toLowerCase()) {
-        case 'active':
-        case 'approved':
-            variant = "default"; // green usually
-            break;
-        case 'pending':
-        case 'inactive':
-            variant = "secondary";
-            break;
-        case 'rejected':
-        case 'blocked':
-            variant = "destructive";
-            break;
-        default:
-            variant = "outline";
-    }
-
-    return <Badge variant={variant}>{status}</Badge>
+interface ConfirmationDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    title: string;
+    description: React.ReactNode;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    variant?: 'default' | 'destructive';
 }
 
 export function ConfirmationDialog({
@@ -42,25 +28,30 @@ export function ConfirmationDialog({
     onOpenChange,
     title,
     description,
+    confirmText = "Təsdiqlə",
+    cancelText = "İmtina",
     onConfirm,
-    trigger
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}: any) {
+    variant = 'default'
+}: ConfirmationDialogProps) {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            {trigger && <DialogTrigger>{trigger}</DialogTrigger>}
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button variant="destructive" onClick={onConfirm}>Confirm</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {description}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={onConfirm}
+                        className={cn(variant === 'destructive' && "bg-destructive hover:bg-destructive/90")}
+                    >
+                        {confirmText}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
 }
