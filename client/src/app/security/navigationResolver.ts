@@ -18,6 +18,10 @@
  */
 
 import { TAB_SUBTAB_REGISTRY, type PageConfig, type TabConfig, type SubTabConfig } from '@/app/navigation/tabSubTab.registry';
+import {
+    getEntityActionConfig,
+    type ActionContext,
+} from '@/app/navigation/action.registry';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -27,6 +31,7 @@ export type RouteDecision =
     | { decision: 'ALLOW'; normalizedUrl: string }
     | { decision: 'REDIRECT'; normalizedUrl: string }
     | { decision: 'DENY'; reason: string };
+
 
 export interface AllowedTab {
     key: string;
@@ -309,6 +314,43 @@ export function getPageConfig(
 // RESOLVED NAV TREE TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Action visibility state as determined by decision center
+ */
+export type ActionState = 'enabled' | 'disabled' | 'hidden';
+
+/**
+ * Resolved action with visibility state
+ */
+export interface ResolvedAction {
+    actionKey: string;
+    permissionSlug: string;
+    label: string;
+    contexts: ActionContext[];
+    state: ActionState;
+}
+
+/**
+ * Result of action visibility resolution
+ * Grouped by context for efficient UI consumption
+ */
+export interface ResolvedActions {
+    /** Entity this resolution is for */
+    entityKey: string;
+    scope: 'system' | 'tenant';
+
+    /** All actions with resolved states */
+    actions: ResolvedAction[];
+
+    /** Actions grouped by context (precomputed for UI) */
+    byContext: {
+        toolbar: ResolvedAction[];
+        row: ResolvedAction[];
+        form: ResolvedAction[];
+        bulk: ResolvedAction[];
+    };
+}
+
 export interface ResolvedNavNode {
     id: string;
     label: string;
@@ -318,6 +360,88 @@ export interface ResolvedNavNode {
     subTabKey?: string;
     path: string;
     children?: ResolvedNavNode[];
+    /**
+     * SAP-GRADE ACTION VISIBILITY
+     * Resolved actions for this context (leaf or container)
+     * Embedded directly in navigation tree - SINGLE SOURCE OF TRUTH
+     */
+    actions?: ResolvedActions;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESOLVE NAVIGATION TREE (SINGLE CANONICAL DECISION OUTPUT)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * SAP-GRADE: Build complete navigation tree using resolver
+ * 
+ * This is the ONLY canonical decision output for navigation.
+ * Sidebar and all navigation consumers MUST use this function.
+ * 
+ * @param context - 'admin' or 'tenant'
+ * @param permissions - User's flat permission array
+ * @returns ResolvedNavNode[] - Complete navigation tree
+ */
+// ═══════════════════════════════════════════════════════════════════════════
+// INTERNAL ACTION RESOLVER (NOT EXPORTED)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Internal helper to resolve actions for a specific context key.
+ * Used ONLY by resolveNavigationTree.
+ */
+function resolveActionsInternal(
+    entityKey: string,
+    scope: 'system' | 'tenant',
+    permissionSet: Set<string>
+): ResolvedActions | undefined {
+    // Get entity action config from registry
+    const entityConfig = getEntityActionConfig(entityKey, scope);
+
+    // If no config found, return undefined (no actions for this node)
+    if (!entityConfig) {
+        return undefined;
+    }
+
+    // Initialize result structure
+    const result: ResolvedActions = {
+        entityKey,
+        scope,
+        actions: [],
+        byContext: {
+            toolbar: [],
+            row: [],
+            form: [],
+            bulk: [],
+        }
+    };
+
+    // Evaluate each action - ORDER INDEPENDENT
+    for (const actionDef of entityConfig.actions) {
+        // EXACT string match - SAP PFCG rule
+        const hasPermission = permissionSet.has(actionDef.permissionSlug);
+
+        // Policy: unauthorized => hidden
+        const state: ActionState = hasPermission ? 'enabled' : 'hidden';
+
+        const resolvedAction: ResolvedAction = {
+            actionKey: actionDef.actionKey,
+            permissionSlug: actionDef.permissionSlug,
+            label: actionDef.label,
+            contexts: actionDef.contexts,
+            state,
+        };
+
+        // Add to main list
+        result.actions.push(resolvedAction);
+
+        // Add to context-specific lists
+        for (const context of actionDef.contexts) {
+            result.byContext[context].push(resolvedAction);
+        }
+    }
+
+    return result;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -336,22 +460,23 @@ export interface ResolvedNavNode {
  */
 export function resolveNavigationTree(
     context: 'admin' | 'tenant',
-    permissions: string[]
+    permissions: string[],
+    actionScope: 'system' | 'tenant'
 ): ResolvedNavNode[] {
     const pages = context === 'admin' ? TAB_SUBTAB_REGISTRY.admin : TAB_SUBTAB_REGISTRY.tenant;
     const result: ResolvedNavNode[] = [];
 
+    // Optimize permission lookup once
+    const permissionSet = new Set(permissions);
+
     for (const page of pages) {
-        // SAP: Check if page has any visible tabs (order-independent)
+        // Check if page has any visible content
         if (!hasAnyVisibleTab(page.pageKey, permissions, context)) {
             continue;
         }
 
         // Get resolved path for page (default routing)
         const pagePath = getFirstAllowedTarget(page.pageKey, permissions, context) || page.basePath;
-
-        // Get allowed tabs
-        const allowedTabs = getAllowedTabs(page.pageKey, permissions, context);
 
         // Build tab children
         const tabChildren: ResolvedNavNode[] = [];
@@ -368,7 +493,9 @@ export function resolveNavigationTree(
                 label: subTab.label,
                 tabKey: tab.key,
                 subTabKey: subTab.key,
-                path: `${page.basePath}?tab=${tab.key}&subTab=${subTab.key}`
+                path: `${page.basePath}?tab=${tab.key}&subTab=${subTab.key}`,
+                // Resolve Actions for SubTab Context
+                actions: resolveActionsInternal(subTab.key, actionScope, permissionSet)
             }));
 
             // Determine tab path
@@ -382,7 +509,9 @@ export function resolveNavigationTree(
                 label: tab.label,
                 tabKey: tab.key,
                 path: tabPath,
-                children: subTabChildren.length > 0 ? subTabChildren : undefined
+                children: subTabChildren.length > 0 ? subTabChildren : undefined,
+                // Resolve Actions for Tab Context
+                actions: resolveActionsInternal(tab.key, actionScope, permissionSet)
             });
         }
 
@@ -393,7 +522,9 @@ export function resolveNavigationTree(
             icon: page.icon,
             pageKey: page.pageKey,
             path: pagePath,
-            children: tabChildren.length > 0 ? tabChildren : undefined
+            children: tabChildren.length > 0 ? tabChildren : undefined,
+            // Resolve Actions for Page Context
+            actions: resolveActionsInternal(page.pageKey, actionScope, permissionSet)
         };
 
         result.push(pageNode);
@@ -401,3 +532,4 @@ export function resolveNavigationTree(
 
     return result;
 }
+
