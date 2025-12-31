@@ -33,6 +33,7 @@ const menus_module_1 = require("./modules/menus/menus.module");
 const permissions_module_1 = require("./modules/admin/iam/permissions/permissions.module");
 const roles_module_1 = require("./modules/admin/iam/roles/roles.module");
 const role_approvals_module_1 = require("./modules/admin/iam/role-approvals/role-approvals.module");
+const role_assignments_module_1 = require("./modules/admin/iam/role-assignments/role-assignments.module");
 const approvals_module_1 = require("./modules/admin/iam/approvals/approvals.module");
 const files_module_1 = require("./modules/files/files.module");
 const prisma_service_1 = require("./prisma.service");
@@ -94,6 +95,7 @@ exports.AppModule = AppModule = __decorate([
             payment_module_1.PaymentModule,
             compliance_module_1.ComplianceModule,
             role_approvals_module_1.RoleApprovalsModule,
+            role_assignments_module_1.RoleAssignmentsModule,
             approvals_module_1.ApprovalsModule,
             workflow_module_1.WorkflowModule,
             notifications_module_1.NotificationsModule,

@@ -45,7 +45,7 @@ export class SessionService {
             throw new BadRequestException('SYSTEM scope cannot have a scopeId');
         }
         if (target.scopeType === 'TENANT' && !target.scopeId) {
-            throw new ForbiddenException('TENANT scope requires a scopeId');
+            throw new BadRequestException('TENANT scope requires a scopeId');
         }
 
         // 1. Validate Assignment (Security Core)

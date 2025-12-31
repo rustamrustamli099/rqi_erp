@@ -35,10 +35,18 @@ let RolesController = class RolesController {
     }
     create(createRoleDto, req) {
         const userId = req.user.sub || req.user.userId;
-        return this.rolesService.create(createRoleDto, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.create(createRoleDto, userId, context);
     }
-    findAll(query) {
-        return this.rolesService.findAll(query);
+    findAll(query, req) {
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.findAll(query, context);
     }
     async debugCheck() {
         return this.rolesService.debugCount();
@@ -48,21 +56,45 @@ let RolesController = class RolesController {
     }
     update(id, updateRoleDto, req) {
         const userId = req.user.sub || req.user.userId;
-        return this.rolesService.update(id, updateRoleDto, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.update(id, updateRoleDto, userId, context);
+    }
+    remove(id, req) {
+        const userId = req.user.sub || req.user.userId;
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.remove(id, userId, context);
     }
     submitForApproval(id, req) {
         const userId = req.user.sub || req.user.userId;
-        return this.rolesService.submitForApproval(id, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.submitForApproval(id, userId, context);
     }
     approve(id, req) {
         const approverId = req.user.sub || req.user.userId;
-        return this.rolesService.approve(id, approverId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.approve(id, approverId, context);
     }
     reject(id, reason, req) {
         if (!reason)
             throw new common_1.BadRequestException('Reason is required');
         const userId = req.user.sub || req.user.userId;
-        return this.rolesService.reject(id, reason, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.rolesService.reject(id, reason, userId, context);
     }
 };
 exports.RolesController = RolesController;
@@ -87,8 +119,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [pagination_dto_1.ListQueryDto]),
+    __metadata("design:paramtypes", [pagination_dto_1.ListQueryDto, Object]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "findAll", null);
 __decorate([
@@ -114,6 +147,14 @@ __decorate([
     __metadata("design:paramtypes", [String, update_role_dto_1.UpdateRoleDto, Object]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], RolesController.prototype, "remove", null);
 __decorate([
     (0, common_1.Post)(':id/submit'),
     __param(0, (0, common_1.Param)('id')),

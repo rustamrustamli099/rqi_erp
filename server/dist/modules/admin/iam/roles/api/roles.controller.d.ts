@@ -33,7 +33,7 @@ export declare class RolesController {
         updatedAt: Date;
         version: number;
     }>;
-    findAll(query: ListQueryDto): Promise<import("../../../../../common/dto/pagination.dto").PaginatedResult<any>>;
+    findAll(query: ListQueryDto, req: any): Promise<import("../../../../../common/dto/pagination.dto").PaginatedResult<any>>;
     debugCheck(): Promise<{
         total: number;
         first: {
@@ -121,6 +121,9 @@ export declare class RolesController {
         createdAt: Date;
         updatedAt: Date;
         version: number;
+    }>;
+    remove(id: string, req: any): Promise<{
+        success: boolean;
     }>;
     submitForApproval(id: string, req: any): Promise<{
         id: string;

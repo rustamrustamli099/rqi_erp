@@ -34,7 +34,11 @@ export class ApprovalsController {
         @Request() req: any
     ) {
         const userId = req.user.sub || req.user.userId || req.user.id;
-        return this.approvalsService.approve(id, type, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.approvalsService.approve(id, type, userId, context);
     }
 
     @Post(':id/reject')
@@ -45,6 +49,10 @@ export class ApprovalsController {
         @Request() req: any
     ) {
         const userId = req.user.sub || req.user.userId || req.user.id;
-        return this.approvalsService.reject(id, type, reason, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.approvalsService.reject(id, type, reason, userId, context);
     }
 }

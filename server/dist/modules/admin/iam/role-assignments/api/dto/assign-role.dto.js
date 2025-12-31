@@ -9,43 +9,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateRoleDto = void 0;
+exports.AssignRoleDto = void 0;
 const class_validator_1 = require("class-validator");
-class CreateRoleDto {
-    name;
-    description;
-    scope;
-    permissionIds;
-    childRoleIds;
+class AssignRoleDto {
+    userId;
+    roleId;
+    validFrom;
+    validTo;
 }
-exports.CreateRoleDto = CreateRoleDto;
+exports.AssignRoleDto = AssignRoleDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
-], CreateRoleDto.prototype, "name", void 0);
+], AssignRoleDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], AssignRoleDto.prototype, "roleId", void 0);
+__decorate([
+    (0, class_validator_1.IsDateString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateRoleDto.prototype, "description", void 0);
+], AssignRoleDto.prototype, "validFrom", void 0);
 __decorate([
-    (0, class_validator_1.IsIn)(['SYSTEM', 'TENANT']),
+    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateRoleDto.prototype, "scope", void 0);
-__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsString)({ each: true }),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsString)({ each: true }),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Array)
-], CreateRoleDto.prototype, "permissionIds", void 0);
-__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsString)({ each: true }),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Array)
-], CreateRoleDto.prototype, "childRoleIds", void 0);
-//# sourceMappingURL=create-role.dto.js.map
+], AssignRoleDto.prototype, "validTo", void 0);
+//# sourceMappingURL=assign-role.dto.js.map

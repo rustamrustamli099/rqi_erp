@@ -17,7 +17,10 @@ export declare class ApprovalsService {
     private readonly rolesService;
     constructor(rolesService: RolesService);
     getPendingApprovals(userId: string, permissions: string[]): Promise<ApprovalItem[]>;
-    approve(id: string, type: 'ROLE', approverId: string): Promise<{
+    approve(id: string, type: 'ROLE', approverId: string, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         id: string;
         name: string;
         description: string | null;
@@ -36,7 +39,10 @@ export declare class ApprovalsService {
         updatedAt: Date;
         version: number;
     }>;
-    reject(id: string, type: 'ROLE', reason: string, userId: string): Promise<{
+    reject(id: string, type: 'ROLE', reason: string, userId: string, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         id: string;
         name: string;
         description: string | null;

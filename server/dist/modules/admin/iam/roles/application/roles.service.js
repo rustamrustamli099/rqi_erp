@@ -28,15 +28,22 @@ let RolesService = class RolesService {
         console.log("DEBUG COUNT:", { total, first });
         return { total, first };
     }
-    async create(dto, userId) {
+    async create(dto, userId, context) {
+        if (context.scopeType === 'TENANT') {
+            if (dto.scope !== 'TENANT') {
+                throw new common_1.ForbiddenException('Security Violation: Tenant users can only create TENANT scoped roles.');
+            }
+        }
+        const effectiveTenantId = context.scopeType === 'TENANT' ? context.scopeId : null;
         const existing = await this.prisma.role.findFirst({
             where: {
                 name: { equals: dto.name, mode: 'insensitive' },
-                scope: dto.scope
+                scope: dto.scope,
+                tenantId: effectiveTenantId
             }
         });
         if (existing) {
-            throw new common_1.BadRequestException(`Role with name '${dto.name}' already exists in ${dto.scope} scope.`);
+            throw new common_1.BadRequestException(`Role with name '${dto.name}' already exists in this scope.`);
         }
         let permissionConnect = [];
         let permissionSlugs = [];
@@ -67,6 +74,7 @@ let RolesService = class RolesService {
                 name: dto.name,
                 description: dto.description,
                 scope: dto.scope,
+                tenantId: effectiveTenantId,
                 level: 10,
                 isLocked: false,
                 isEnabled: true,
@@ -88,21 +96,37 @@ let RolesService = class RolesService {
                 roleId: role.id,
                 name: role.name,
                 scope: role.scope,
+                tenantId: effectiveTenantId,
                 assigned_permissions: permissionSlugs
             },
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: effectiveTenantId || undefined
         });
         return role;
     }
-    async findAll(query) {
+    async findAll(query, context) {
         const { skip, take, orderBy, page, pageSize, search, filters } = query_parser_1.QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope', 'status']);
         const where = {};
+        if (context) {
+            if (context.scopeType === 'TENANT') {
+                where.OR = [
+                    { tenantId: context.scopeId },
+                    { scope: 'SYSTEM' }
+                ];
+            }
+        }
         if (search) {
-            where.OR = [
-                { name: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } }
+            where.AND = [
+                ...(where.OR ? [{ OR: where.OR }] : []),
+                {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { description: { contains: search, mode: 'insensitive' } }
+                    ]
+                }
             ];
+            delete where.OR;
         }
         if (filters) {
             if (filters.scope)
@@ -153,8 +177,9 @@ let RolesService = class RolesService {
             throw new common_1.NotFoundException('Role not found');
         return role;
     }
-    async submitForApproval(id, userId) {
+    async submitForApproval(id, userId, context) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'submit');
         if (role.status !== client_1.RoleStatus.DRAFT && role.status !== client_1.RoleStatus.REJECTED) {
             throw new common_1.BadRequestException('Only Draft or Rejected roles can be submitted');
         }
@@ -171,11 +196,13 @@ let RolesService = class RolesService {
             details: { roleId: id },
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: role.tenantId || undefined
         });
         return result;
     }
-    async approve(id, approverId) {
+    async approve(id, approverId, context) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'approve');
         if (role.status !== client_1.RoleStatus.PENDING_APPROVAL) {
             throw new common_1.BadRequestException('Role is not pending approval');
         }
@@ -196,11 +223,13 @@ let RolesService = class RolesService {
             details: { roleId: id, approverId },
             module: 'ACCESS_CONTROL',
             userId: approverId,
+            tenantId: role.tenantId || undefined
         });
         return result;
     }
-    async reject(id, reason, userId = 'SYSTEM') {
+    async reject(id, reason, userId = 'SYSTEM', context) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'reject');
         if (role.status !== client_1.RoleStatus.PENDING_APPROVAL) {
             throw new common_1.BadRequestException('Role is not pending approval');
         }
@@ -217,11 +246,13 @@ let RolesService = class RolesService {
             details: { roleId: id, reason },
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: role.tenantId || undefined
         });
         return result;
     }
-    async update(id, dto, userId = 'SYSTEM') {
+    async update(id, dto, userId = 'SYSTEM', context) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'update');
         if (role.isLocked) {
             throw new common_1.ForbiddenException('Cannot edit a locked System Role.');
         }
@@ -312,6 +343,70 @@ let RolesService = class RolesService {
                 }
             }
         }
+        if (dto.childRoleIds) {
+            const currentChildren = await this.prisma.compositeRole.findMany({
+                where: { parentRoleId: id }
+            });
+            const oldChildIds = currentChildren.map(c => c.childRoleId);
+            const newChildIds = [...new Set(dto.childRoleIds)];
+            if (newChildIds.length > 0) {
+                const invalidChildren = await this.prisma.role.findMany({
+                    where: {
+                        id: { in: newChildIds },
+                        OR: context.scopeType === 'SYSTEM'
+                            ? [{ scope: 'TENANT' }]
+                            : []
+                    }
+                });
+                if (context.scopeType === 'SYSTEM' && invalidChildren.length > 0) {
+                    throw new common_1.BadRequestException(`System Roles cannot contain Tenant Roles.`);
+                }
+                if (context.scopeType === 'TENANT') {
+                    const alienRoles = await this.prisma.role.findMany({
+                        where: {
+                            id: { in: newChildIds },
+                            AND: [
+                                { scope: 'TENANT' },
+                                { tenantId: { not: context.scopeId } }
+                            ]
+                        }
+                    });
+                    if (alienRoles.length > 0) {
+                        throw new common_1.BadRequestException(`Security Violation: Cannot include roles from another tenant.`);
+                    }
+                }
+            }
+            for (const childId of newChildIds) {
+                const hasCycle = await this.detectCycle(childId, id);
+                if (hasCycle) {
+                    throw new common_1.BadRequestException(`Cycle Detected: Role ${childId} already contains ${id} recursively.`);
+                }
+            }
+            const kidsToRemove = oldChildIds.filter(c => !newChildIds.includes(c));
+            const kidsToAdd = newChildIds.filter(c => !oldChildIds.includes(c));
+            await this.prisma.$transaction(async (tx) => {
+                if (kidsToRemove.length > 0) {
+                    await tx.compositeRole.deleteMany({
+                        where: {
+                            parentRoleId: id,
+                            childRoleId: { in: kidsToRemove }
+                        }
+                    });
+                }
+                if (kidsToAdd.length > 0) {
+                    await tx.compositeRole.createMany({
+                        data: kidsToAdd.map(cid => ({
+                            parentRoleId: id,
+                            childRoleId: cid
+                        }))
+                    });
+                }
+            });
+            auditDetails.child_roles = {
+                removed: kidsToRemove,
+                added: kidsToAdd
+            };
+        }
         const updateData = {};
         if (dto.name)
             updateData.name = dto.name;
@@ -323,7 +418,8 @@ let RolesService = class RolesService {
                 where: {
                     name: { equals: dto.name, mode: 'insensitive' },
                     scope: role.scope,
-                    id: { not: id }
+                    id: { not: id },
+                    tenantId: role.tenantId
                 }
             });
             if (existing)
@@ -340,8 +436,65 @@ let RolesService = class RolesService {
             details: auditDetails,
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: role.tenantId || undefined
         });
         return updatedRole;
+    }
+    async remove(id, userId, context) {
+        const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'delete');
+        if (role.isLocked) {
+            throw new common_1.ForbiddenException('Cannot delete a locked System Role.');
+        }
+        const assignmentCount = await this.prisma.userRole.count({ where: { roleId: id } });
+        if (assignmentCount > 0) {
+            throw new common_1.BadRequestException(`Cannot delete role '${role.name}' because it has ${assignmentCount} active assignments.`);
+        }
+        await this.prisma.$transaction([
+            this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
+            this.prisma.role.delete({ where: { id } })
+        ]);
+        await this.auditService.logAction({
+            action: 'ROLE_DELETED',
+            resource: 'Role',
+            details: { roleId: id, name: role.name },
+            module: 'ACCESS_CONTROL',
+            userId: userId,
+            tenantId: role.tenantId || undefined
+        });
+        return { success: true };
+    }
+    verifyOwnership(role, context, action) {
+        if (context.scopeType === 'TENANT') {
+            if (role.scope === 'SYSTEM') {
+                throw new common_1.ForbiddenException(`Security Violation: Tenant cannot ${action} a SYSTEM role.`);
+            }
+            if (role.tenantId !== context.scopeId) {
+                throw new common_1.ForbiddenException(`Security Violation: You do not have access to this role.`);
+            }
+        }
+    }
+    async detectCycle(startNodeId, targetNodeId) {
+        const toVisit = [startNodeId];
+        const visited = new Set();
+        while (toVisit.length > 0) {
+            const current = toVisit.pop();
+            if (!current || visited.has(current))
+                continue;
+            visited.add(current);
+            if (current === targetNodeId)
+                return true;
+            const children = await this.prisma.compositeRole.findMany({
+                where: { parentRoleId: current },
+                select: { childRoleId: true }
+            });
+            for (const c of children) {
+                if (!visited.has(c.childRoleId)) {
+                    toVisit.push(c.childRoleId);
+                }
+            }
+        }
+        return false;
     }
 };
 exports.RolesService = RolesService;

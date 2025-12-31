@@ -45,7 +45,7 @@ let SessionService = class SessionService {
             throw new common_1.BadRequestException('SYSTEM scope cannot have a scopeId');
         }
         if (target.scopeType === 'TENANT' && !target.scopeId) {
-            throw new common_1.ForbiddenException('TENANT scope requires a scopeId');
+            throw new common_1.BadRequestException('TENANT scope requires a scopeId');
         }
         const hasAssignment = await this.prisma.userRoleAssignment.findFirst({
             where: {

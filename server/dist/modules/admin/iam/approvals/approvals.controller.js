@@ -34,11 +34,19 @@ let ApprovalsController = class ApprovalsController {
     }
     async approve(id, type, req) {
         const userId = req.user.sub || req.user.userId || req.user.id;
-        return this.approvalsService.approve(id, type, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.approvalsService.approve(id, type, userId, context);
     }
     async reject(id, type, reason, req) {
         const userId = req.user.sub || req.user.userId || req.user.id;
-        return this.approvalsService.reject(id, type, reason, userId);
+        const context = {
+            scopeType: req.user.scopeType || 'SYSTEM',
+            scopeId: req.user.scopeId || null
+        };
+        return this.approvalsService.reject(id, type, reason, userId, context);
     }
 };
 exports.ApprovalsController = ApprovalsController;

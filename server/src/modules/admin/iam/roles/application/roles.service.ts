@@ -22,17 +22,37 @@ export class RolesService {
         return { total, first };
     }
 
-    async create(dto: CreateRoleDto, userId: string) {
-        // SAP Rule: Unique name per scope
+    async create(dto: CreateRoleDto, userId: string, context: { scopeType: string, scopeId: string | null }) {
+        // [PFCG] Strict Ownership Enforcement
+        // 1. Tenant User can ONLY create Tenant Roles for THEIR Tenant
+        if (context.scopeType === 'TENANT') {
+            if (dto.scope !== 'TENANT') {
+                throw new ForbiddenException('Security Violation: Tenant users can only create TENANT scoped roles.');
+            }
+            // Force Tenant ID from Context (Ignore DTO if passed)
+            // validation against context.scopeId needed? context.scopeId is the source of truth.
+        }
+
+        // 2. System User can create SYSTEM or TENANT roles
+        // If System User creates TENANT role, they implies global provisioning (rare but possible).
+        // For now, allow mixed, but ensure data integrity.
+
+        const effectiveTenantId = context.scopeType === 'TENANT' ? context.scopeId : null;
+        // NOTE: If System Admin creates a Tenant Role, we might need a target tenantId in DTO. 
+        // For this phase, we assume System Admins create SYSTEM roles, and Tenant Admins create TENANT roles.
+        // If a System Admin wants to create a Tenant Role, they should Switch Context to that Tenant first.
+
+        // SAP Rule: Unique name per scope + tenant
         const existing = await this.prisma.role.findFirst({
             where: {
                 name: { equals: dto.name, mode: 'insensitive' },
-                scope: dto.scope as any // Cast to RoleScope enum
+                scope: dto.scope as any, // Cast to RoleScope enum
+                tenantId: effectiveTenantId
             }
         });
 
         if (existing) {
-            throw new BadRequestException(`Role with name '${dto.name}' already exists in ${dto.scope} scope.`);
+            throw new BadRequestException(`Role with name '${dto.name}' already exists in this scope.`);
         }
 
         // Resolve Permissions if provided
@@ -72,6 +92,7 @@ export class RolesService {
                 name: dto.name,
                 description: dto.description,
                 scope: dto.scope as any,
+                tenantId: effectiveTenantId, // [CRITICAL] Bind to Tenant
                 level: 10,
                 isLocked: false,
                 isEnabled: true,
@@ -95,26 +116,48 @@ export class RolesService {
                 roleId: role.id,
                 name: role.name,
                 scope: role.scope,
+                tenantId: effectiveTenantId,
                 assigned_permissions: permissionSlugs
             },
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: effectiveTenantId || undefined
         });
 
         return role;
     }
 
-    async findAll(query: ListQueryDto): Promise<PaginatedResult<any>> {
+    async findAll(query: ListQueryDto, context?: { scopeType: string, scopeId: string | null }): Promise<PaginatedResult<any>> {
         const { skip, take, orderBy, page, pageSize, search, filters } = QueryParser.parse(query, ['name', 'createdAt', 'level', 'scope', 'status']);
 
         const where: any = {};
 
+        // [PFCG] Compliance: Visibility Scoping
+        if (context) {
+            if (context.scopeType === 'TENANT') {
+                // Tenant sees:
+                // 1. Own Tenant Roles
+                // 2. System Roles (Global available reference) - [Policy Decision: Can they see system roles? Yes, usually for assignment/reading]
+                where.OR = [
+                    { tenantId: context.scopeId },
+                    { scope: 'SYSTEM' } // System roles are visible to all (usually)
+                ];
+            }
+            // System sees everything by default, or specific tenant if filtered.
+        }
+
         // 1. Search Logic (Indexed fields only)
         if (search) {
-            where.OR = [
-                { name: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } }
+            where.AND = [
+                ...(where.OR ? [{ OR: where.OR }] : []), // Preserve scope restriction if exists
+                {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { description: { contains: search, mode: 'insensitive' } }
+                    ]
+                }
             ];
+            delete where.OR; // Clean up top-level OR if moved to AND
         }
 
         // 2. Filter Logic (Explicit Parsing per module schema)
@@ -170,8 +213,10 @@ export class RolesService {
         return role;
     }
 
-    async submitForApproval(id: string, userId: string) {
+    async submitForApproval(id: string, userId: string, context: { scopeType: string, scopeId: string | null }) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'submit');
+
         if (role.status !== RoleStatus.DRAFT && role.status !== RoleStatus.REJECTED) {
             throw new BadRequestException('Only Draft or Rejected roles can be submitted');
         }
@@ -189,13 +234,16 @@ export class RolesService {
             details: { roleId: id },
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: role.tenantId || undefined
         });
 
         return result;
     }
 
-    async approve(id: string, approverId: string) {
+    async approve(id: string, approverId: string, context: { scopeType: string, scopeId: string | null }) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'approve');
+
         if (role.status !== RoleStatus.PENDING_APPROVAL) {
             throw new BadRequestException('Role is not pending approval');
         }
@@ -218,13 +266,16 @@ export class RolesService {
             details: { roleId: id, approverId },
             module: 'ACCESS_CONTROL',
             userId: approverId,
+            tenantId: role.tenantId || undefined
         });
 
         return result;
     }
 
-    async reject(id: string, reason: string, userId: string = 'SYSTEM') {
+    async reject(id: string, reason: string, userId: string = 'SYSTEM', context: { scopeType: string, scopeId: string | null }) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'reject');
+
         if (role.status !== RoleStatus.PENDING_APPROVAL) {
             throw new BadRequestException('Role is not pending approval');
         }
@@ -242,14 +293,16 @@ export class RolesService {
             details: { roleId: id, reason },
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: role.tenantId || undefined
         });
 
         return result;
     }
 
 
-    async update(id: string, dto: UpdateRoleDto, userId: string = 'SYSTEM') {
+    async update(id: string, dto: UpdateRoleDto, userId: string = 'SYSTEM', context: { scopeType: string, scopeId: string | null }) {
         const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'update');
 
         // Locked Role Check (SAP Standard)
         if (role.isLocked) {
@@ -377,6 +430,94 @@ export class RolesService {
             }
         }
 
+        // [PFCG] Composite Role Logic
+        if (dto.childRoleIds) {
+            // 1. Current Children
+            const currentChildren = await (this.prisma as any).compositeRole.findMany({
+                where: { parentRoleId: id }
+            });
+            const oldChildIds = currentChildren.map(c => c.childRoleId);
+
+            // 2. New Children - Dedupe
+            const newChildIds = [...new Set(dto.childRoleIds)];
+
+            // 3. Validation: Ownership & Scope
+            if (newChildIds.length > 0) {
+                const invalidChildren = await this.prisma.role.findMany({
+                    where: {
+                        id: { in: newChildIds },
+                        // Scope Check: Can only add roles visible to this scope
+                        // Tenant can add: Own Tenant Roles OR System Roles ?
+                        // SAP Rule: Composite Role can contain Single Roles.
+                        // Ideally: Tenant Role -> Contains Tenant Roles OR System Roles (if System roles are templates/usable)
+                        // But System Role -> Can ONLY contain System Roles.
+                        OR: context.scopeType === 'SYSTEM'
+                            ? [{ scope: 'TENANT' }] // System Role cannot contain Tenant Role
+                            : []
+                    }
+                });
+
+                if (context.scopeType === 'SYSTEM' && invalidChildren.length > 0) {
+                    // Wait, the logic above is inverse. 
+                    // If I am System, I want to Find Roles that are TENANT (Invalid).
+                    throw new BadRequestException(`System Roles cannot contain Tenant Roles.`);
+                }
+
+                // If Tenant: Can I add System Role? Yes. Can I add other Tenant Role? No.
+                if (context.scopeType === 'TENANT') {
+                    const alienRoles = await this.prisma.role.findMany({
+                        where: {
+                            id: { in: newChildIds },
+                            AND: [
+                                { scope: 'TENANT' },
+                                { tenantId: { not: context.scopeId } }
+                            ]
+                        }
+                    });
+                    if (alienRoles.length > 0) {
+                        throw new BadRequestException(`Security Violation: Cannot include roles from another tenant.`);
+                    }
+                }
+            }
+
+            // 4. Cycle Detection
+            // If I add Child C to Parent P, does C already contain P (deeply)?
+            for (const childId of newChildIds) {
+                const hasCycle = await this.detectCycle(childId, id);
+                if (hasCycle) {
+                    throw new BadRequestException(`Cycle Detected: Role ${childId} already contains ${id} recursively.`);
+                }
+            }
+
+            // 5. Diff
+            const kidsToRemove = oldChildIds.filter(c => !newChildIds.includes(c));
+            const kidsToAdd = newChildIds.filter(c => !oldChildIds.includes(c));
+
+            await this.prisma.$transaction(async (tx) => {
+                if (kidsToRemove.length > 0) {
+                    await (tx as any).compositeRole.deleteMany({
+                        where: {
+                            parentRoleId: id,
+                            childRoleId: { in: kidsToRemove }
+                        }
+                    });
+                }
+                if (kidsToAdd.length > 0) {
+                    await (tx as any).compositeRole.createMany({
+                        data: kidsToAdd.map(cid => ({
+                            parentRoleId: id,
+                            childRoleId: cid
+                        }))
+                    });
+                }
+            });
+
+            auditDetails.child_roles = {
+                removed: kidsToRemove,
+                added: kidsToAdd
+            };
+        }
+
         // Handle other fields (Name, Description)
         // We separate this to ensure permission transaction logic is clean, 
         // though typically this could be inside the same transaction.
@@ -395,7 +536,8 @@ export class RolesService {
                 where: {
                     name: { equals: dto.name, mode: 'insensitive' },
                     scope: role.scope,
-                    id: { not: id }
+                    id: { not: id },
+                    tenantId: role.tenantId // Scope Check
                 }
             });
             if (existing) throw new BadRequestException(`Role name '${dto.name}' is already taken.`);
@@ -413,9 +555,94 @@ export class RolesService {
             details: auditDetails,
             module: 'ACCESS_CONTROL',
             userId: userId,
+            tenantId: role.tenantId || undefined
         });
 
         return updatedRole;
     }
 
+    async remove(id: string, userId: string, context: { scopeType: string, scopeId: string | null }) {
+        const role = await this.findOne(id);
+        this.verifyOwnership(role, context, 'delete');
+
+        // Prevent deleting System Roles if not System Admin? 
+        // verifyOwnership handles scope check.
+        // Additional check: Locked roles
+        if (role.isLocked) {
+            throw new ForbiddenException('Cannot delete a locked System Role.');
+        }
+
+        // Check Assignments
+        const assignmentCount = await this.prisma.userRole.count({ where: { roleId: id } });
+        if (assignmentCount > 0) {
+            throw new BadRequestException(`Cannot delete role '${role.name}' because it has ${assignmentCount} active assignments.`);
+        }
+
+        await this.prisma.$transaction([
+            this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
+            this.prisma.role.delete({ where: { id } })
+        ]);
+
+        await this.auditService.logAction({
+            action: 'ROLE_DELETED',
+            resource: 'Role',
+            details: { roleId: id, name: role.name },
+            module: 'ACCESS_CONTROL',
+            userId: userId,
+            tenantId: role.tenantId || undefined
+        });
+
+        return { success: true };
+    }
+
+    /**
+     * PRIVATE helper to enforce ownership
+     */
+    private verifyOwnership(role: any, context: { scopeType: string, scopeId: string | null }, action: string) {
+        if (context.scopeType === 'TENANT') {
+            // Tenant Users can only touch their OWN roles
+            // 1. Role must be TENANT scoped (System roles are Read-Only for tenants, enforced by service logic usually, but here we cover mutations)
+            if (role.scope === 'SYSTEM') {
+                throw new ForbiddenException(`Security Violation: Tenant cannot ${action} a SYSTEM role.`);
+            }
+            // 2. Role must belong to the same tenant
+            if (role.tenantId !== context.scopeId) {
+                // Should act as Not Found to prevent enumeration? Or explicit Forbidden?
+                // For Admin UI, Forbidden is often clearer, but strictly 404 is safer.
+                // Given we already did findOne which doesn't check filter, we do check here.
+                throw new ForbiddenException(`Security Violation: You do not have access to this role.`);
+            }
+        }
+    }
+
+    private async detectCycle(startNodeId: string, targetNodeId: string): Promise<boolean> {
+        // BFS/DFS to see if startNodeId can reach targetNodeId
+        // startNodeId is the Child we are adding.
+        // targetNodeId is the Parent.
+        // If Child contains Parent, then adding Child to Parent creates a loop.
+
+        const toVisit = [startNodeId];
+        const visited = new Set<string>();
+
+        while (toVisit.length > 0) {
+            const current = toVisit.pop();
+            if (!current || visited.has(current)) continue;
+
+            visited.add(current);
+
+            if (current === targetNodeId) return true;
+
+            const children = await (this.prisma as any).compositeRole.findMany({
+                where: { parentRoleId: current },
+                select: { childRoleId: true }
+            });
+
+            for (const c of children) {
+                if (!visited.has(c.childRoleId)) {
+                    toVisit.push(c.childRoleId);
+                }
+            }
+        }
+        return false;
+    }
 }

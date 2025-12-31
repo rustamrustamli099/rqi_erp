@@ -89,16 +89,16 @@ export class ApprovalsService {
         return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
 
-    async approve(id: string, type: 'ROLE', approverId: string) {
+    async approve(id: string, type: 'ROLE', approverId: string, context: { scopeType: string, scopeId: string | null }) {
         if (type === 'ROLE') {
-            return this.rolesService.approve(id, approverId);
+            return this.rolesService.approve(id, approverId, context);
         }
         throw new ForbiddenException('Unknown approval type');
     }
 
-    async reject(id: string, type: 'ROLE', reason: string, userId: string) {
+    async reject(id: string, type: 'ROLE', reason: string, userId: string, context: { scopeType: string, scopeId: string | null }) {
         if (type === 'ROLE') {
-            return this.rolesService.reject(id, reason, userId);
+            return this.rolesService.reject(id, reason, userId, context);
         }
         throw new ForbiddenException('Unknown approval type');
     }

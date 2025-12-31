@@ -29,7 +29,10 @@ export declare class RolesService {
             version: number;
         } | null;
     }>;
-    create(dto: CreateRoleDto, userId: string): Promise<{
+    create(dto: CreateRoleDto, userId: string, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         id: string;
         name: string;
         description: string | null;
@@ -48,7 +51,10 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
-    findAll(query: ListQueryDto): Promise<PaginatedResult<any>>;
+    findAll(query: ListQueryDto, context?: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<PaginatedResult<any>>;
     findOne(id: string): Promise<{
         permissions: ({
             permission: {
@@ -82,7 +88,10 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
-    submitForApproval(id: string, userId: string): Promise<{
+    submitForApproval(id: string, userId: string, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         id: string;
         name: string;
         description: string | null;
@@ -101,7 +110,10 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
-    approve(id: string, approverId: string): Promise<{
+    approve(id: string, approverId: string, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         id: string;
         name: string;
         description: string | null;
@@ -120,7 +132,10 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
-    reject(id: string, reason: string, userId?: string): Promise<{
+    reject(id: string, reason: string, userId: string | undefined, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         id: string;
         name: string;
         description: string | null;
@@ -139,7 +154,10 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
-    update(id: string, dto: UpdateRoleDto, userId?: string): Promise<{
+    update(id: string, dto: UpdateRoleDto, userId: string | undefined, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
         permissions: ({
             permission: {
                 id: string;
@@ -172,4 +190,12 @@ export declare class RolesService {
         updatedAt: Date;
         version: number;
     }>;
+    remove(id: string, userId: string, context: {
+        scopeType: string;
+        scopeId: string | null;
+    }): Promise<{
+        success: boolean;
+    }>;
+    private verifyOwnership;
+    private detectCycle;
 }

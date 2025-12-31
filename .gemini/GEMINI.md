@@ -140,7 +140,21 @@ It is implemented EXCLUSIVELY in:
 
 ---
 
-## 8. WHY THIS EXISTS
+## 8. CODE HYGIENE (ENFORCED)
+
+**LAW:** Code must be compilable, explicit, and free of placeholder logic.
+
+1. **No Literal Placeholders:**
+   - Literal placeholders such as `...` are **FORBIDDEN** in committed code.
+   - Any placeholder must be replaced with valid executable logic before merge.
+   - CI SHOULD fail builds containing invalid syntax placeholders.
+
+2. **Rationale:**
+   - Prevent silent compile-breakers in critical authorization paths.
+
+---
+
+## 9. WHY THIS EXISTS
 
 This system is built to **SAP/Bank-Grade ERP Standards**.
 

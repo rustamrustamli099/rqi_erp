@@ -24,6 +24,7 @@ import { MenusModule } from './modules/menus/menus.module';
 import { PermissionsModule } from './modules/admin/iam/permissions/permissions.module';
 import { RolesModule } from './modules/admin/iam/roles/roles.module';
 import { RoleApprovalsModule } from './modules/admin/iam/role-approvals/role-approvals.module';
+import { RoleAssignmentsModule } from './modules/admin/iam/role-assignments/role-assignments.module';
 import { ApprovalsModule } from './modules/admin/iam/approvals/approvals.module';
 import { FilesModule } from './modules/files/files.module';
 import { PrismaService } from './prisma.service';
@@ -78,6 +79,7 @@ import { DecisionModule } from './platform/decision/decision.module';
     PaymentModule,
     ComplianceModule,
     RoleApprovalsModule,
+    RoleAssignmentsModule,
     ApprovalsModule,
     WorkflowModule,
     NotificationsModule,
