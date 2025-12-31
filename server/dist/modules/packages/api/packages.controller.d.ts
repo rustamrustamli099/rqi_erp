@@ -1,0 +1,86 @@
+import { PackagesUseCase } from '../application/packages.usecase';
+import { Prisma } from '@prisma/client';
+export declare class PackagesController {
+    private readonly packagesUseCase;
+    constructor(packagesUseCase: PackagesUseCase);
+    create(data: Prisma.PackageCreateInput): Promise<{
+        id: string;
+        name: string;
+        description: string | null;
+        priceMonthly: Prisma.Decimal;
+        priceYearly: Prisma.Decimal;
+        currency: string;
+        maxUsers: number;
+        maxStorageGB: number;
+        maxBranches: number;
+        features: string | null;
+        isActive: boolean;
+        isPopular: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    findAll(): Promise<{
+        priceMonthly: number;
+        priceYearly: number;
+        id: string;
+        name: string;
+        description: string | null;
+        currency: string;
+        maxUsers: number;
+        maxStorageGB: number;
+        maxBranches: number;
+        features: string | null;
+        isActive: boolean;
+        isPopular: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    findOne(id: string): Promise<{
+        priceMonthly: number;
+        priceYearly: number;
+        id: string;
+        name: string;
+        description: string | null;
+        currency: string;
+        maxUsers: number;
+        maxStorageGB: number;
+        maxBranches: number;
+        features: string | null;
+        isActive: boolean;
+        isPopular: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    } | null>;
+    update(id: string, data: Prisma.PackageUpdateInput): Promise<{
+        id: string;
+        name: string;
+        description: string | null;
+        priceMonthly: Prisma.Decimal;
+        priceYearly: Prisma.Decimal;
+        currency: string;
+        maxUsers: number;
+        maxStorageGB: number;
+        maxBranches: number;
+        features: string | null;
+        isActive: boolean;
+        isPopular: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    remove(id: string): Promise<{
+        id: string;
+        name: string;
+        description: string | null;
+        priceMonthly: Prisma.Decimal;
+        priceYearly: Prisma.Decimal;
+        currency: string;
+        maxUsers: number;
+        maxStorageGB: number;
+        maxBranches: number;
+        features: string | null;
+        isActive: boolean;
+        isPopular: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+}

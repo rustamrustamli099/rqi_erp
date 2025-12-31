@@ -41,13 +41,13 @@ export default function UsersPage() {
         setPageKey("users");
     }, [setPageKey]);
 
-    // SAP-GRADE: MERGE params, don't replace
+    // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (val: string) => {
         if (!allowedKeys.includes(val)) return;
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
+        setSearchParams(_prev => {
+            // Start fresh - only navigation params
+            const newParams = new URLSearchParams();
             newParams.set('tab', val);
-            newParams.delete('subTab');
             return newParams;
         });
     };

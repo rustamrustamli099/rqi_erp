@@ -167,13 +167,13 @@ export default function DeveloperHubPage() {
         ? currentParam
         : '';
 
-    // SAP-GRADE: MERGE params, don't replace
+    // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
+        setSearchParams(_prev => {
+            // Start fresh - only navigation params
+            const newParams = new URLSearchParams();
             newParams.set('tab', value);
-            newParams.delete('subTab');
             return newParams;
         }, { replace: true });
     };

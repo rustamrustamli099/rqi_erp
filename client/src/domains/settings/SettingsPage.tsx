@@ -104,13 +104,14 @@ export default function SettingsPage() {
         ? currentParam
         : '';
 
-    // Handler for tab change - SAP-GRADE: MERGE params, don't replace
+    // Handler for tab change - SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (tabId: string) => {
         if (!allowedKeys.includes(tabId)) return;
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
+        setSearchParams(_prev => {
+            // SAP-GRADE: Start fresh with only navigation params
+            const newParams = new URLSearchParams();
             newParams.set('tab', tabId);
-            newParams.delete('subTab'); // Clear subTab when changing tab
+            // Don't copy: page, pageSize, search, sortBy, sortDir, filters[*]
             return newParams;
         });
     };
@@ -161,11 +162,17 @@ export default function SettingsPage() {
                                         )}
                                         onClick={() => {
                                             // SAP-GRADE: Use canonical path from resolver (includes default subTab)
+                                            // BUT only extract navigation params (tab, subTab) - NOT pagination
                                             const resolvedNode = allowedTabs.find(t => (t.tabKey || t.id) === item.id);
                                             if (resolvedNode?.path) {
-                                                // Extract params from canonical path
                                                 const url = new URL(resolvedNode.path, window.location.origin);
-                                                setSearchParams(url.searchParams);
+                                                const newParams = new URLSearchParams();
+                                                // Only copy navigation params
+                                                const tab = url.searchParams.get('tab');
+                                                const subTab = url.searchParams.get('subTab');
+                                                if (tab) newParams.set('tab', tab);
+                                                if (subTab) newParams.set('subTab', subTab);
+                                                setSearchParams(newParams);
                                             } else {
                                                 handleTabChange(item.id);
                                             }
