@@ -66,14 +66,18 @@ export default function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once
-    const navTree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions);
-    }, [permissions]);
+    // SAP-GRADE: Resolve navigation tree
+    const tree = resolveNavigationTree('admin', permissions);
+    const settingsPageNode = tree.find(n => n.pageKey === 'admin.settings');
 
-    // Get settings page node
-    const settingsPageNode = useMemo(() => {
-        return navTree.find(p => p.pageKey === 'admin.settings');
-    }, [navTree]);
+    // DEBUG - SİL SONRA (User Permission Diagnosis)
+    if (import.meta.env?.DEV) {
+        console.log('[SettingsPage] DEBUG:', {
+            activePermissions: permissions.filter(p => p.includes('settings') || p.includes('billing')),
+            settingsChildren: settingsPageNode?.children?.map(c => c.tabKey),
+            billingConfigNode: settingsPageNode?.children?.find(c => c.tabKey === 'billing_config')
+        });
+    }
 
     // Tabs from page node children
     const allowedTabs = useMemo(() => settingsPageNode?.children ?? [], [settingsPageNode]);

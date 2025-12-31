@@ -86,9 +86,11 @@ export const NotificationsTab = () => (
 import DocumentTemplatesPage from "@/domains/documents/views/DocumentTemplatesPage";
 import { BillingConfigForm } from "./_components/settings/BillingConfigForm";
 
-export const BillingConfigTab = () => (
+import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+
+export const BillingConfigTab = ({ tabNode }: { tabNode: ResolvedNavNode }) => (
     <div className="h-full">
-        <BillingConfigForm />
+        <BillingConfigForm tabNode={tabNode} />
     </div>
 );
 
