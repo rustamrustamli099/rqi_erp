@@ -66,17 +66,18 @@ export const ADMIN_PERMISSION_HIERARCHY = {
         },
         security: {
             security_policy: {
-                password_policy: {
-                    perms: ['read', 'create', 'update']
+                // SAP-GRADE: These must match tabSubTab.registry.ts subTab keys
+                password: {
+                    perms: ['read', 'update']
                 },
-                access_policy: {
-                    perms: ['read', 'create', 'update']
+                login: {
+                    perms: ['read', 'update']
                 },
-                session_policy: {
-                    perms: ['read', 'create', 'update']
+                session: {
+                    perms: ['read', 'update']
                 },
-                global_policy: {
-                    perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status']
+                restrictions: {
+                    perms: ['read', 'create', 'update', 'delete']
                 },
             },
             sso_OAuth: {
@@ -332,15 +333,20 @@ const SCOPE_MAP: Record<string, 'SYSTEM' | 'TENANT' | 'COMMON'> = {
     developer_hub: 'SYSTEM',
 };
 
-const getScope = (key: string, parentScope?: 'SYSTEM' | 'TENANT' | 'COMMON'): 'SYSTEM' | 'TENANT' | 'COMMON' => {
+const getScope = (key: string, parentScope?: 'SYSTEM' | 'TENANT' | 'COMMON', prefix?: string): 'SYSTEM' | 'TENANT' | 'COMMON' => {
+    // SAP-GRADE: Prefix is the SOURCE OF TRUTH for scope
+    if (prefix?.startsWith('system')) return 'SYSTEM';
+    if (prefix?.startsWith('tenant')) return 'TENANT';
+
+    // Fallback to SCOPE_MAP for root nodes
     if (SCOPE_MAP[key]) return SCOPE_MAP[key];
-    return parentScope || 'COMMON'; // Default inherit or Common
+    return parentScope || 'COMMON';
 };
 
 const buildNode = (key: string, obj: any, prefix: string, parentScope?: 'SYSTEM' | 'TENANT' | 'COMMON'): PermissionNode => {
     const currentSlug = prefix ? `${prefix}.${key}` : key;
     const label = formatLabel(key);
-    const scope = getScope(key, parentScope);
+    const scope = getScope(key, parentScope, prefix);
 
     const subKeys = Object.keys(obj).filter(k => k !== 'perms');
     const hasPerms = Array.isArray(obj.perms) && obj.perms.length > 0;

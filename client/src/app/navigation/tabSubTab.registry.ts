@@ -186,7 +186,30 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'security',
                 label: 'Təhlükəsizlik Siyasəti',
-                requiredAnyOf: ['system.settings.security.security_policy.global_policy.read']
+                // SAP-GRADE: Parent is PERMISSIONLESS. Visibility from ANY child.
+                requiredAnyOf: [],
+                subTabs: [
+                    {
+                        key: 'password',
+                        label: 'Şifrə Siyasəti',
+                        requiredAnyOf: ['system.settings.security.security_policy.password.read']
+                    },
+                    {
+                        key: 'login',
+                        label: 'Giriş Nəzarəti',
+                        requiredAnyOf: ['system.settings.security.security_policy.login.read']
+                    },
+                    {
+                        key: 'session',
+                        label: 'Sessiya İdarəetməsi',
+                        requiredAnyOf: ['system.settings.security.security_policy.session.read']
+                    },
+                    {
+                        key: 'restrictions',
+                        label: 'Qlobal Məhdudiyyətlər',
+                        requiredAnyOf: ['system.settings.security.security_policy.restrictions.read']
+                    }
+                ]
             },
             {
                 key: 'sso',

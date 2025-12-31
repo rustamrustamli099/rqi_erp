@@ -63,9 +63,9 @@ export const EmailSettingsTab = () => (
 );
 
 
-export const SecuritySettingsTab = () => (
+export const SecuritySettingsTab = ({ tabNode }: { tabNode: ResolvedNavNode }) => (
     <div className="h-full">
-        <SecuritySettingsForm />
+        <SecuritySettingsForm tabNode={tabNode} />
     </div>
 );
 

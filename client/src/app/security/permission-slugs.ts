@@ -70,6 +70,26 @@ const SYSTEM_SLUGS = {
         SECURITY: {
             READ: 'system.settings.security.read',
             MANAGE: 'system.settings.security.update',
+            SECURITY_POLICY: {
+                PASSWORD: {
+                    READ: 'system.settings.security.security_policy.password.read',
+                    UPDATE: 'system.settings.security.security_policy.password.update',
+                },
+                LOGIN: {
+                    READ: 'system.settings.security.security_policy.login.read',
+                    UPDATE: 'system.settings.security.security_policy.login.update',
+                },
+                SESSION: {
+                    READ: 'system.settings.security.security_policy.session.read',
+                    UPDATE: 'system.settings.security.security_policy.session.update',
+                },
+                RESTRICTIONS: {
+                    READ: 'system.settings.security.security_policy.restrictions.read',
+                    CREATE: 'system.settings.security.security_policy.restrictions.create',
+                    UPDATE: 'system.settings.security.security_policy.restrictions.update',
+                    DELETE: 'system.settings.security.security_policy.restrictions.delete',
+                }
+            }
         },
         CONFIG: {
             READ: 'system.settings.system_configurations.read',

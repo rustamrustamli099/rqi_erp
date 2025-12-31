@@ -265,7 +265,7 @@ export default function SettingsPage() {
                         {activeTab === 'sms' && <SmsSettingsTab />}
 
                         {/* 6. SECURITY */}
-                        {activeTab === 'security' && <SecuritySettingsTab />}
+                        {activeTab === 'security' && currentTabNode && <SecuritySettingsTab tabNode={currentTabNode} />}
                         {activeTab === 'sso' && <SSOSettingsTab />}
 
 
