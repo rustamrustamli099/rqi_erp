@@ -831,20 +831,23 @@ export default function RolesPage({ context = "admin" }: RolesPageProps) {
                 }
             }} className="h-full space-y-6">
                 <div className="flex items-center justify-between">
-                    <TabsList className="bg-muted/50 p-1">
-                        <TabsTrigger value="list" className="gap-2">
-                            <List className="w-4 h-4" />
-                            Rollar Siyahısı
-                        </TabsTrigger>
-                        <TabsTrigger value="matrix">
-                            <LayoutGrid className="w-4 h-4 mr-2" />
-                            Matris
-                        </TabsTrigger>
-                        <TabsTrigger value="compliance">
-                            <FileText className="w-4 h-4 mr-2" />
-                            Compliance
-                        </TabsTrigger>
-                    </TabsList>
+                    {/* Reusable Scrollable Tabs - Pill Style */}
+                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                        <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
+                            <TabsTrigger value="list" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 gap-2">
+                                <List className="w-4 h-4" />
+                                Rollar Siyahısı
+                            </TabsTrigger>
+                            <TabsTrigger value="matrix" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 gap-2">
+                                <LayoutGrid className="w-4 h-4" />
+                                Matris
+                            </TabsTrigger>
+                            <TabsTrigger value="compliance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 gap-2">
+                                <FileText className="w-4 h-4" />
+                                Compliance
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
                 </div>
 
                 {/* UNIFIED ROLES LIST TAB */}

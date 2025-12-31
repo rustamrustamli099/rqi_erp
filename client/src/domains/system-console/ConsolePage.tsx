@@ -101,9 +101,9 @@ export default function SystemCorePage() {
 
             <div className="space-y-6">
                 <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-                    <ScrollableTabs className="w-full border-b">
-                        <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent space-x-6 border-b-0">
-                            {/* SAP-GRADE: Only render ALLOWED tabs from tree node */}
+                    {/* Reusable Scrollable Tabs - Pill Style */}
+                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b">
+                        <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                             {allowedTabs.map(tab => {
                                 const tabKey = tab.tabKey || tab.id;
                                 const Icon = TAB_ICONS[tabKey] || LayoutDashboard;
@@ -111,14 +111,14 @@ export default function SystemCorePage() {
                                     <TabsTrigger
                                         key={tabKey}
                                         value={tabKey}
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2 shrink-0"
+                                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2 shrink-0"
                                     >
                                         <Icon className="w-4 h-4 mr-2" /> {tab.label}
                                     </TabsTrigger>
                                 );
                             })}
                         </TabsList>
-                    </ScrollableTabs>
+                    </div>
 
                     {/* Content Area - SAP-GRADE: Pass tabNode to children */}
                     <div className="pt-4">

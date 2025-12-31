@@ -99,11 +99,16 @@ export function DictionariesTab() {
     return (
         <div className="space-y-4">
             <Tabs value={currentSubTab} onValueChange={handleSubTabChange} className="w-full">
-                {/* Horizontal scrollable tabs - SAP-GRADE: Only render ALLOWED subTabs */}
-                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                    <TabsList className="inline-flex w-max gap-1 h-10 justify-start">
+                {/* Reusable Scrollable SubTabs */}
+                <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                         {allowedSubTabs.map(st => (
-                            <TabsTrigger key={st.key} value={st.key} className="whitespace-nowrap">
+                            <TabsTrigger
+                                key={st.key}
+                                value={st.key}
+                                data-subtab={st.key}
+                                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background whitespace-nowrap"
+                            >
                                 {st.label}
                             </TabsTrigger>
                         ))}

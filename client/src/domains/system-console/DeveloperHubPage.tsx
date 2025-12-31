@@ -207,21 +207,21 @@ export default function DeveloperHubPage() {
 
             <div className="flex-1 px-8 min-w-0 pb-8">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col">
-                    <ScrollableTabs>
-                        {/* SAP-GRADE: Only render ALLOWED tabs */}
-                        <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b-0 gap-6">
+                    {/* Reusable Scrollable Tabs */}
+                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b">
+                        <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                             {allowedTabs.map(tab => (
                                 <TabsTrigger
                                     key={tab.key}
                                     value={tab.key}
                                     data-tab={tab.key}
-                                    className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium"
+                                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2"
                                 >
                                     {tab.label}
                                 </TabsTrigger>
                             ))}
                         </TabsList>
-                    </ScrollableTabs>
+                    </div>
 
                     <div className="mt-6">
                         {/* SAP-GRADE: Only render ALLOWED TabsContent */}

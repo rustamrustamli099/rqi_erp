@@ -373,16 +373,16 @@ export default function BillingPage() {
 
             <div className="flex-1 p-8 pt-4 overflow-hidden min-w-0">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
-                    <div className="border-b flex-shrink-0">
-                        <TabsList className="w-full justify-start border-b-0 rounded-none bg-transparent p-0 h-auto gap-6">
-                            {/* SAP-GRADE: Only render ALLOWED tabs */}
+                    {/* Reusable Scrollable Tabs - Pill Style */}
+                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b flex-shrink-0">
+                        <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                             {visibleTabs.map(tab => {
                                 const Icon = tab.icon;
                                 return (
                                     <TabsTrigger
                                         key={tab.key}
                                         value={tab.key}
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary px-4 py-3"
+                                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2"
                                     >
                                         <Icon className="mr-2 h-4 w-4" /> {tab.label}
                                     </TabsTrigger>

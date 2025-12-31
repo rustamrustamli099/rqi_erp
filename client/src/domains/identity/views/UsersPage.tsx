@@ -68,16 +68,16 @@ export default function UsersPage() {
 
             <div className="flex-1 p-8 pt-4 overflow-hidden min-w-0">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
-                    <div className="border-b">
-                        <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b-0 gap-6">
-                            {/* SAP-GRADE: Only render ALLOWED tabs */}
+                    {/* Reusable Scrollable Tabs - Pill Style */}
+                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b">
+                        <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                             {allowedTabs.map(tab => {
                                 const Icon = TAB_ICONS[tab.key] || Users;
                                 return (
                                     <TabsTrigger
                                         key={tab.key}
                                         value={tab.key}
-                                        className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-4 py-2 font-medium"
+                                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2"
                                     >
                                         <div className="flex items-center gap-2">
                                             <Icon className="w-4 h-4" />
