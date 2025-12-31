@@ -70,8 +70,14 @@ export default function MonitoringTab({ tabNode }: MonitoringTabProps) {
     }
 
     // DEV debugging
-    if (import.meta.env?.DEV && resolvedSubTabs.length > 0) {
-        console.log('[MonitoringTab] DEBUG - allowedKeys:', allowedKeys);
+    if (import.meta.env?.DEV) {
+        console.log('[MonitoringTab] DEBUG:', {
+            allowedKeys,
+            urlSubTab,
+            currentSubTab,
+            subTabsCount: resolvedSubTabs.length,
+            firstKey: allowedKeys[0]
+        });
     }
 
     return (

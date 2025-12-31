@@ -53,6 +53,17 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         context
     );
 
+    // DEBUG - SİL SONRA
+    if (import.meta.env?.DEV) {
+        console.log('[ProtectedRoute] Decision:', {
+            path: location.pathname,
+            params: searchParams.toString(),
+            decision: decision.decision,
+            normalized: decision.decision === 'REDIRECT' ? decision.normalizedUrl : undefined,
+            reason: decision.decision === 'DENY' ? decision.reason : undefined
+        });
+    }
+
     // 5. Handle decision
     switch (decision.decision) {
         case 'ALLOW':
