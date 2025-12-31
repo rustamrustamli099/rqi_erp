@@ -1,5 +1,8 @@
 /**
- * Unit Tests - TAB_SUBTAB Registry & Permission Preview Engine
+ * Unit Tests - TAB_SUBTAB Registry Functions
+ * 
+ * SAP-GRADE: Tests use registry helper functions only.
+ * NO duplicate decision centers.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -8,7 +11,6 @@ import {
     getFirstAllowedTab,
     canAccessPage
 } from '@/app/navigation/tabSubTab.registry';
-import { PermissionPreviewEngine } from '@/domains/auth/utils/permissionPreviewEngine';
 
 describe('normalizePermissions', () => {
     it('should add read when write actions exist', () => {
@@ -67,30 +69,20 @@ describe('canAccessPage', () => {
     });
 });
 
-describe('PermissionPreviewEngine', () => {
-    it('curators-only user sees Users menu with correct landing', () => {
-        const perms = ['system.users.curators.read'];
-        const result = PermissionPreviewEngine.run(perms, 'admin');
+describe('SAP Visibility Law', () => {
+    it('page is accessible when only one child tab is allowed', () => {
+        // User with only one tab permission
+        const perms = ['system.settings.system_configurations.billing_configurations.invoice.read'];
 
-        const usersMenu = result.visibleMenus.find(m => m.menuId === 'admin.users');
-        expect(usersMenu).toBeDefined();
-        expect(usersMenu?.landingPath).toBe('/admin/users?tab=curators');
+        // Settings page should be accessible (via billing_config > invoice)
+        const canAccess = canAccessPage('admin.settings', perms, 'admin');
+        expect(canAccess).toBe(true);
     });
 
-    it('no permissions - access denied', () => {
-        const perms: string[] = [];
-        const result = PermissionPreviewEngine.run(perms, 'admin');
+    it('page not accessible when no tabs allowed', () => {
+        const perms = ['unrelated.permission'];
 
-        expect(result.visibleMenus.length).toBe(0);
-        expect(result.firstLandingPath).toBe('/access-denied');
-    });
-
-    it('write action implies read for navigation', () => {
-        const perms = ['system.users.curators.create']; // No read, only create
-        const result = PermissionPreviewEngine.run(perms, 'admin');
-
-        // Should still be able to see Users page (read implied)
-        const usersPage = result.pages.find(p => p.pageKey === 'admin.users');
-        expect(usersPage?.allowed).toBe(true);
+        const canAccess = canAccessPage('admin.settings', perms, 'admin');
+        expect(canAccess).toBe(false);
     });
 });

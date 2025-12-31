@@ -351,7 +351,7 @@ export const TAB_SUBTAB_REGISTRY: TabSubTabRegistry = {
 
 /**
  * Check if user can access ANY tab of a page
- * EXACT base match only - NO startsWith
+ * SAP LAW: Tab visible if self.allowed OR ANY(subTab.allowed)
  */
 export function canAccessPage(
     pageKey: string,
@@ -364,9 +364,34 @@ export function canAccessPage(
 
     if (!page) return false;
 
-    return page.tabs.some(tab =>
-        tab.requiredAnyOf.some(req => permSet.has(req))
-    );
+    // SAP LAW: Page accessible if ANY tab is visible
+    return page.tabs.some(tab => isTabAllowed(tab, permSet));
+}
+
+/**
+ * SAP LAW: Tab allowed if self.allowed OR ANY(subTab.allowed)
+ * ORDER-INDEPENDENT - checks ALL children
+ */
+function isTabAllowed(tab: TabConfig, permSet: Set<string>): boolean {
+    // Self allowed?
+    const selfAllowed = tab.requiredAnyOf.length > 0 &&
+        tab.requiredAnyOf.some(req => permSet.has(req));
+
+    if (selfAllowed) return true;
+
+    // Any subTab allowed? (SAP: order-independent)
+    if (tab.subTabs && tab.subTabs.length > 0) {
+        return tab.subTabs.some(subTab =>
+            subTab.requiredAnyOf.some(req => permSet.has(req))
+        );
+    }
+
+    // Tab with empty requiredAnyOf and no subTabs = always visible (permissionless leaf)
+    if (tab.requiredAnyOf.length === 0 && (!tab.subTabs || tab.subTabs.length === 0)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
