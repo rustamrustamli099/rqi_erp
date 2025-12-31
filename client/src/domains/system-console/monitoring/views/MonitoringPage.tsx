@@ -1,12 +1,18 @@
-import AccessMonitoringTab from "./MonitoringTab"; // Assuming export default is AccessMonitoringTab or similar
-// Wait, step 5308 imported it as `MonitoringPage`.
-// I need to check the export of MonitoringTab.tsx
-// I will check it in next step before assuming the import name.
-// But mostly it's default export.
+/**
+ * MonitoringPage Wrapper
+ * 
+ * SAP-GRADE: Passes tabNode prop to MonitoringTab
+ */
 
+import MonitoringTab from "./MonitoringTab";
 import { PageHeader } from "@/shared/components/ui/page-header";
+import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 
-export default function MonitoringPage() {
+interface MonitoringPageProps {
+    tabNode: ResolvedNavNode;
+}
+
+export default function MonitoringPage({ tabNode }: MonitoringPageProps) {
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">
             <div className="px-8 pt-6 flex-shrink-0">
@@ -17,7 +23,8 @@ export default function MonitoringPage() {
             </div>
             <div className="flex-1 p-8 pt-4 overflow-hidden min-w-0">
                 <div className="h-full overflow-y-auto">
-                    <AccessMonitoringTab />
+                    {/* SAP-GRADE: Pass tabNode to MonitoringTab */}
+                    <MonitoringTab tabNode={tabNode} />
                 </div>
             </div>
         </div>

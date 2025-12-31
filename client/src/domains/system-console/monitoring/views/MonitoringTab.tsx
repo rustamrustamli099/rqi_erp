@@ -78,6 +78,8 @@ export default function MonitoringPage({ tabNode }: MonitoringPageProps) {
 
     // DEV assertion: verify all subTabs are rendered
     if (import.meta.env?.DEV && resolvedSubTabs.length > 0) {
+        console.log('[MonitoringPage] DEBUG - resolvedSubTabs:', resolvedSubTabs.map(st => st.subTabKey || st.id));
+        console.log('[MonitoringPage] DEBUG - allowedKeys:', allowedKeys);
         const uniqueKeys = new Set(allowedKeys);
         if (uniqueKeys.size !== resolvedSubTabs.length) {
             console.error('[MonitoringPage] SAP VIOLATION: Duplicate subTab keys detected! Keys:', allowedKeys);
