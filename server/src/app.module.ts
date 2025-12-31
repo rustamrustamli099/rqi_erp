@@ -40,6 +40,7 @@ import { ComplianceModule } from './modules/compliance/compliance.module';
 import { WorkflowModule } from './platform/workflow/workflow.module';
 import { NotificationsModule } from './platform/notifications/notifications.module';
 import { ExportModule } from './modules/export/export.module';
+import { SessionModule } from './platform/auth/session/session.module';
 
 @Module({
   imports: [
@@ -79,7 +80,9 @@ import { ExportModule } from './modules/export/export.module';
     ApprovalsModule,
     WorkflowModule,
     NotificationsModule,
+    NotificationsModule,
     ExportModule,
+    SessionModule,
     LoggerModule.forRoot({
       pinoHttp: {
         customProps: (req, res) => ({

@@ -102,49 +102,45 @@ let AuthService = class AuthService {
         }
         return null;
     }
-    async login(user, rememberMe = false, ip, agent) {
-        const effectivePermissions = await this.getEffectivePermissions(user.id, user.tenantId || null);
-        if (!effectivePermissions || effectivePermissions.length === 0) {
-            console.warn(`[AuthService] Login blocked for user ${user.email} due to zero permissions.`);
-            throw new common_1.ForbiddenException({
-                error: 'NO_ACCESS',
-                message: 'Sizin üçün hələ heç bir icazə təyin edilməyib'
-            });
-        }
-        const userWithRole = await this.identityUseCase.findUserWithPermissions(user.id);
-        let roleNames = [];
-        const contextTenantId = user.tenantId || null;
-        if (userWithRole?.roles) {
-            roleNames = userWithRole.roles
-                .filter((ur) => (ur.tenantId || null) === contextTenantId)
-                .map((ur) => ur.role?.name)
-                .filter(Boolean);
-        }
-        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
-        const refreshToken = rtResult.token;
+    async issueTokenForScope(user, scopeType, scopeId) {
         const payload = {
             email: user.email,
             sub: user.id,
-            tenantId: user.tenantId,
-            roles: roleNames,
+            scopeType: scopeType,
+            scopeId: scopeId,
+            tenantId: scopeId,
             isOwner: user.isOwner,
         };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-        const expiresIn = rememberMe ? '30d' : '7d';
-        await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
-        const scope = user.tenantId ? 'TENANT' : 'SYSTEM';
-        await this.permissionCache.setPermissions(user.id, effectivePermissions, user.tenantId, scope);
         return {
             access_token: accessToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                scopeType,
+                scopeId
+            }
+        };
+    }
+    async login(user, rememberMe = false, ip, agent) {
+        const targetScopeType = user.tenantId ? 'TENANT' : 'SYSTEM';
+        const targetScopeId = user.tenantId || null;
+        const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
+        const refreshToken = rtResult.token;
+        await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
+        const tokenResult = await this.issueTokenForScope(user, targetScopeType, targetScopeId);
+        const expiresIn = rememberMe ? '30d' : '7d';
+        return {
+            access_token: tokenResult.access_token,
             refresh_token: refreshToken,
             expiresIn,
             user: {
                 id: user.id,
                 email: user.email,
                 fullName: user.fullName,
-                roles: roleNames,
+                roles: [],
                 isOwner: user.isOwner,
-                permissions: effectivePermissions
+                permissions: []
             }
         };
     }

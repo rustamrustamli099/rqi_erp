@@ -13,6 +13,15 @@ export declare class AuthService {
     getEffectivePermissions(userId: string, contextTenantId: string | null): Promise<string[]>;
     private canonicalizePermission;
     validateUser(email: string, pass: string): Promise<any>;
+    issueTokenForScope(user: any, scopeType: string, scopeId: string | null): Promise<{
+        access_token: string;
+        user: {
+            id: any;
+            email: any;
+            scopeType: string;
+            scopeId: string | null;
+        };
+    }>;
     login(user: any, rememberMe?: boolean, ip?: string, agent?: string): Promise<{
         access_token: string;
         refresh_token: string;
@@ -21,9 +30,9 @@ export declare class AuthService {
             id: any;
             email: any;
             fullName: any;
-            roles: string[];
+            roles: never[];
             isOwner: any;
-            permissions: string[];
+            permissions: never[];
         };
     }>;
     refreshTokens(refreshToken: string, ip?: string, agent?: string): Promise<{
@@ -39,9 +48,9 @@ export declare class AuthService {
             id: any;
             email: any;
             fullName: any;
-            roles: string[];
+            roles: never[];
             isOwner: any;
-            permissions: string[];
+            permissions: never[];
         };
     }>;
     impersonate(requesterId: string, targetUserId: string): Promise<{
@@ -52,9 +61,9 @@ export declare class AuthService {
             id: any;
             email: any;
             fullName: any;
-            roles: string[];
+            roles: never[];
             isOwner: any;
-            permissions: string[];
+            permissions: never[];
         };
     }>;
     revokeSessions(userId: string): Promise<void>;

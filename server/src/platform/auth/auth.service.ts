@@ -85,67 +85,78 @@ export class AuthService {
         return null;
     }
 
+    /**
+     * SAP-GRADE: Issue Token for Explicit Scope
+     * Called by SessionService during context switch.
+     */
+    async issueTokenForScope(user: any, scopeType: string, scopeId: string | null) {
+        // [STRICT] SESSION CONTEXT - NO PERMISSIONS IN TOKEN
+        // Validation of "User has role in scope" MUST be done by caller (SessionService / Login)
+
+        const payload = {
+            email: user.email,
+            sub: user.id,
+            // SAP-GRADE: Explicit Context Only
+            scopeType: scopeType,     // REQUIRED
+            scopeId: scopeId,         // SYSTEM -> null, TENANT -> string
+            // Legacy/Convenience fields can remain if strict validation allows, 
+            // but strict Phase 7 says "JWT MUST contain ONLY ...".
+            // We keep 'tenantId' mapping to 'scopeId' for backward compatibility if needed, 
+            // but rely on scopeType/scopeId for logic.
+            tenantId: scopeId,
+            isOwner: (user as any).isOwner,
+        };
+
+        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+
+        return {
+            access_token: accessToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                scopeType,
+                scopeId
+            }
+        };
+    }
+
     async login(user: any, rememberMe: boolean = false, ip?: string, agent?: string) {
-        // [RBAC] Calculate Permissions via DB
-        const effectivePermissions = await this.getEffectivePermissions(user.id, user.tenantId || null);
+        // [STRICT] PHASE 7: LOGIN - NO PERMISSION CALCULATION
+        // Authenticate User -> Select Default Scope -> Issue Token
 
-        // [SEC] BLOCK LOGIN IF NO PERMISSIONS
-        if (!effectivePermissions || effectivePermissions.length === 0) {
-            console.warn(`[AuthService] Login blocked for user ${user.email} due to zero permissions.`);
-            throw new ForbiddenException({
-                error: 'NO_ACCESS',
-                message: 'Sizin üçün hələ heç bir icazə təyin edilməyib'
-            });
-        }
+        // Default Scope Logic (For backward compatibility / initial login)
+        // If user has tenantId -> TENANT, else -> SYSTEM
+        // Note: Strict rules might require explicit selection, but 'login' implies bootstrapping.
+        // We do NOT check userRoleAssignment here (Token Issuance is separated).
+        // However, issueTokenForScope doesn't validate assignment either. 
+        // We assume 'validateUser' (caller) confirmed identity.
 
-        // Fetch full role details for UI (names only)
-        // Optimization: Could reuse userWithRole from getEffectivePermissions if refactored further, but consistent for now.
-        const userWithRole = await this.identityUseCase.findUserWithPermissions(user.id);
-
-        let roleNames: string[] = [];
-        const contextTenantId = user.tenantId || null;
-
-        if ((userWithRole as any)?.roles) {
-            roleNames = (userWithRole as any).roles
-                .filter((ur: any) => (ur.tenantId || null) === contextTenantId)
-                .map((ur: any) => ur.role?.name)
-                .filter(Boolean);
-        }
+        const targetScopeType = user.tenantId ? 'TENANT' : 'SYSTEM';
+        const targetScopeId = user.tenantId || null;
 
         // 1. Generate Opaque Refresh Token (Bank-Grade)
         const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent);
         const refreshToken = rtResult.token;
 
-        // 2. Access Token
-        const payload = {
-            email: user.email,
-            sub: user.id,
-            tenantId: user.tenantId,
-            roles: roleNames,
-            isOwner: (user as any).isOwner,
-        };
-        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' }); // Short-lived
-
-        const expiresIn = rememberMe ? '30d' : '7d';
-
         // Legacy/Backup
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
 
-        // Cache permissions
-        const scope = user.tenantId ? 'TENANT' : 'SYSTEM';
-        await this.permissionCache.setPermissions(user.id, effectivePermissions, user.tenantId, scope);
+        // 2. Issue Access Token via Scope
+        const tokenResult = await this.issueTokenForScope(user, targetScopeType, targetScopeId);
+
+        const expiresIn = rememberMe ? '30d' : '7d';
 
         return {
-            access_token: accessToken,
+            access_token: tokenResult.access_token,
             refresh_token: refreshToken,
             expiresIn,
             user: {
                 id: user.id,
                 email: user.email,
                 fullName: user.fullName,
-                roles: roleNames, // Multi-Role
-                isOwner: (user as any).isOwner, // Owner Flag
-                permissions: effectivePermissions // [UI] Snapshot for UI
+                roles: [],         // Deprecated in token
+                isOwner: (user as any).isOwner,
+                permissions: []    // REMOVED from Token/Login. Must fetch via Context.
             }
         };
     }

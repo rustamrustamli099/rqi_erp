@@ -36,11 +36,27 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
                 throw new common_1.UnauthorizedException('Session revoked');
             }
         }
+        if (!payload.scopeType) {
+            throw new common_1.UnauthorizedException('Invalid Token: Missing Scope Context');
+        }
+        if (payload.scopeType === 'SYSTEM' && payload.scopeId) {
+            throw new common_1.UnauthorizedException('Invalid Token: SYSTEM scope cannot have scopeId');
+        }
+        if (payload.scopeType === 'TENANT' && !payload.scopeId) {
+            throw new common_1.UnauthorizedException('Invalid Token: TENANT scope requires valid scopeId');
+        }
         const user = await this.identityUseCase.findUserByEmail(payload.email);
         if (!user) {
             throw new common_1.UnauthorizedException();
         }
-        return { userId: payload.sub, email: payload.email, tenantId: payload.tenantId, role: payload.role, isOwner: payload.isOwner };
+        return {
+            userId: payload.sub,
+            email: payload.email,
+            tenantId: payload.scopeId,
+            scopeId: payload.scopeId,
+            scopeType: payload.scopeType,
+            isOwner: payload.isOwner
+        };
     }
 };
 exports.JwtStrategy = JwtStrategy;

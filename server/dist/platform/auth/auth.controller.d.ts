@@ -52,9 +52,9 @@ export declare class AuthController {
             id: any;
             email: any;
             fullName: any;
-            roles: string[];
+            roles: never[];
             isOwner: any;
-            permissions: string[];
+            permissions: never[];
         };
     }>;
 }

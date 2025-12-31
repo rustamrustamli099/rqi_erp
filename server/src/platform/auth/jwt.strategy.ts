@@ -31,10 +31,34 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             }
         }
 
+        // [STRICT] PHASE 7: SCOPE VALIDATION
+        // 1. Missing scopeType -> 401
+        if (!payload.scopeType) {
+            throw new UnauthorizedException('Invalid Token: Missing Scope Context');
+        }
+
+        // 2. SYSTEM scope invalidation
+        if (payload.scopeType === 'SYSTEM' && payload.scopeId) {
+            throw new UnauthorizedException('Invalid Token: SYSTEM scope cannot have scopeId');
+        }
+
+        // 3. TENANT scope validation
+        if (payload.scopeType === 'TENANT' && !payload.scopeId) {
+            throw new UnauthorizedException('Invalid Token: TENANT scope requires valid scopeId');
+        }
+
         const user = await this.identityUseCase.findUserByEmail(payload.email);
         if (!user) {
             throw new UnauthorizedException();
         }
-        return { userId: payload.sub, email: payload.email, tenantId: payload.tenantId, role: payload.role, isOwner: payload.isOwner };
+
+        return {
+            userId: payload.sub,
+            email: payload.email,
+            tenantId: payload.scopeId, // Forward compatibility
+            scopeId: payload.scopeId,
+            scopeType: payload.scopeType,
+            isOwner: payload.isOwner
+        };
     }
 }
