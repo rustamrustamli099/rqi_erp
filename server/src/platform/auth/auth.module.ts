@@ -22,7 +22,7 @@ import { MenuModule } from '../menu/menu.module';
   imports: [
     forwardRef(() => IdentityModule),
     PassportModule,
-    MenuModule, // Needed for PermissionsService (circular dependency risk? MenuService needs what? MenuDefinition is static)
+    forwardRef(() => MenuModule), // Needed for PermissionsService (circular dependency risk? MenuService needs what? MenuDefinition is static)
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

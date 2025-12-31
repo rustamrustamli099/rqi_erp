@@ -6,21 +6,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MenuModule = void 0;
+exports.DecisionModule = void 0;
 const common_1 = require("@nestjs/common");
-const menu_controller_1 = require("./menu.controller");
-const menu_service_1 = require("./menu.service");
-const decision_module_1 = require("../decision/decision.module");
-let MenuModule = class MenuModule {
+const decision_center_service_1 = require("./decision-center.service");
+const decision_orchestrator_1 = require("./decision.orchestrator");
+const auth_module_1 = require("../auth/auth.module");
+let DecisionModule = class DecisionModule {
 };
-exports.MenuModule = MenuModule;
-exports.MenuModule = MenuModule = __decorate([
+exports.DecisionModule = DecisionModule;
+exports.DecisionModule = DecisionModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [decision_module_1.DecisionModule],
-        controllers: [menu_controller_1.MenuController],
-        providers: [menu_service_1.MenuService],
-        exports: [menu_service_1.MenuService],
+        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
+        providers: [decision_center_service_1.DecisionCenterService, decision_orchestrator_1.DecisionOrchestrator],
+        exports: [decision_center_service_1.DecisionCenterService, decision_orchestrator_1.DecisionOrchestrator]
     })
-], MenuModule);
-//# sourceMappingURL=menu.module.js.map
+], DecisionModule);
+//# sourceMappingURL=decision.module.js.map

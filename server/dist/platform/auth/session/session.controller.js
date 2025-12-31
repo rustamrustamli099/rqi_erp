@@ -17,10 +17,13 @@ const common_1 = require("@nestjs/common");
 const session_service_1 = require("./session.service");
 const switch_context_dto_1 = require("./dto/switch-context.dto");
 const jwt_auth_guard_1 = require("../jwt-auth.guard");
+const decision_orchestrator_1 = require("../../decision/decision.orchestrator");
 let SessionController = class SessionController {
     sessionService;
-    constructor(sessionService) {
+    decisionOrchestrator;
+    constructor(sessionService, decisionOrchestrator) {
         this.sessionService = sessionService;
+        this.decisionOrchestrator = decisionOrchestrator;
     }
     async getScopes(req) {
         return this.sessionService.getAvailableScopes(req.user.userId);
@@ -31,6 +34,9 @@ let SessionController = class SessionController {
             scopeType: req.user.scopeType || 'UNKNOWN',
             scopeId: req.user.tenantId || null
         };
+    }
+    async getBootstrap(req) {
+        return this.decisionOrchestrator.getSessionState(req.user);
     }
     async switchContext(req, dto) {
         return this.sessionService.switchContext(req.user.userId, dto);
@@ -52,6 +58,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SessionController.prototype, "getContext", null);
 __decorate([
+    (0, common_1.Get)('bootstrap'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], SessionController.prototype, "getBootstrap", null);
+__decorate([
     (0, common_1.Post)('context'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
@@ -62,6 +75,7 @@ __decorate([
 exports.SessionController = SessionController = __decorate([
     (0, common_1.Controller)('session'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [session_service_1.SessionService])
+    __metadata("design:paramtypes", [session_service_1.SessionService,
+        decision_orchestrator_1.DecisionOrchestrator])
 ], SessionController);
 //# sourceMappingURL=session.controller.js.map

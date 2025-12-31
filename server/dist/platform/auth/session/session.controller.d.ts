@@ -1,13 +1,20 @@
 import { SessionService } from './session.service';
 import { SwitchContextDto } from './dto/switch-context.dto';
+import { DecisionOrchestrator } from '../../decision/decision.orchestrator';
 export declare class SessionController {
     private readonly sessionService;
-    constructor(sessionService: SessionService);
+    private readonly decisionOrchestrator;
+    constructor(sessionService: SessionService, decisionOrchestrator: DecisionOrchestrator);
     getScopes(req: any): Promise<any>;
     getContext(req: any): Promise<{
         userId: any;
         scopeType: any;
         scopeId: any;
+    }>;
+    getBootstrap(req: any): Promise<{
+        navigation: import("../../menu/menu.definition").MenuItem[];
+        actions: string[];
+        canonicalPath: string | null;
     }>;
     switchContext(req: any, dto: SwitchContextDto): Promise<{
         access_token: string;

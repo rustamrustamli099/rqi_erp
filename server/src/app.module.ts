@@ -41,6 +41,7 @@ import { WorkflowModule } from './platform/workflow/workflow.module';
 import { NotificationsModule } from './platform/notifications/notifications.module';
 import { ExportModule } from './modules/export/export.module';
 import { SessionModule } from './platform/auth/session/session.module';
+import { DecisionModule } from './platform/decision/decision.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { SessionModule } from './platform/auth/session/session.module';
     NotificationsModule,
     ExportModule,
     SessionModule,
+    DecisionModule,
     LoggerModule.forRoot({
       pinoHttp: {
         customProps: (req, res) => ({

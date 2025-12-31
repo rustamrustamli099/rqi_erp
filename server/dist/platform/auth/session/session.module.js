@@ -12,12 +12,13 @@ const session_controller_1 = require("./session.controller");
 const session_service_1 = require("./session.service");
 const auth_module_1 = require("../auth.module");
 const prisma_service_1 = require("../../../prisma.service");
+const decision_module_1 = require("../../decision/decision.module");
 let SessionModule = class SessionModule {
 };
 exports.SessionModule = SessionModule;
 exports.SessionModule = SessionModule = __decorate([
     (0, common_1.Module)({
-        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
+        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule), decision_module_1.DecisionModule],
         controllers: [session_controller_1.SessionController],
         providers: [session_service_1.SessionService, prisma_service_1.PrismaService],
         exports: [session_service_1.SessionService]

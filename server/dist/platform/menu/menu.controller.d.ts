@@ -1,8 +1,6 @@
-import { MenuService } from './menu.service';
-import { EffectivePermissionsService } from '../auth/effective-permissions.service';
+import { DecisionOrchestrator } from '../decision/decision.orchestrator';
 export declare class MenuController {
-    private readonly menuService;
-    private readonly effectivePermissionsService;
-    constructor(menuService: MenuService, effectivePermissionsService: EffectivePermissionsService);
+    private readonly decisionOrchestrator;
+    constructor(decisionOrchestrator: DecisionOrchestrator);
     getMyMenu(req: any): Promise<import("./menu.definition").MenuItem[]>;
 }
