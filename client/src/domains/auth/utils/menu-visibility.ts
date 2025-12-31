@@ -73,9 +73,13 @@ export const MenuVisibilityEngine = {
             children: visibleChildren.length > 0 ? visibleChildren : undefined
         };
 
-        // Path rewrite: If self not allowed but children are, use first child's path
-        if (!selfAllowed && anyChildVisible && visibleChildren[0].route) {
-            result.route = visibleChildren[0].route;
+        // Default routing: If self not allowed but children are, use first child's path
+        // NOTE: This is DEFAULT ROUTING only, not VISIBILITY (SAP-compliant)
+        if (!selfAllowed && anyChildVisible) {
+            const firstVisibleChild = visibleChildren.find(c => c.route);
+            if (firstVisibleChild?.route) {
+                result.route = firstVisibleChild.route;
+            }
         }
 
         return result;
