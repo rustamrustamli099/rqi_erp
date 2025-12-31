@@ -60,11 +60,12 @@ export default function SystemCorePage() {
 
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
-    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
+    // SAP-GRADE: Read tab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get("tab");
     const currentTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
-        : allowedKeys[0] || "";
+        : '';
 
     // Get current tab node for passing to child components
     const currentTabNode = useMemo(() => {

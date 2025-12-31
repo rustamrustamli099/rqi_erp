@@ -260,9 +260,9 @@ const ADMIN_PAGES: PageConfig[] = [
                 requiredAnyOf: [],
                 subTabs: [
                     { key: 'dashboard', label: 'Dashboard', requiredAnyOf: ['system.system_console.monitoring.dashboard.read'] },
-                    { key: 'alerts', label: 'Alert Rules', requiredAnyOf: ['system.system_console.monitoring.alerts.read'] },
-                    { key: 'anomalies', label: 'Anomalies', requiredAnyOf: ['system.system_console.monitoring.anomalies.read'] },
-                    { key: 'logs', label: 'System Logs', requiredAnyOf: ['system.system_console.monitoring.logs.read'] }
+                    { key: 'alerts', label: 'Alert Rules', requiredAnyOf: ['system.system_console.monitoring.alert_rules.read'] },
+                    { key: 'anomalies', label: 'Anomalies', requiredAnyOf: ['system.system_console.monitoring.anomaly_detection.read'] },
+                    { key: 'logs', label: 'System Logs', requiredAnyOf: ['system.system_console.monitoring.system_logs.read'] }
                 ]
             },
             { key: 'audit', label: 'Audit & Compliance', requiredAnyOf: ['system.system_console.audit_compliance.read'] },

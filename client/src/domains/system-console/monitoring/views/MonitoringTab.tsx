@@ -45,9 +45,10 @@ export default function MonitoringTab({ tabNode }: MonitoringTabProps) {
     const resolvedSubTabs = useMemo(() => tabNode?.children ?? [], [tabNode]);
     const allowedKeys = useMemo(() => resolvedSubTabs.map(st => st.subTabKey || st.id), [resolvedSubTabs]);
 
-    // Read subTab from URL
+    // SAP-GRADE: Read subTab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const urlSubTab = searchParams.get('subTab') || '';
-    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || '';
+    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : '';
 
     // User-initiated tab change
     const handleTabChange = (value: string) => {

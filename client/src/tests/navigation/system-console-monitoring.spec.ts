@@ -15,8 +15,8 @@ describe('SAP Regression: System Console Monitoring SubTabs', () => {
 
     describe('Test A: Multiple allowed subTabs', () => {
         const perms = [
-            'system.system_console.monitoring.logs.read',
-            'system.system_console.monitoring.anomalies.read'
+            'system.system_console.monitoring.system_logs.read',
+            'system.system_console.monitoring.anomaly_detection.read'
         ];
 
         it('resolveNavigationTree includes console page', () => {
@@ -56,7 +56,7 @@ describe('SAP Regression: System Console Monitoring SubTabs', () => {
     });
 
     describe('Test B: Non-first subTab only', () => {
-        const perms = ['system.system_console.monitoring.anomalies.read'];
+        const perms = ['system.system_console.monitoring.anomaly_detection.read'];
 
         it('anomalies subTab is included even though not first in registry', () => {
             const tree = resolveNavigationTree('admin', perms);
@@ -84,9 +84,9 @@ describe('SAP Regression: System Console Monitoring SubTabs', () => {
     describe('Test C: All four subTabs allowed', () => {
         const perms = [
             'system.system_console.monitoring.dashboard.read',
-            'system.system_console.monitoring.alerts.read',
-            'system.system_console.monitoring.anomalies.read',
-            'system.system_console.monitoring.logs.read'
+            'system.system_console.monitoring.alert_rules.read',
+            'system.system_console.monitoring.anomaly_detection.read',
+            'system.system_console.monitoring.system_logs.read'
         ];
 
         it('all four subTabs are included', () => {
