@@ -116,6 +116,8 @@ export function resolvePageByPath(
 /**
  * Get all VISIBLE tabs for a page (ORDER-INDEPENDENT)
  * Uses isTabVisible internally - no order dependence
+ * 
+ * @internal DO NOT USE IN UI COMPONENTS - Use resolveNavigationTree() instead
  */
 export function getAllowedTabs(
     pageKey: string,
@@ -135,6 +137,8 @@ export function getAllowedTabs(
 
 /**
  * Get all VISIBLE subTabs for a tab (ORDER-INDEPENDENT)
+ * 
+ * @internal DO NOT USE IN UI COMPONENTS - Use resolveNavigationTree() instead
  */
 export function getAllowedSubTabs(
     pageKey: string,

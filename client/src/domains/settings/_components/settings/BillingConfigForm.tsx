@@ -20,25 +20,25 @@ import { Badge } from "@/components/ui/badge";
 import { Info, AlertTriangle, Shield, CreditCard, Bell, Lock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedSubTabs } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
 
-export function BillingConfigForm() {
+interface BillingConfigFormProps {
+    tabNode: ResolvedNavNode;
+}
+
+export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { permissions, isLoading } = usePermissions();
+    const { isLoading } = usePermissions();
 
-    // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
-    const allowedSubTabs = useMemo(() => {
-        if (isLoading) return [];
-        return getAllowedSubTabs('admin.settings', 'billing_config', permissions, 'admin');
-    }, [permissions, isLoading]);
+    // SAP-GRADE: Get subTabs from tabNode.children (NOT from helper call)
+    const resolvedSubTabs = useMemo(() => tabNode?.children ?? [], [tabNode]);
+    const allowedKeys = useMemo(() => resolvedSubTabs.map(st => st.subTabKey || st.id), [resolvedSubTabs]);
 
-    const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
-
-    // SAP-GRADE: Read subTab from URL (already canonicalized by ProtectedRoute)
-    // NO URL SYNC EFFECT - ProtectedRoute handles canonicalization
+    // SAP-GRADE: Read subTab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const urlSubTab = searchParams.get('subTab') || '';
-    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || '';
+    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : '';
 
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
@@ -71,11 +71,11 @@ export function BillingConfigForm() {
                 <div className="w-full overflow-x-auto pb-2">
                     {/* SAP-GRADE: Only render ALLOWED subTabs */}
                     <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
-                        {allowedSubTabs.map(st => (
+                        {resolvedSubTabs.map(st => (
                             <TabsTrigger
-                                key={st.key}
-                                value={st.key}
-                                data-subtab={st.key}
+                                key={st.subTabKey || st.id}
+                                value={st.subTabKey || st.id}
+                                data-subtab={st.subTabKey || st.id}
                                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background"
                             >
                                 {st.label}

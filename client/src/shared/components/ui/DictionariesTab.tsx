@@ -58,25 +58,25 @@ import type {
 import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
-import { getAllowedSubTabs } from "@/app/security/navigationResolver"
+import { type ResolvedNavNode } from "@/app/security/navigationResolver"
 
-export function DictionariesTab() {
+interface DictionariesTabProps {
+    tabNode: ResolvedNavNode;
+}
+
+export function DictionariesTab({ tabNode }: DictionariesTabProps) {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { permissions } = usePermissions();
 
-    // SAP-GRADE: Get allowed subTabs from resolver (EXACT match)
-    const allowedSubTabs = useMemo(() => {
-        return getAllowedSubTabs('admin.settings', 'dictionaries', permissions, 'admin');
-    }, [permissions]);
+    // SAP-GRADE: Get subTabs from tabNode.children (NOT from helper call)
+    const resolvedSubTabs = useMemo(() => tabNode?.children ?? [], [tabNode]);
+    const allowedKeys = useMemo(() => resolvedSubTabs.map(st => st.subTabKey || st.id), [resolvedSubTabs]);
 
-    const allowedKeys = useMemo(() => allowedSubTabs.map(st => st.key), [allowedSubTabs]);
-
-    // SAP-GRADE: Read subTab from URL (already canonicalized by ProtectedRoute)
-    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
+    // SAP-GRADE: Read subTab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get('subTab');
     const currentSubTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
-        : allowedKeys[0] || '';
+        : '';
 
     // Handler for subTab change - SAP-GRADE: MERGE params, don't replace
     const handleSubTabChange = (value: string) => {
@@ -102,11 +102,11 @@ export function DictionariesTab() {
                 {/* Reusable Scrollable SubTabs */}
                 <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                     <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
-                        {allowedSubTabs.map(st => (
+                        {resolvedSubTabs.map(st => (
                             <TabsTrigger
-                                key={st.key}
-                                value={st.key}
-                                data-subtab={st.key}
+                                key={st.subTabKey || st.id}
+                                value={st.subTabKey || st.id}
+                                data-subtab={st.subTabKey || st.id}
                                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background whitespace-nowrap"
                             >
                                 {st.label}

@@ -310,7 +310,7 @@ import { PageHeader } from "@/shared/components/ui/page-header";
 
 import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { resolveNavigationTree } from "@/app/security/navigationResolver";
 
 // Tab configuration for filtering
 const BILLING_TABS = [
@@ -325,23 +325,26 @@ export default function BillingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { permissions } = usePermissions();
 
-    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
-    const allowedTabs = useMemo(() => {
-        return getAllowedTabs('admin.billing', permissions, 'admin');
+    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
+    const navTree = useMemo(() => {
+        return resolveNavigationTree('admin', permissions);
     }, [permissions]);
 
+    // Get billing page node and tabs from children
+    const pageNode = useMemo(() => navTree.find(p => p.pageKey === 'admin.billing'), [navTree]);
+    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
+
     // Filter visible tabs using resolver output
-    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
     const visibleTabs = useMemo(() => {
         return BILLING_TABS.filter(tab => allowedKeys.includes(tab.key));
     }, [allowedKeys]);
 
-    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
-    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
+    // SAP-GRADE: Read tab from URL - NO [0] fallback
     const currentParam = searchParams.get("tab");
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
-        : allowedKeys[0] || "";
+        : '';
 
     // SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (val: string) => {

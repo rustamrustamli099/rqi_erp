@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { resolveNavigationTree } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
 
 import {
@@ -150,19 +150,22 @@ export default function DeveloperHubPage() {
     const { permissions, isLoading } = usePermissions();
     const [webhookUrl, setWebhookUrl] = useState("https://your-api.com/webhook");
 
-    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
-    const allowedTabs = useMemo(() => {
-        return getAllowedTabs('admin.developer', permissions, 'admin');
+    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
+    const navTree = useMemo(() => {
+        return resolveNavigationTree('admin', permissions);
     }, [permissions]);
 
-    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+    // Get developer page node and tabs from children
+    const pageNode = useMemo(() => navTree.find(p => p.pageKey === 'admin.developer'), [navTree]);
+    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
-    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
-    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
+    // SAP-GRADE: Read tab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get('tab');
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
-        : allowedKeys[0] || '';
+        : '';
 
     // SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (value: string) => {
@@ -210,16 +213,19 @@ export default function DeveloperHubPage() {
                     {/* Reusable Scrollable Tabs */}
                     <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b">
                         <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
-                            {allowedTabs.map(tab => (
-                                <TabsTrigger
-                                    key={tab.key}
-                                    value={tab.key}
-                                    data-tab={tab.key}
-                                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2"
-                                >
-                                    {tab.label}
-                                </TabsTrigger>
-                            ))}
+                            {allowedTabs.map(tab => {
+                                const tabKey = tab.tabKey || tab.id;
+                                return (
+                                    <TabsTrigger
+                                        key={tabKey}
+                                        value={tabKey}
+                                        data-tab={tabKey}
+                                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2"
+                                    >
+                                        {tab.label}
+                                    </TabsTrigger>
+                                );
+                            })}
                         </TabsList>
                     </div>
 

@@ -5,7 +5,7 @@ import { UsersListTab } from "./UsersListTab";
 import { CuratorsListTab } from "./CuratorsListTab";
 import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { resolveNavigationTree } from "@/app/security/navigationResolver";
 import { useHelp } from "@/app/context/HelpContext";
 import { useEffect, useMemo } from "react";
 
@@ -20,19 +20,22 @@ export default function UsersPage() {
     const { setPageKey } = useHelp();
     const { permissions } = usePermissions();
 
-    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
-    const allowedTabs = useMemo(() => {
-        return getAllowedTabs('admin.users', permissions, 'admin');
+    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
+    const navTree = useMemo(() => {
+        return resolveNavigationTree('admin', permissions);
     }, [permissions]);
 
-    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+    // Get users page node and tabs from children
+    const pageNode = useMemo(() => navTree.find(p => p.pageKey === 'admin.users'), [navTree]);
+    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
-    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
-    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
+    // SAP-GRADE: Read tab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get("tab");
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
-        : allowedKeys[0] || "";
+        : '';
 
     useEffect(() => {
         setPageKey("users");
@@ -72,11 +75,12 @@ export default function UsersPage() {
                     <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b">
                         <TabsList className="flex h-auto w-max justify-start gap-2 bg-transparent p-0">
                             {allowedTabs.map(tab => {
-                                const Icon = TAB_ICONS[tab.key] || Users;
+                                const tabKey = tab.tabKey || tab.id;
+                                const Icon = TAB_ICONS[tabKey] || Users;
                                 return (
                                     <TabsTrigger
-                                        key={tab.key}
-                                        value={tab.key}
+                                        key={tabKey}
+                                        value={tabKey}
                                         className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background rounded-md px-4 py-2"
                                     >
                                         <div className="flex items-center gap-2">

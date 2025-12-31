@@ -54,7 +54,7 @@ const timezones = [
 ]
 
 import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
-import { getAllowedTabs } from "@/app/security/navigationResolver";
+import { resolveNavigationTree, type ResolvedNavNode } from "@/app/security/navigationResolver";
 
 // --- Sidebar Navigation Items ---
 // Single Source of Truth from TAB_SUBTAB_REGISTRY
@@ -65,13 +65,21 @@ export default function SettingsPage() {
     const { isLoading, permissions } = usePermissions()
     const [searchParams, setSearchParams] = useSearchParams()
 
-    // SAP-GRADE: Get allowed tabs from resolver (EXACT match)
-    const allowedTabs = useMemo(() => {
-        return getAllowedTabs('admin.settings', permissions, 'admin');
+    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
+    const navTree = useMemo(() => {
+        return resolveNavigationTree('admin', permissions);
     }, [permissions]);
 
-    // Filter Menu based on resolver output
-    const allowedKeys = useMemo(() => allowedTabs.map(t => t.key), [allowedTabs]);
+    // Get settings page node
+    const settingsPageNode = useMemo(() => {
+        return navTree.find(p => p.pageKey === 'admin.settings');
+    }, [navTree]);
+
+    // Tabs from page node children
+    const allowedTabs = useMemo(() => settingsPageNode?.children ?? [], [settingsPageNode]);
+    const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
+
+    // Filter sidebar based on resolver output (not direct call)
     const visibleSidebarGroups = useMemo(() => {
         return ALL_SIDEBAR_ITEMS.map(group => ({
             ...group,
@@ -79,12 +87,18 @@ export default function SettingsPage() {
         })).filter(group => group.items.length > 0);
     }, [allowedKeys]);
 
-    // SAP-GRADE: Read tab from URL (already canonicalized by ProtectedRoute)
-    // NO useEffect URL sync - ProtectedRoute is sole canonicalizer
+    // Get current tabNode for passing to children
+    const currentTabNode = useMemo(() => {
+        const tabKey = searchParams.get('tab');
+        return allowedTabs.find(t => (t.tabKey || t.id) === tabKey);
+    }, [allowedTabs, searchParams]);
+
+    // SAP-GRADE: Read tab from URL - NO [0] fallback
+    // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get('tab');
     const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
-        : allowedKeys[0] || '';
+        : '';
 
     // Handler for tab change - SAP-GRADE: MERGE params, don't replace
     const handleTabChange = (tabId: string) => {
@@ -282,9 +296,9 @@ export default function SettingsPage() {
                         )}
 
 
-                        {/* --- EXISTING TABS MIGRATED --- */}
-                        {activeTab === 'billing_config' && <BillingConfigTab />}
-                        {activeTab === 'dictionaries' && <DictionariesTab />}
+                        {/* --- EXISTING TABS MIGRATED - SAP-GRADE: pass tabNode --- */}
+                        {activeTab === 'billing_config' && currentTabNode && <BillingConfigTab tabNode={currentTabNode} />}
+                        {activeTab === 'dictionaries' && currentTabNode && <DictionariesTab tabNode={currentTabNode} />}
                         {activeTab === 'templates' && <DocumentTemplatesTab />}
                         {activeTab === 'workflow' && <WorkflowConfigTab />}
                         {activeTab === 'roles' && <RolesPage />}
