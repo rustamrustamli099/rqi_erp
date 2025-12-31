@@ -35,10 +35,19 @@ export interface RoleColumnHandlers {
     onHistory: (role: Role) => void;
 }
 
+import type { ResolvedAction } from "@/app/security/navigationResolver";
+
 /**
  * Creates role table columns with provided handlers
+ * SAP-GRADE: Filters actions based on PRECOMPUTED visibility
  */
-export function createRoleColumns(handlers: RoleColumnHandlers): ColumnDef<Role>[] {
+export function createRoleColumns(
+    handlers: RoleColumnHandlers,
+    enabledActions: ResolvedAction[] = [] // Default empty to be safe, but caller should provide
+): ColumnDef<Role>[] {
+    // Helper to check if action is visible
+    const isVisible = (key: string) => enabledActions.some(a => a.actionKey === key && a.state !== 'hidden');
+
     return [
         {
             accessorKey: "name",
@@ -118,19 +127,26 @@ export function createRoleColumns(handlers: RoleColumnHandlers): ColumnDef<Role>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handlers.onView(role)}>
-                                <Eye className="mr-2 h-4 w-4" /> Bax
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlers.onHistory(role)}>
-                                <History className="mr-2 h-4 w-4" /> Tarixçə
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlers.onSelectPermissions(role)}>
-                                <Check className="mr-2 h-4 w-4" /> İcazələri Seç
-                            </DropdownMenuItem>
+                            {isVisible('view') && (
+                                <DropdownMenuItem onClick={() => handlers.onView(role)}>
+                                    <Eye className="mr-2 h-4 w-4" /> Bax
+                                </DropdownMenuItem>
+                            )}
+                            {isVisible('history') && (
+                                <DropdownMenuItem onClick={() => handlers.onHistory(role)}>
+                                    <History className="mr-2 h-4 w-4" /> Tarixçə
+                                </DropdownMenuItem>
+                            )}
+                            {isVisible('assign_permissions') && (
+                                <DropdownMenuItem onClick={() => handlers.onSelectPermissions(role)}>
+                                    <Check className="mr-2 h-4 w-4" /> İcazələri Seç
+                                </DropdownMenuItem>
+                            )}
+
                             <DropdownMenuSeparator />
 
-                            {/* Workflow Actions */}
-                            {role.status === "DRAFT" && (
+                            {/* Workflow Actions - Visibility also depends on status, but MUST be authorized */}
+                            {role.status === "DRAFT" && isVisible('submit') && (
                                 <DropdownMenuItem onClick={() => handlers.onSubmit(role.id)}>
                                     <CheckCircle2 className="mr-2 h-4 w-4 text-blue-600" />
                                     Təsdiqə Göndər
@@ -138,26 +154,32 @@ export function createRoleColumns(handlers: RoleColumnHandlers): ColumnDef<Role>
                             )}
                             {role.status === "PENDING_APPROVAL" && (
                                 <>
-                                    <DropdownMenuItem onClick={() => handlers.onApprove(role.id)}>
-                                        <Check className="mr-2 h-4 w-4 text-green-600" />
-                                        Təsdiqlə
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handlers.onReject(role.id)}>
-                                        <XCircle className="mr-2 h-4 w-4 text-red-600" />
-                                        İmtina Et
-                                    </DropdownMenuItem>
+                                    {isVisible('approve') && (
+                                        <DropdownMenuItem onClick={() => handlers.onApprove(role.id)}>
+                                            <Check className="mr-2 h-4 w-4 text-green-600" />
+                                            Təsdiqlə
+                                        </DropdownMenuItem>
+                                    )}
+                                    {isVisible('reject') && (
+                                        <DropdownMenuItem onClick={() => handlers.onReject(role.id)}>
+                                            <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                                            İmtina Et
+                                        </DropdownMenuItem>
+                                    )}
                                 </>
                             )}
 
                             <DropdownMenuSeparator />
 
-                            <DropdownMenuItem
-                                disabled={role.type === "system"}
-                                onClick={() => handlers.onEdit(role)}
-                            >
-                                <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
-                            </DropdownMenuItem>
-                            {role.type !== "system" && (
+                            {isVisible('update') && (
+                                <DropdownMenuItem
+                                    disabled={role.type === "system"}
+                                    onClick={() => handlers.onEdit(role)}
+                                >
+                                    <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
+                                </DropdownMenuItem>
+                            )}
+                            {role.type !== "system" && isVisible('delete') && (
                                 <DropdownMenuItem
                                     className="text-red-600"
                                     onClick={() => handlers.onDelete(role)}

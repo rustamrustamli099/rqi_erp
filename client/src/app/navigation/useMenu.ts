@@ -31,7 +31,9 @@ export const useMenu = () => {
         if (!isStable || permissions.length === 0) return [];
 
         // SAP-GRADE: Use resolveNavigationTree as SINGLE decision source
-        return resolveNavigationTree(context, permissions);
+        // Map context to scope for action resolution (as done in resolver)
+        const actionScope = context === 'admin' ? 'system' : 'tenant';
+        return resolveNavigationTree(context, permissions, actionScope);
     }, [permissions, isStable, context]);
 
     const getFirstAllowedRoute = () => {

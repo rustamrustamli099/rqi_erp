@@ -36,7 +36,8 @@ import { DataTableToolbar } from "@/shared/components/ui/data-table-toolbar"
 import { PageHeader } from "@/shared/components/ui/page-header"
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog"
 import { toast } from "sonner"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
+// SAP-GRADE: Use precomputed actions, NO direct permission checks
+// import { useCurrentRouteActions } from "@/app/navigation/useCurrentRouteActions";
 import { RoleCreationWizard } from "./_components/RoleCreationWizard"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
 import { systemApi, type SystemPermission } from "@/domains/system-console/api/system.contract";
@@ -91,6 +92,7 @@ const RoleTable = ({
         if (draftFilters.scope === undefined) setFilter('scope', undefined);
         if (draftFilters.status === undefined) setFilter('status', undefined);
     };
+
 
     const table = useReactTable({
         data,
@@ -251,15 +253,26 @@ interface RolesPageProps {
 
 export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps) {
     useTranslation()
-    const { can } = usePermissions();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // SAP-GRADE: Read subTab from URL (Managed by ProtectedRoute)
+    // SAP-GRADE: Consume precomputed actions from decision center (DIRECTLY FROM TREE)
+    // 1. Identify CURRENT node (SubTab or Tab)
     const subTabs = tabNode?.children ?? [];
     const allowedKeys = subTabs.map(st => st.subTabKey || st.id);
-
     const urlSubTab = searchParams.get('subTab') || '';
     const currentTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || 'roles';
+
+    // 2. Locate Node in Tree
+    const activeNode = subTabs.find(n => (n.subTabKey || n.id) === currentTab) || tabNode;
+
+    // 3. Read Actions (Pure Property Access)
+    const actions = activeNode?.actions;
+    const toolbarActions = actions?.byContext.toolbar || [];
+    const rowActions = actions?.byContext.row || [];
+
+    // Check visibility for actions (SAP: Exact match required)
+    const canCreate = toolbarActions.some(a => a.actionKey === 'create' && a.state !== 'hidden');
+    const canExport = toolbarActions.some(a => a.actionKey === 'export' && a.state !== 'hidden');
 
     const handleTabChange = (value: string) => {
         console.log('[RolesPage] handleTabChange:', value);
@@ -422,7 +435,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         onApprove: workflow.handleApprove,
         onReject: workflow.handleReject,
         onHistory: () => toast.info("Audit tarixçəsi tezliklə hazır olacaq"),
-    }), [workflow.handleSubmit, workflow.handleApprove, workflow.handleReject]);
+    }, rowActions), [workflow.handleSubmit, workflow.handleApprove, workflow.handleReject, rowActions]);
 
     // Fetch Logic
     // ... imports
@@ -666,7 +679,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 setRowSelection={setRowSelection}
                 setColumnFilters={setColumnFilters}
                 onRowClick={handleRoleSelect}
-                onAddClick={() => setWizardOpen(true)}
+                onAddClick={canCreate ? () => setWizardOpen(true) : undefined}
                 isLoading={loading}
                 searchTerm={searchTerm}
                 setSearch={setSearch}
@@ -676,7 +689,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 query={query}
                 setFilter={setFilter}
                 reset={reset}
-                onExportClick={can('system.settings.security.user_rights.roles.read') ? () => {
+                onExportClick={canExport ? () => {
                     const headers = ['Ad', 'Təsvir', 'Növ', 'Scope', 'İstifadəçi Sayı', 'İcazə Sayı', 'Status'];
                     const csvRows = [
                         headers.join(','),

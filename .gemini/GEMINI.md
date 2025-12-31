@@ -1,215 +1,151 @@
-ULTRA MODE — ENTERPRISE ERP FINALIZATION PROMPT
-(SAP-GRADE / BANK-GRADE / AUDIT-READY)
+# GEMINI SYSTEM CONSTITUTION - SAP-GRADE ARCHITECTURE
 
-You are acting as a Chief Software Architect + Security Auditor.
-Your task is to FINALIZE, SIMPLIFY, and HARDEN the entire ERP system.
+> **WARNING: THIS FILE IS THE SUPREME LAW OF THE SYSTEM.**
+> Violations of these rules, no matter how small, are rejected immediately.
+> There are NO exceptions, NO temporary workarounds, and NO "features" that bypass these laws.
 
-This is NOT a greenfield project.
-This is a CONTINUATION.
-DO NOT redesign randomly.
-DO NOT introduce new patterns unless required to fix inconsistencies.
+## 1. CORE PRINCIPLE: SINGLE DECISION CENTER
 
-====================================================
-REFACTOR STATUS: COMPLETED ✅
-====================================================
+**LAW:** There is EXACTLY ONE Decision Center for the entire application.
 
-## SAP-Grade RBAC Refactor (December 2024)
+It is implemented EXCLUSIVELY in:
+- `resolveNavigationTree()` (Navigation Logic)
+- `evaluateRoute()` (Routing Logic)
 
-### Single Source of Truth
-**FILE:** `client/src/app/navigation/tabSubTab.registry.ts`
+**THE DECISION CENTER ALONE DECIDES:**
+- Navigation visibility (Menu Hierarchy)
+- Tab / SubTab access
+- Action visibility (CRUD, Workflow, Custom, Bulk)
+- Default routing paths
+- URL canonicalization
 
-This file now contains:
-- TAB_SUBTAB_REGISTRY - All pages/tabs/subTabs
-- ADMIN_PAGES - Admin panel pages with tabs
-- TENANT_PAGES - Tenant panel pages
-- canAccessPage() - Check page access
-- getFirstAllowedTab() - Get first allowed tab
-- buildLandingPath() - Build landing URL
-- getSettingsTabsForUI() - Settings page tabs
+**VIOLATION:**
+- The UI MUST NEVER decide visibility or access.
+- The UI MUST NEVER filter menus or actions based on its own logic.
+- Splitting decision logic into "hooks" or "utils" is FORBIDDEN.
 
-### Files DELETED
-- `client/src/app/security/rbac.registry.ts`
-- `client/src/app/navigation/settings.registry.ts`
-- `client/src/app/navigation/settings-tabs.registry.ts`
-- `client/src/app/security/permission-preview.ts`
-- `client/src/app/security/permission-preview.engine.ts`
+---
 
-### Files MODIFIED
-- `usePermissions.ts` - EXACT match only, no startsWith
-- `ProtectedRoute.tsx` - Uses TAB_SUBTAB_REGISTRY
-- `menu.definitions.ts` - Flat sidebar, registry-driven
-- `menu-visibility.ts` - Exact permission checks
-- `SettingsPage.tsx` - Uses getSettingsTabsForUI()
-- `permission.service.ts` - .access synthesis REMOVED
+## 2. SAP VISIBILITY LAW
 
-### Files ADDED
-- `tabSubTab.registry.ts` - Single Source of Truth
-- `TAB_SUBTAB_FROZEN_SPEC.md` - Registry specification
-- `RBAC_NAVIGATION_STANDARD.md` - Navigation standard
-- `docs/delete-plan-rbac.md` - Delete plan
-- `e2e/rbac-users-curators-only.spec.ts`
-- `e2e/rbac-console-monitoring-only.spec.ts`
-- `e2e/rbac-settings-dictionaries-only.spec.ts`
-- `e2e/rbac-no-permissions-terminal.spec.ts`
-- `scripts/ci-prefix-auth-scan.ps1`
-- `scripts/ci-prefix-auth-scan.sh`
-- `server/scripts/seed-test-users.ts`
+**LAW:** Visibility logic is structural and permissions-driven ONLY.
 
-### Test Users Created
-| Email | Permission |
-|-------|------------|
-| curators-only@test.com | system.users.curators.read |
-| users-only@test.com | system.users.users.read |
-| monitoring-only@test.com | system.console.monitoring.dashboard.read |
-| dictionaries-currency@test.com | system.settings.system_configurations.dictionary.currency.read |
-| no-permissions@test.com | (none) |
+1. **Permissions belong to Nodes, NOT Containers.**
+   - A container (Page/Group) has NO permissions of its own.
 
-**Password:** `TestPassword123!`
+2. **Parent Visibility Rule:**
+   - A parent is VISIBLE if and only if ANY child is visible.
+   - If all children are hidden, the parent MUST generally be hidden (unless specifically permissionless).
 
-====================================================
-1. GLOBAL PRINCIPLES (NON-NEGOTIABLE)
-====================================================
+3. **Order-Independence:**
+   - Visibility calculations MUST be order-independent.
+   - `children[0]` logic is FORBIDDEN for determines visibility or defaults during resolution time.
+   - `firstAllowed` logic is managed ONLY by the router for redirection, never for data structure generation.
 
-- Single Source of Truth for:
-  - Permissions → `tabSubTab.registry.ts`
-  - Menus → Generated from registry
-  - Routes → ProtectedRoute uses registry
-- No permission inference from UI state
-- No hardcoded role bypasses (NO isOwner magic)
-- Admin (SYSTEM) and Tenant scopes MUST be fully isolated
-- EXACT permission checks ONLY - NO startsWith/prefix
+**WHY:** Order-dependence creates "phantom access" bugs where moving a menu item changes security posture. This is unacceptable in ERP systems.
 
-====================================================
-2. PERMISSION CHECKS (SAP-GRADE)
-====================================================
+---
 
-ALLOWED:
-- can(slugExact) - Exact match
-- canAny([slugs]) - Any exact match
-- canForTab(pageKey, tabKey) - Registry lookup
+## 3. ACTION AUTHORIZATION LAW
 
-FORBIDDEN:
-- startsWith() for permissions
-- includes() for permissions
-- Wildcard matching
-- Parent-implies-child inference
+**LAW:** Actions are treated as SAP Transaction Codes.
 
-NORMALIZATION (ONE PLACE ONLY):
-- Write action (create/update/delete/export/approve) implies read
-- Implemented in usePermissions.ts normalizeToBase()
+1. **1 Action = 1 Permission (EXACT MATCH).**
+   - Action `create` -> Permission `ref.create`
+   - Action `approve` -> Permission `ref.approve`
 
-====================================================
-3. MENU SYSTEM — SAP STYLE (FLAT SIDEBAR)
-====================================================
+2. **NO Semantic Logic.**
+   - No `OR`, `AND`, or `ANY` logic for a single action.
+   - No fallback permissions ("if not create, try update").
 
-- Sidebar is FLAT
-- NO submenus in sidebar
-- ALL hierarchy is expressed via:
-  - tabs
-  - subTabs
-  - URL query params
+3. **Resolution Location.**
+   - Actions are resolved ONLY inside the Decision Center (`resolveNavigationTree`).
+   - The UI receives a `ResolvedAction[]` list with `state: 'enabled' | 'disabled' | 'hidden'`.
 
-Example:
- /admin/settings?tab=dictionaries&subTab=currency
+**VIOLATION:**
+- UI checking `can('create')` is FORBIDDEN.
+- UI deriving "if I can see the page, I can read" is FORBIDDEN.
 
-Rules:
-- Page visible if ANY tab is allowed (exact check)
-- Page navigates to FIRST allowed tab
-- Tabs/subTabs filtered before render (not shown+redirect)
+---
 
-====================================================
-4. PROTECTED ROUTE BEHAVIOR
-====================================================
+## 4. UI ROLE: DUMB RENDERER
 
-1) If auth loading: render skeleton
-2) If not authenticated: redirect to /login
-3) Resolve pageKey from pathname
-4) Compute allowed tabs from TAB_SUBTAB_REGISTRY
-5) If no allowed tabs: terminal /access-denied
-6) If URL tab not allowed: redirect to first allowed tab
-7) If URL subTab not allowed: redirect to first allowed subTab
+**LAW:** The UI is a projection surface, not a brain.
 
-NEVER render unauthorized content, not even briefly.
+**UI MAY:**
+- Render the `resolvedNavigationTree` provided by the hook.
+- Read `node.actions.byContext`.
+- Render a button if `action.state !== 'hidden'`.
+- Disable a button if `action.state === 'disabled'`.
 
-====================================================
-5. ACCESS DENIED (TERMINAL STATE)
-====================================================
+**UI MUST NOT:**
+- Check permissions (e.g., `usePermissions()`, `Set.has()`).
+- Derive context (Current Page, Current Tab) from URL manually for decision purposes.
+- Infer defaults (e.g., "If no actions, show read-only").
+- Use hooks that "decide" visibility (e.g., `useVisibleActions`).
+- Re-filter actions (e.g., `actions.filter(a => user.has(a.perm))`).
+- Interpret route meaning (e.g., "admin/users implies System Scope").
 
-AccessDenied page is TERMINAL:
-- Only Logout is allowed
-- No retry
-- No redirect back
-- Not directly accessible by URL
+**SPECIFIC BAN:**
+- Adapters like `useCurrentRouteActions` that interpret routing to provide a "convenience" layer are FORBIDDEN. The UI must traverse the resolved tree or use router primitives to find its node.
 
-====================================================
-6. SERVER CHANGES
-====================================================
+---
 
-REMOVED from permission.service.ts:
-- .access permission synthesis
-- Parent read inference
+## 5. ROUTING LAW
 
-KEPT:
-- Write implies read (same resource only)
+**LAW:** Routing is a centralized state machine.
 
-====================================================
-7. E2E TESTS
-====================================================
+1. **Centralized Decisions:**
+   - `evaluateRoute` is the ONLY place that determines if a URL is valid.
 
-Run: `npx playwright test`
+2. **Invalid URLs:**
+   - Fixed by the Router (Redirect / 404), NEVER by the UI.
+   - The UI should never render a broken state; it should be redirected away before rendering.
 
-Tests verify:
-- Unauthorized tabs NOT in DOM
-- Click visible items never redirects to dashboard
-- Invalid tab URL redirects to allowed tab
-- No access-denied loop on refresh
+3. **Default Routing:**
+   - Automatic selection of the "First Allowed Child" happens ONLY when a specific child is not requested (e.g., visiting `/settings`).
+   - Visibility of a parent must NEVER depend on which child is "default".
 
-====================================================
-8. CI SCAN
-====================================================
+---
 
-Run: `.\scripts\ci-prefix-auth-scan.ps1`
+## 6. CONTEXT & SCOPE LAW
 
-Detects:
-- startsWith on permissions
-- includes on permissions
-- .access synthetic permissions
+**LAW:** The Decision Center is Context-Agnostic but Scope-Aware.
 
-====================================================
-9. VERIFICATION CHECKLIST
-====================================================
+1. **No Interpretation:**
+   - The Decision Center does NOT guess context.
+   - Arguments like `context: 'admin'` MUST be passed explicitly.
+   - Arguments like `actionScope: 'system'` MUST be passed explicitly.
 
-```bash
-# 1. Start servers
-cd server && npm run start:dev
-cd client && npm run dev
+2. **No Inference:**
+   - `admin` context DOES NOT imply `system` scope. (e.g., Tenant Admin).
+   - `tenant` context DOES NOT imply `tenant` scope.
+   - The Resolver trusts its inputs and does not transform them.
 
-# 2. Login with test user
-curators-only@test.com / TestPassword123!
+**WHY:** Inference creates coupling. In SAP systems, "Context" (Where I am) and "Scope" (What data I see) are modifying, orthogonal dimensions.
 
-# 3. Verify:
-# - Only Curators tab visible
-# - Users tab NOT in DOM
-# - URL /admin/users?tab=users redirects to ?tab=curators
+---
 
-# 4. Run E2E tests
-cd client && npx playwright test
+## 7. FORBIDDEN PATTERNS (BLACKLIST)
 
-# 5. Run CI scan
-.\scripts\ci-prefix-auth-scan.ps1
-```
+**THE FOLLOWING ARE BANNED FOREVER:**
 
-====================================================
-10. FINAL ACCEPTANCE CRITERIA ✅
-====================================================
+1. **UI-Level Decision Hooks:** e.g., `useCanDoX()`, `useActionVisibility()`.
+2. **Component Permission Checks:** e.g., `<Button disabled={!can('perm')} />`.
+3. **Registry Access from UI:** Importing `ACTION_REGISTRY` in a `.tsx` file.
+4. **Helper Deciders:** Functions like `isActionVisible(action)`.
+5. **Multiple Decision Engines:** Separating "Menu Logic" from "Action Logic".
+6. **Static Menus:** Hardcoded links bypassing the Resolver.
+7. **"Tests Passed" as Proof:** A passing test on bad architecture is a bug in the test suite.
 
-System is ACCEPTED:
-- ✅ No access-denied redirect loops
-- ✅ Menu clicks navigate correctly
-- ✅ Unauthorized tabs NOT rendered
-- ✅ Admin NEVER sees tenant UI
-- ✅ Single Source of Truth established
-- ✅ Prefix-based auth removed
+---
 
-END OF PROMPT
+## 8. WHY THIS EXISTS
 
+This system is built to **SAP/Bank-Grade ERP Standards**.
+
+- **Scale:** Small "convenience" violations scale into unmaintainable security holes.
+- **Audit:** An auditor must look at **ONE** file to verify security. Distributed logic makes audit impossible.
+- **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
+
+**If behavior diverges from these laws, IT IS A BUG.**
