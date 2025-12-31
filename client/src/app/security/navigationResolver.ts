@@ -301,4 +301,99 @@ export function getPageConfig(
     return pages.find(p => p.basePath === basePath) ?? null;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// RESOLVED NAV TREE TYPES
+// ═══════════════════════════════════════════════════════════════════════════
 
+export interface ResolvedNavNode {
+    id: string;
+    label: string;
+    icon?: string;
+    pageKey?: string;
+    tabKey?: string;
+    subTabKey?: string;
+    path: string;
+    children?: ResolvedNavNode[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESOLVE NAVIGATION TREE (SINGLE CANONICAL DECISION OUTPUT)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * SAP-GRADE: Build complete navigation tree using resolver
+ * 
+ * This is the ONLY canonical decision output for navigation.
+ * Sidebar and all navigation consumers MUST use this function.
+ * 
+ * @param context - 'admin' or 'tenant'
+ * @param permissions - User's flat permission array
+ * @returns ResolvedNavNode[] - Complete navigation tree
+ */
+export function resolveNavigationTree(
+    context: 'admin' | 'tenant',
+    permissions: string[]
+): ResolvedNavNode[] {
+    const pages = context === 'admin' ? TAB_SUBTAB_REGISTRY.admin : TAB_SUBTAB_REGISTRY.tenant;
+    const result: ResolvedNavNode[] = [];
+
+    for (const page of pages) {
+        // SAP: Check if page has any visible tabs (order-independent)
+        if (!hasAnyVisibleTab(page.pageKey, permissions, context)) {
+            continue;
+        }
+
+        // Get resolved path for page (default routing)
+        const pagePath = getFirstAllowedTarget(page.pageKey, permissions, context) || page.basePath;
+
+        // Get allowed tabs
+        const allowedTabs = getAllowedTabs(page.pageKey, permissions, context);
+
+        // Build tab children
+        const tabChildren: ResolvedNavNode[] = [];
+        for (const tab of page.tabs) {
+            // Check if tab is visible (SAP: self OR any subTab)
+            if (!isTabVisible(tab, permissions)) continue;
+
+            // Get allowed subTabs for this tab
+            const allowedSubTabs = getAllowedSubTabs(page.pageKey, tab.key, permissions, context);
+
+            // Build subTab children
+            const subTabChildren: ResolvedNavNode[] = allowedSubTabs.map(subTab => ({
+                id: `${page.pageKey}.${tab.key}.${subTab.key}`,
+                label: subTab.label,
+                tabKey: tab.key,
+                subTabKey: subTab.key,
+                path: `${page.basePath}?tab=${tab.key}&subTab=${subTab.key}`
+            }));
+
+            // Determine tab path
+            let tabPath = `${page.basePath}?tab=${tab.key}`;
+            if (subTabChildren.length > 0) {
+                tabPath = subTabChildren[0].path; // First allowed subTab for default routing
+            }
+
+            tabChildren.push({
+                id: `${page.pageKey}.${tab.key}`,
+                label: tab.label,
+                tabKey: tab.key,
+                path: tabPath,
+                children: subTabChildren.length > 0 ? subTabChildren : undefined
+            });
+        }
+
+        // Build page node
+        const pageNode: ResolvedNavNode = {
+            id: page.pageKey,
+            label: page.labelAz,
+            icon: page.icon,
+            pageKey: page.pageKey,
+            path: pagePath,
+            children: tabChildren.length > 0 ? tabChildren : undefined
+        };
+
+        result.push(pageNode);
+    }
+
+    return result;
+}

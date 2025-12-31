@@ -16,8 +16,7 @@ import {
     ShieldAlert
 } from "lucide-react"
 import * as LucideIcons from "lucide-react"
-import { useMenu } from "@/app/navigation/useMenu";
-import { type AdminMenuItem } from "@/app/navigation/menu.definitions";
+import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 import {
     Tooltip,
@@ -55,7 +54,7 @@ const DesktopMenuItem = ({
     navigate,
     location
 }: {
-    item: AdminMenuItem,
+    item: ResolvedNavNode,
     collapsed: boolean,
     navigate: any,
     location: any
@@ -73,7 +72,7 @@ const DesktopMenuItem = ({
         // Base Route Match (e.g. /admin/settings)
         // Must match exactly or be start of sub-path (if handled by routing)
         // But for flat sidebar, usually exact match on module root.
-        const baseRoute = item.route.split('?')[0];
+        const baseRoute = (item.path || '').split('?')[0];
 
         if (currentPath !== baseRoute && !currentPath.startsWith(baseRoute + '/')) {
             return false;
@@ -98,12 +97,7 @@ const DesktopMenuItem = ({
 
     // Navigate Handler
     const handleNavigate = () => {
-        let target = item.route;
-        // Append default tab if specified and not already in route string
-        if (item.tab && !target.includes('?')) {
-            target += `?tab=${item.tab}`;
-        }
-        navigate(target);
+        navigate(item.path);
     };
 
     return (
@@ -125,7 +119,7 @@ const DesktopMenuItem = ({
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                        {item.title}
+                        {item.label}
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -142,7 +136,7 @@ const DesktopMenuItem = ({
                     <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-r-full" />
                 )}
                 {Icon && <Icon className={cn(iconSize, "shrink-0")} />}
-                <span className={cn("truncate font-medium flex-1 text-left", !Icon && "pl-0")}>{item.title}</span>
+                <span className={cn("truncate font-medium flex-1 text-left", !Icon && "pl-0")}>{item.label}</span>
             </Button>
         )
     )

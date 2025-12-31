@@ -5,26 +5,23 @@
  * 
  * RULES:
  * 1. EXACT permission match via includes() — NO verb stripping
- * 2. NO regex base-matching
- * 3. Uses TAB_SUBTAB_REGISTRY for tab checks via resolver
+ * 2. ALL decisions delegate to navigationResolver
+ * 3. NO legacy registry helpers (canAccessPage/getFirstAllowedTab)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { useCallback } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
 import {
-    getFirstAllowedTab,
-    canAccessPage,
-    TAB_SUBTAB_REGISTRY
-} from '@/app/navigation/tabSubTab.registry';
-import {
+    hasAnyVisibleTab,
     getAllowedTabs,
-    getAllowedSubTabs
+    getAllowedSubTabs,
+    getFirstAllowedTarget
 } from '@/app/security/navigationResolver';
 
 export const usePermissions = () => {
     const { permissions, user, isImpersonating, isLoading, activeTenantType } = useAuth();
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+    const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
     /**
      * SAP-GRADE: Check if user has EXACT permission
@@ -53,25 +50,26 @@ export const usePermissions = () => {
     }, [permissions]);
 
     /**
-     * SAP-GRADE: Check if user can access a specific tab/subTab
-     * Uses frozen TAB_SUBTAB_REGISTRY via resolver
+     * SAP-GRADE: Check if user can access a specific page/tab/subTab
+     * DELEGATES TO navigationResolver ONLY
      */
     const canForTab = useCallback((
         pageKey: string,
         tabKey?: string,
         subTabKey?: string
     ): boolean => {
+        // No tabKey: check if user can access ANY tab of the page
         if (!tabKey) {
-            // Check if user can access ANY tab of the page
-            return canAccessPage(pageKey, permissions, context);
+            return hasAnyVisibleTab(pageKey, permissions, context);
         }
 
-        // Use resolver for tab/subTab checks
+        // Check if tab is allowed via resolver
         const allowedTabs = getAllowedTabs(pageKey, permissions, context);
         const hasTabAccess = allowedTabs.some(t => t.key === tabKey);
 
         if (!hasTabAccess) return false;
 
+        // Check subTab if provided
         if (subTabKey) {
             const allowedSubTabs = getAllowedSubTabs(pageKey, tabKey, permissions, context);
             return allowedSubTabs.some(st => st.key === subTabKey);
@@ -81,10 +79,11 @@ export const usePermissions = () => {
     }, [permissions, context]);
 
     /**
-     * SAP-GRADE: Get first allowed tab for a page
+     * SAP-GRADE: Get first allowed target for a page (default routing ONLY)
+     * Returns full path with tab/subTab params
      */
-    const getFirstAllowedTabForPage = useCallback((pageKey: string) => {
-        return getFirstAllowedTab(pageKey, permissions, context);
+    const getFirstAllowedTabForPage = useCallback((pageKey: string): string | null => {
+        return getFirstAllowedTarget(pageKey, permissions, context);
     }, [permissions, context]);
 
     // Legacy aliases for backward compatibility
