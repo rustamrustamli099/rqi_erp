@@ -890,6 +890,7 @@ function WorkflowMonitorView() {
 
 function AssignmentSelector({ stageIdx, formStages, setFormStages }: { stageIdx: number, formStages: ApprovalStage[], setFormStages: (s: ApprovalStage[]) => void }) {
     const [search, setSearch] = useState("")
+    const [currentTab, setCurrentTab] = useState("roles")
 
     const toggleRole = (roleId: string) => {
         const newStages = [...formStages]

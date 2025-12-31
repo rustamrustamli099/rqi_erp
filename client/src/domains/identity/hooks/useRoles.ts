@@ -1,148 +1,165 @@
+/**
+ * SAP-GRADE useRoles Hook (RTK Query Wrapper)
+ * 
+ * Bu hook RTK Query hooks-unu wrap edərək köhnə interface-i saxlayır.
+ * Əvvəlki komponentlər refaktor edilmədən işləyə bilir.
+ * 
+ * Cache: 5 dəqiqə (roles.api.ts-dən)
+ */
 
-import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import type { Role } from "../types";
-import { api } from "@/shared/lib/api";
+import {
+    useGetRolesQuery,
+    useCreateRoleMutation,
+    useUpdateRoleMutation,
+    useDeleteRoleMutation,
+    useUpdateRolePermissionsMutation,
+    useSubmitRoleMutation,
+    useApproveRoleMutation,
+    useRejectRoleMutation,
+    type Role,
+    type RolesQueryParams,
+} from "@/store/api";
 
-// Mock Data if API fails
-const MOCK_ROLES: Role[] = [
-    { id: "admin", name: "Admin", description: "Full Access", scope: "SYSTEM", status: "ACTIVE", permissions: ["*"] },
-    { id: "manager", name: "Manager", description: "Department Manager", scope: "TENANT", status: "ACTIVE", permissions: ["system.tenants.view"] }
-];
+// Re-export type for backward compatibility
+export type { Role };
 
-export function useRoles() {
-    const [roles, setRoles] = useState<Role[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
+export interface UseRolesOptions {
+    scope?: 'SYSTEM' | 'TENANT';
+    status?: string;
+    skip?: boolean;
+}
 
-    const fetchRoles = useCallback(async () => {
-        setIsLoading(true);
+export function useRoles(options: UseRolesOptions = {}) {
+    // RTK Query - cached data
+    const queryParams: RolesQueryParams = {
+        scope: options.scope,
+        status: options.status,
+    };
+
+    const {
+        data,
+        isLoading,
+        isFetching,
+        error,
+        refetch
+    } = useGetRolesQuery(queryParams, {
+        skip: options.skip,
+        refetchOnMountOrArgChange: false, // Use cache
+    });
+
+    // Mutations with toast notifications
+    const [createRoleMutation, { isLoading: isCreating }] = useCreateRoleMutation();
+    const [updateRoleMutation, { isLoading: isUpdating }] = useUpdateRoleMutation();
+    const [deleteMutation, { isLoading: isDeleting }] = useDeleteRoleMutation();
+    const [updatePermsMutation] = useUpdateRolePermissionsMutation();
+    const [submitMutation] = useSubmitRoleMutation();
+    const [approveMutation] = useApproveRoleMutation();
+    const [rejectMutation] = useRejectRoleMutation();
+
+    // Wrapped mutations with toast
+    const createRole = async (roleData: Partial<Role>) => {
         try {
-            console.log("Fetching roles...");
-            // Corrected endpoint to match backend RolesController
-            const res = await api.get<any>("/admin/roles");
-            console.log("Roles Response:", res);
-
-            // Check if response is paginated { items: [], meta: ... } or direct array
-            // Logs show structure: res.data -> { data: { items: [...] }, statusCode: ... }
-            const responseData = res.data;
-            let rolesData = [];
-
-            if (responseData.data && responseData.data.items && Array.isArray(responseData.data.items)) {
-                // Nested within standard API wrapper: { data: { items: [] } }
-                rolesData = responseData.data.items;
-            } else if (responseData.items && Array.isArray(responseData.items)) {
-                // Direct pagination: { items: [] }
-                rolesData = responseData.items;
-            } else if (Array.isArray(responseData)) {
-                // Direct array: []
-                rolesData = responseData;
-            } else if (responseData.data && Array.isArray(responseData.data)) {
-                // Wrapper with direct array: { data: [] }
-                rolesData = responseData.data;
-            } else {
-                console.warn("Unexpected rol response structure:", responseData);
-            }
-
-            console.log("Parsed Roles Data:", rolesData);
-            setRoles(rolesData);
-        } catch (err: any) {
-            console.error("Fetch Roles Error:", err);
-            // Fallback to mock for dev
-            if (roles.length === 0) setRoles(MOCK_ROLES);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [roles.length]);
-
-    // Initial fetch
-    useEffect(() => {
-        fetchRoles();
-    }, []);
-
-    const createRole = async (data: Role) => {
-        try {
-            await api.post("/admin/roles", data);
+            await createRoleMutation(roleData).unwrap();
             toast.success("Rol yaradıldı");
-            fetchRoles();
         } catch (e: any) {
-            toast.error("Xəta baş verdi: " + e.message);
+            toast.error("Xəta baş verdi: " + (e.data?.message || e.message));
+            throw e;
         }
     };
 
-    const updateRole = async (id: string, data: Partial<Role>) => {
+    const updateRole = async (id: string, roleData: Partial<Role>) => {
         try {
-            await api.patch(`/admin/roles/${id}`, data);
+            await updateRoleMutation({ id, data: roleData }).unwrap();
             toast.success("Rol yeniləndi");
-            fetchRoles();
         } catch (e: any) {
-            toast.error("Xəta: " + e.message);
-        }
-    };
-
-    const updateRolePermissions = async (id: string, permissions: string[]) => {
-        try {
-            await api.put(`/admin/roles/${id}/permissions`, { permissions });
-            toast.success("İcazələr yeniləndi");
-            fetchRoles();
-        } catch (e: any) {
-            toast.error("Xəta: " + e.message);
+            toast.error("Xəta: " + (e.data?.message || e.message));
+            throw e;
         }
     };
 
     const deleteRole = async (id: string) => {
         try {
-            await api.delete(`/admin/roles/${id}`);
+            await deleteMutation(id).unwrap();
             toast.success("Rol silindi");
-            fetchRoles();
         } catch (e: any) {
-            toast.error("Xəta: " + e.message);
+            toast.error("Xəta: " + (e.data?.message || e.message));
+            throw e;
         }
     };
 
-    // Approval Workflow
-    const submitRole = async (id: string, reason: string, diff: any) => {
+    const updateRolePermissions = async (
+        id: string,
+        permissionSlugs: string[],
+        expectedVersion: number = 1,
+        comment?: string
+    ) => {
         try {
-            await api.post(`/admin/iam/role-approvals`, { roleId: id, reason, diff });
-            toast.success("Təsdiqə göndərildi");
-            fetchRoles();
+            await updatePermsMutation({ id, expectedVersion, permissionSlugs, comment }).unwrap();
+            toast.success("İcazələr yeniləndi");
         } catch (e: any) {
-            toast.error("Xəta: " + e.message);
+            toast.error("Xəta: " + (e.data?.message || e.message));
+            throw e;
+        }
+    };
+
+    const submitRole = async (id: string) => {
+        try {
+            await submitMutation(id).unwrap();
+            toast.success("Təsdiqə göndərildi");
+        } catch (e: any) {
+            toast.error("Xəta: " + (e.data?.message || e.message));
+            throw e;
         }
     };
 
     const approveRole = async (id: string) => {
         try {
-            await api.post(`/admin/iam/role-approvals/${id}/approve`, {});
+            await approveMutation(id).unwrap();
             toast.success("Təsdiqləndi");
-            fetchRoles();
         } catch (e: any) {
-            toast.error("Xəta: " + e.message);
+            toast.error("Xəta: " + (e.data?.message || e.message));
+            throw e;
         }
     };
 
     const rejectRole = async (id: string, reason: string) => {
         try {
-            await api.post(`/admin/iam/role-approvals/${id}/reject`, { reason });
+            await rejectMutation({ id, reason }).unwrap();
             toast.success("İmtina edildi");
-            fetchRoles();
         } catch (e: any) {
-            toast.error("Xəta: " + e.message);
+            toast.error("Xəta: " + (e.data?.message || e.message));
+            throw e;
         }
     };
 
-
     return {
-        roles,
+        // Data
+        roles: data?.items ?? [],
+        meta: data?.meta,
+
+        // Loading states
         isLoading,
-        error,
-        fetchRoles,
+        isFetching,
+        isCreating,
+        isUpdating,
+        isDeleting,
+
+        // Error
+        error: error as Error | null,
+
+        // Actions
+        refetch,           // Manual refetch (RTK Query)
+        fetchRoles: refetch, // Backward compat alias
         createRole,
         updateRole,
         deleteRole,
         updateRolePermissions,
         submitRole,
         approveRole,
-        rejectRole
+        rejectRole,
     };
 }
+
+// Default export for backward compatibility
+export default useRoles;

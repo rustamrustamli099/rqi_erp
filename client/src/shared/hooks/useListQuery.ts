@@ -16,7 +16,7 @@ export function useListQuery(config: ListQueryConfig = {}) {
 
     // 1. Raw State (Canonical Source is URL)
     const page = Number(searchParams.get("page")) || config.defaultPage || 1;
-    const pageSize = Number(searchParams.get("pageSize")) || config.defaultPageSize || 20;
+    const pageSize = Number(searchParams.get("pageSize")) || config.defaultPageSize || 10;
     const sortBy = searchParams.get("sortBy") || config.defaultSortBy || "createdAt";
     const sortDir = (searchParams.get("sortDir") || config.defaultSortDir || "desc") as 'asc' | 'desc';
 

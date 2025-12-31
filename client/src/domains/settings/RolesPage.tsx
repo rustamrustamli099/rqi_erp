@@ -62,7 +62,8 @@ import { toast } from "sonner"
 import { usePermissions } from "@/app/auth/hooks/usePermissions"
 import { RoleCreationWizard } from "./_components/RoleCreationWizard"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
-import { systemApi, type Role, type SystemPermission } from "@/domains/system-console/api/system.contract";
+import { systemApi, type SystemPermission } from "@/domains/system-console/api/system.contract";
+import { useGetRolesQuery, useCreateRoleMutation, useUpdateRoleMutation, useDeleteRoleMutation, useGetRoleByIdQuery, type Role } from "@/store/api";
 import { PermissionMatrix } from "@/domains/system-console/feature-flags/PermissionMatrix";
 import { PermissionTreeEditor } from "./_components/PermissionTreeEditor"
 import type { PermissionNode } from "./_components/permission-utils"
@@ -293,14 +294,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         setSearchParams(newParams, { replace: true });
     };
 
-
-    const [roles, setRoles] = useState<Role[]>([])
-    const [allPermissions, setAllPermissions] = useState<SystemPermission[]>([])
-    // Loading States
-    const [loading, setLoading] = useState(true)
-    const [permissionsLoading, setPermissionsLoading] = useState(false)
-
-    // SAP-Grade List Query Engine
+    // SAP-Grade List Query Engine (MUST BE BEFORE RTK Query hooks)
     const defaultFilters = useMemo(() => ({
         scope: context === 'admin' ? '' : 'TENANT'
     }), [context]);
@@ -319,6 +313,40 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         defaultSortDir: 'desc',
         defaultFilters
     });
+
+    // RTK Query - Roles with caching (uses query from useListQuery)
+    const { data: rolesData, isLoading: loading, isFetching, refetch: refetchRoles } = useGetRolesQuery({
+        scope: query.filters?.scope as 'SYSTEM' | 'TENANT' | undefined,
+        status: query.filters?.status,
+        search: query.search,
+        page: query.page,
+        pageSize: query.pageSize,
+    });
+
+    // Transform roles data
+    const roles = useMemo(() => {
+        if (!rolesData?.items) return [];
+        return rolesData.items.map((r: any) => ({
+            id: r.id,
+            name: r.name,
+            description: r.description,
+            type: (r.isSystem || r.scope === 'SYSTEM') ? 'system' : 'custom',
+            scope: r.scope || 'TENANT',
+            usersCount: r._count?.userRoles || r.usersCount || 0,
+            permissionsCount: r._count?.permissions || (r.permissions || []).length || 0,
+            permissions: r.permissions || [],
+            status: r.status || 'ACTIVE',
+            version: r.version || 1,
+        }));
+    }, [rolesData]);
+
+    // RTK Query Mutations
+    const [createRoleMutation] = useCreateRoleMutation();
+    const [updateRoleMutation] = useUpdateRoleMutation();
+    const [deleteRoleMutation] = useDeleteRoleMutation();
+
+    const [allPermissions, setAllPermissions] = useState<SystemPermission[]>([])
+    const [permissionsLoading, setPermissionsLoading] = useState(false)
 
     // Derived Table State for TanStack Table (Sync with URL)
     const pagination = useMemo(() => ({
@@ -532,39 +560,9 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         }
     }
 
-    const fetchRoles = async () => {
-        setLoading(true);
-        try {
-            const response = await systemApi.getRoles(query); // Canonical Query
-
-            const rolesData = (response as any).items || response;
-
-            // STRICT BACKEND MODE: No Mock Fallback
-            const finalRoles = Array.isArray(rolesData) ? rolesData : [];
-
-            setRoles(finalRoles.map((r: any) => ({
-                id: r.id,
-                name: r.name,
-                description: r.description,
-                type: (r.isSystem || r.scope === 'SYSTEM') ? 'system' : 'custom',
-                scope: r.scope || 'TENANT',
-                usersCount: r._count?.userRoles || r.usersCount || 0,
-                permissionsCount: r._count?.permissions || (r.permissions || []).length || 0,
-                permissions: r.permissions || [],
-                status: r.status || 'ACTIVE'
-            })));
-        } catch (e) {
-            console.error("Failed to fetch roles:", e);
-            toast.error("Rollar yüklənərkən xəta baş verdi.");
-            setRoles([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchRoles();
-    }, [query]); // Refetch on query change
+    // RTK Query handles caching and refetching automatically
+    // fetchRoles is now just an alias for refetch
+    const fetchRoles = refetchRoles;
 
     // Use systemApi in handleSaveRole - WITH BACKEND SoD VALIDATION
     const handleSaveRole = async (values: RoleFormValues) => {
