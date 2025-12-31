@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -140,19 +141,117 @@ const IAM_SLUGS = { ROLE: { SUBMIT: 'system.user_rights.roles.submit', APPROVE: 
 const LEGACY_MAP = { 'tenants.create': SYSTEM_SLUGS.TENANTS.CREATE };
 
 async function main() {
-    console.log('🚀 Starting Permission Seed V5 (NEW SUBTABS)...');
+    console.log('🚀 Starting Permission Seed V6 (Full Setup)...');
 
-    console.log('🗑️ Wiping existing permissions...');
-    await prisma.rolePermission.deleteMany({});
-    await prisma.permission.deleteMany({});
+    // 1. Wipe existing data (optional, but good for clean slate if needed, keeping users/roles for now unless specified)
+    // await prisma.rolePermission.deleteMany({});
+    // await prisma.permission.deleteMany({});
 
+    console.log('📦 Upserting Roles...');
+
+    // For Owner (System)
+    let ownerRole = await prisma.role.findFirst({
+        where: { name: 'Owner', tenantId: null }
+    });
+    if (!ownerRole) {
+        ownerRole = await prisma.role.create({
+            data: {
+                name: 'Owner',
+                description: 'System Owner with full access',
+                scope: 'SYSTEM',
+                isSystem: true,
+                isLocked: true,
+                status: 'ACTIVE'
+            }
+        });
+    }
+
+    let testRole = await prisma.role.findFirst({
+        where: { name: 'Test', tenantId: null }
+    });
+    if (!testRole) {
+        testRole = await prisma.role.create({
+            data: {
+                name: 'Test',
+                description: 'Test Role with NO access',
+                scope: 'SYSTEM',
+                isSystem: false,
+                isLocked: false,
+                status: 'ACTIVE'
+            }
+        });
+    }
+
+    console.log('👤 Upserting Users...');
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash('password123', saltRounds);
+
+    const ownerUser = await prisma.user.upsert({
+        where: { email: 'owner@antigravity.com' },
+        update: {
+            password: hashedPassword
+        },
+        create: {
+            email: 'owner@antigravity.com',
+            password: hashedPassword,
+            name: 'System Owner',
+            // Assign role relation directly if possible, or use UserRole model
+        }
+    });
+
+    // Assign Owner Role to Owner User
+    // Model is UserRole: userId, roleId, tenantId
+    // Use findFirst instead of upsert for UserRole due to potential null tenantId issue
+    let ownerAssignment = await prisma.userRole.findFirst({
+        where: { userId: ownerUser.id, roleId: ownerRole.id, tenantId: null }
+    });
+    if (!ownerAssignment) {
+        await prisma.userRole.create({
+            data: {
+                userId: ownerUser.id,
+                roleId: ownerRole.id,
+                tenantId: null,
+                assignedBy: 'system'
+            }
+        });
+    }
+
+    const testUser = await prisma.user.upsert({
+        where: { email: 'test@antigravity.com' },
+        update: {
+            password: hashedPassword
+        },
+        create: {
+            email: 'test@antigravity.com',
+            password: hashedPassword,
+            name: 'Test User',
+        }
+    });
+
+    // Assign Test Role to Test User
+    let testAssignment = await prisma.userRole.findFirst({
+        where: { userId: testUser.id, roleId: testRole.id, tenantId: null }
+    });
+    if (!testAssignment) {
+        await prisma.userRole.create({
+            data: {
+                userId: testUser.id,
+                roleId: testRole.id,
+                tenantId: null,
+                assignedBy: 'system'
+            }
+        });
+    }
+
+    console.log('🛡️  Processing Permissions...');
     const flattenSlugs = (obj: any): { slug: string; scope: string, module: string }[] => {
         let results: { slug: string; scope: string, module: string }[] = [];
         for (const key in obj) {
             if (typeof obj[key] === 'string') {
-                const slug = obj[key];
+                const slug = obj[key]; // e.g. 'system.tenants.read'
                 const scope = slug.startsWith('tenant.') ? 'TENANT' : 'SYSTEM';
                 const parts = slug.split('.');
+                // module is usually the second part: system.[tenants].read
                 const module = parts.length > 1 ? parts[1] : 'general';
                 results.push({ slug, scope, module });
             } else if (typeof obj[key] === 'object' && obj[key] !== null) {
@@ -164,65 +263,97 @@ async function main() {
 
     const systemPerms = flattenSlugs(SYSTEM_SLUGS);
     const tenantPerms = flattenSlugs(TENANT_SLUGS);
-    const iamPerms = flattenSlugs(IAM_SLUGS);
+    // const iamPerms = flattenSlugs(IAM_SLUGS); // merged into user_rights usually
 
     const allPermissions = [
-        ...systemPerms, ...tenantPerms, ...iamPerms,
+        ...systemPerms, ...tenantPerms,
         ...Object.keys(LEGACY_MAP).map(k => ({ slug: k, scope: 'SYSTEM', module: 'legacy' }))
     ];
 
-    const uniquePermissions = Array.from(new Set(allPermissions.map(p => p.slug)))
-        .map(slug => allPermissions.find(p => p.slug === slug)!);
+    // Deduplicate
+    const uniqueMap = new Map();
+    for (const p of allPermissions) {
+        uniqueMap.set(p.slug, p);
+    }
+    const uniquePermissions = Array.from(uniqueMap.values());
 
-    console.log(`📝 Found ${uniquePermissions.length} unique permissions definitions.`);
+    console.log(`📝 Upserting ${uniquePermissions.length} permissions...`);
+    for (const p of uniquePermissions) {
+        await prisma.permission.upsert({
+            where: { slug: p.slug },
+            update: { scope: p.scope, module: p.module },
+            create: {
+                slug: p.slug,
+                description: `Auto: ${p.slug}`,
+                scope: p.scope,
+                module: p.module
+            }
+        });
+    }
 
-    console.log('💾 Inserting permissions into DB...');
-    await prisma.permission.createMany({
-        data: uniquePermissions.map(p => ({ slug: p.slug, description: `Auto: ${p.slug}`, scope: p.scope, module: p.module })),
-        skipDuplicates: true
+    console.log('🔍 Fetching all Permission IDs...');
+    const dbPermissions = await prisma.permission.findMany();
+
+    console.log('👑 Assigning ALL Permissions to Owner...');
+    // We only assign permissions that match the Role's scope mostly, but Owner (System) gets everything usually or just System perms.
+    // For safety, let's assign ALL System perms to System Owner.
+
+    const ownerPermIds = dbPermissions.map(p => p.id); // Assigning ALL for now as requested "butun icazeleri ver"
+
+    // Batch Insert RolePermissions for Owner
+    const data = ownerPermIds.map(permId => ({
+        roleId: ownerRole.id,
+        permissionId: permId,
+        // permissionSlug removed as it is not in the schema model
+    }));
+
+    // Use transaction or createMany. createMany skipDuplicates is handy.
+    // However, schema might require 'permissionSlug' as well if it's in the model.
+    // Checking previous schema: RolePermission has roleId, permissionId, permissionSlug.
+
+    if (data.length > 0) {
+        await prisma.rolePermission.createMany({
+            data: data,
+            skipDuplicates: true
+        });
+        console.log(`✅ Assigned ${data.length} permissions to Owner Role.`);
+    }
+
+    console.log('🍔 Creating Menus & MenuItems...');
+    // Create a default System Menu
+    const sysMenu = await prisma.menu.upsert({
+        where: { slug: 'system-main' },
+        update: {},
+        create: { name: 'System Main Menu', slug: 'system-main', isActive: true }
     });
 
-    console.log('🔍 Fetching inserted permission IDs...');
-    const dbPermissions = await prisma.permission.findMany();
-    const slugToId: Record<string, string> = {};
-    for (const perm of dbPermissions) {
-        slugToId[perm.slug] = perm.id;
-    }
-    console.log(`📦 Fetched ${dbPermissions.length} permissions from DB.`);
+    // Simple auto-generation of menu items from top-level keys of SYSTEM_SLUGS
+    const keys = Object.keys(SYSTEM_SLUGS);
+    let order = 10;
+    for (const key of keys) {
+        if (key === 'USER_RIGHTS') continue; // Skip complex nested for now or handle specifically
 
-    console.log('👑 Assigning SYSTEM permissions to "Owner" roles...');
-    const systemOwners = await prisma.role.findMany({ where: { name: 'Owner', scope: 'SYSTEM' } });
-
-    for (const role of systemOwners) {
-        const permsToAssign = uniquePermissions
-            .filter(p => slugToId[p.slug])
-            .map(p => ({ roleId: role.id, permissionId: slugToId[p.slug] }));
-
-        if (permsToAssign.length > 0) {
-            await prisma.rolePermission.createMany({ data: permsToAssign, skipDuplicates: true });
-            console.log(`   ✅ Assigned ${permsToAssign.length} perms to System Owner: ${role.name}`);
-        }
+        await prisma.menuItem.create({
+            data: {
+                menuId: sysMenu.id,
+                title: key.charAt(0) + key.slice(1).toLowerCase(), // e.g. DASHBOARD -> Dashboard
+                path: `/admin/${key.toLowerCase()}`,
+                order: order,
+                // parentId: null
+            }
+        });
+        order += 10;
     }
 
-    console.log('🏢 Assigning TENANT permissions to Tenant Owners/Admins...');
-    const tenantRoles = await prisma.role.findMany({ where: { scope: 'TENANT', name: { in: ['Owner', 'Admin'] } } });
-    console.log(`Found ${tenantRoles.length} Tenant Admin/Owner roles.`);
-    const tenantOnlyPerms = uniquePermissions.filter(p => p.scope === 'TENANT');
-
-    for (const role of tenantRoles) {
-        const permsToAssign = tenantOnlyPerms
-            .filter(p => slugToId[p.slug])
-            .map(p => ({ roleId: role.id, permissionId: slugToId[p.slug] }));
-
-        if (permsToAssign.length > 0) {
-            await prisma.rolePermission.createMany({ data: permsToAssign, skipDuplicates: true });
-            console.log(`   ✅ Assigned ${permsToAssign.length} perms to Tenant Role: ${role.name}`);
-        }
-    }
-
-    console.log('✅ Seed V5 Completed Successfully!');
+    console.log('✅ Seed Setup Completed Successfully!');
 }
 
+const fs = require('fs');
+
 main()
-    .catch((e) => { console.error(e); process.exit(1); })
+    .catch((e) => {
+        console.error(e);
+        fs.writeFileSync('seed_error.log', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
+        process.exit(1);
+    })
     .finally(async () => { await prisma.$disconnect(); });

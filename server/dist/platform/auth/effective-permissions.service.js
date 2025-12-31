@@ -22,11 +22,10 @@ let EffectivePermissionsService = EffectivePermissionsService_1 = class Effectiv
     async computeEffectivePermissions(params) {
         const { userId, scopeType, scopeId } = params;
         this.logger.debug(`Computing permissions for User: ${userId}, Scope: ${scopeType}:${scopeId}`);
-        const assignments = await this.prisma.userRoleAssignment.findMany({
+        const assignments = await this.prisma.userRole.findMany({
             where: {
                 userId: userId,
-                scopeType: scopeType,
-                scopeId: scopeId
+                tenantId: scopeType === 'SYSTEM' ? null : scopeId
             },
             select: {
                 roleId: true
@@ -42,11 +41,19 @@ let EffectivePermissionsService = EffectivePermissionsService_1 = class Effectiv
                 roleId: { in: Array.from(effectiveRoleIds) }
             },
             select: {
-                permissionSlug: true
+                permission: {
+                    select: {
+                        slug: true
+                    }
+                }
             }
         });
         const uniqueSlugs = new Set();
-        rolePermissions.forEach((rp) => uniqueSlugs.add(rp.permissionSlug));
+        rolePermissions.forEach((rp) => {
+            if (rp.permission?.slug) {
+                uniqueSlugs.add(rp.permission.slug);
+            }
+        });
         const result = Array.from(uniqueSlugs).sort();
         this.logger.debug(`Computed ${result.length} unique permissions for User ${userId}`);
         return result;

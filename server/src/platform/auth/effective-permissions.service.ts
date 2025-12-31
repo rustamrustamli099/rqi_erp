@@ -41,11 +41,14 @@ export class EffectivePermissionsService {
 
         // Note: Using 'any' for Prisma model access as the schema definition 
         // might not be fully generated invocation-side in this environment.
-        const assignments = await (this.prisma as any).userRoleAssignment.findMany({
+        const assignments = await (this.prisma as any).userRole.findMany({
             where: {
                 userId: userId,
-                scopeType: scopeType,
-                scopeId: scopeId
+                // scopeType: scopeType, // UserRole implies specific tenant (scopeId) OR system (null)
+                // We need to map scopeType/ScopeId to tenantId logic
+                // If ScopeType is SYSTEM, tenantId must be null. 
+                // If ScopeType is TENANT, tenantId must be scopeId.
+                tenantId: scopeType === 'SYSTEM' ? null : scopeId
             },
             select: {
                 roleId: true
@@ -77,7 +80,11 @@ export class EffectivePermissionsService {
                 roleId: { in: Array.from(effectiveRoleIds) }
             },
             select: {
-                permissionSlug: true
+                permission: {
+                    select: {
+                        slug: true
+                    }
+                }
             }
         });
 
@@ -85,7 +92,11 @@ export class EffectivePermissionsService {
         // 4. DEDUPLICATE & RETURN
         // ---------------------------------------------------------
         const uniqueSlugs = new Set<string>();
-        rolePermissions.forEach((rp: any) => uniqueSlugs.add(rp.permissionSlug));
+        rolePermissions.forEach((rp: any) => {
+            if (rp.permission?.slug) {
+                uniqueSlugs.add(rp.permission.slug);
+            }
+        });
 
         const result = Array.from(uniqueSlugs).sort();
 
