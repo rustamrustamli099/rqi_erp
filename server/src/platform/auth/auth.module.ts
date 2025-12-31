@@ -11,6 +11,7 @@ import { MfaService } from './mfa.service';
 import { PermissionsService } from './permission.service';
 import { PermissionCacheService } from './permission-cache.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { EffectivePermissionsService } from './effective-permissions.service';
 
 import { PrismaService } from '../../prisma.service';
 import { MenuService } from '../menu/menu.service';
@@ -31,8 +32,8 @@ import { MenuModule } from '../menu/menu.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, PermissionCacheService, RefreshTokenService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, PermissionCacheService, RefreshTokenService, EffectivePermissionsService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, PermissionsService, PermissionCacheService, RefreshTokenService],
+  exports: [AuthService, JwtModule, PermissionsService, PermissionCacheService, RefreshTokenService, EffectivePermissionsService],
 })
 export class AuthModule { }
