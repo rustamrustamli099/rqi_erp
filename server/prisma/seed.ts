@@ -7,7 +7,22 @@ const prisma = new PrismaClient();
 // COMPLETE SLUGS - USER_RIGHTS WITH NEW SUBTABS
 const SYSTEM_SLUGS = {
     DASHBOARD: { READ: 'system.dashboard.read' },
-    TENANTS: { READ: 'system.tenants.read', CREATE: 'system.tenants.create', UPDATE: 'system.tenants.update', DELETE: 'system.tenants.delete', IMPERSONATE: 'system.tenants.impersonate', MANAGE: 'system.tenants.manage_subscription' },
+    TENANTS: {
+        READ: 'system.tenants.read',
+        CREATE: 'system.tenants.create',
+        UPDATE: 'system.tenants.update',
+        DELETE: 'system.tenants.delete',
+        IMPERSONATE: 'system.tenants.impersonate',
+        EXPORT: 'system.tenants.export_to_excel',
+        // Granular Permissions (Phase 14G Refinement)
+        MANAGE_USERS: 'system.tenants.manage_users',
+        MANAGE_SECURITY: 'system.tenants.manage_security',
+        MANAGE_BILLING: 'system.tenants.manage_billing',
+        MANAGE_FEATURES: 'system.tenants.manage_features', // Modules, Limits
+        MANAGE_CONTRACT: 'system.tenants.manage_contract', // Suspend, Terminate, Restrictions
+        VIEW_AUDIT: 'system.tenants.view_audit',
+        // MANAGE legacy removal - using granular instead
+    },
     BRANCHES: { READ: 'system.branches.read', CREATE: 'system.branches.create', UPDATE: 'system.branches.update', DELETE: 'system.branches.delete' },
     USERS: {
         READ: 'system.users.users.read',

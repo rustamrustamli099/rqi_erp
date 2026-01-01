@@ -35,14 +35,15 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge"
 import type { ApprovalStatus } from "@/components/ui/status-badge"
 import { MOCK_SECTORS, MOCK_PLANS } from "@/shared/constants/reference-data"
+// PHASE 14G: Import canonical keys
+import { ACTION_KEYS, type ActionsMap } from "@/app/navigation/action-keys"
 
 
 
 // Handler Interfaces
 interface TenantsActionsProps {
     row: Tenant
-    onApprove: (t: Tenant) => void
-    onReject: (t: Tenant) => void
+
     onView: (t: Tenant) => void
     onEdit: (t: Tenant) => void
     onUsers: (t: Tenant) => void
@@ -62,10 +63,11 @@ interface TenantsActionsProps {
 
 const ActionCell = ({
     row,
-    onApprove, onReject, onView, onEdit, onUsers, onLoginAs, onModules,
+    actions,
+    onView, onEdit, onUsers, onLoginAs, onModules,
     onBilling, onRestrictions, onSignContract, onTerminate, onSuspend, onDelete,
     on2FAToggle, onResetPassword, onAuditLogs, onResourceLimits
-}: TenantsActionsProps) => {
+}: TenantsActionsProps & { actions: ActionsMap }) => {
     const isPending = row.status === 'PENDING'
     const isCancelled = row.status === 'CANCELLED'
     const isActive = row.status === 'ACTIVE'
@@ -81,91 +83,117 @@ const ActionCell = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 max-h-[300px] overflow-y-auto">
 
-                {isPending && (
+
+
+                {/* VIEW is allowed by page authorization, but explicit VIEW actions should be guarded? 
+                    Usually READ implies view details. We show 'Baxış' always if row is visible (implied READ). */}
+                <DropdownMenuItem onClick={() => onView(row)}>
+                    <Eye className="mr-2 h-4 w-4" /> Baxış
+                </DropdownMenuItem>
+
+                {actions[ACTION_KEYS.TENANTS_UPDATE] && (
+                    <DropdownMenuItem onClick={() => onEdit(row)} disabled={isPending}>
+                        <Building className="mr-2 h-4 w-4" /> Düzəliş
+                    </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {/* PHASE 14G: User Management (Granular) */}
+                {actions[ACTION_KEYS.TENANTS_MANAGE_USERS] && (
+                    <DropdownMenuItem onClick={() => onUsers(row)} disabled={isPending}>
+                        <Users className="mr-2 h-4 w-4" /> İstifadəçilər
+                    </DropdownMenuItem>
+                )}
+
+                {/* SAP Security Actions (Granular) */}
+                {actions[ACTION_KEYS.TENANTS_MANAGE_SECURITY] && (
                     <>
-                        <DropdownMenuItem onClick={() => onApprove(row)} className="text-green-600 font-medium">
-                            <CheckCircle2 className="mr-2 h-4 w-4" /> Təsdiqlə
+                        <DropdownMenuItem onClick={() => onResetPassword(row)} disabled={isPending}>
+                            <Key className="mr-2 h-4 w-4" /> Şifrəni Sıfırla
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onReject(row)} className="text-red-600 font-medium">
-                            <XCircle className="mr-2 h-4 w-4" /> İmtina Et
+                        <DropdownMenuItem onClick={() => on2FAToggle(row)} disabled={isPending}>
+                            <Lock className="mr-2 h-4 w-4" />
+                            2FA Tətbiq/Ləğv Et
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+                    </>
+                )}
+
+                {actions[ACTION_KEYS.TENANTS_IMPERSONATE] && (
+                    <>
+                        <DropdownMenuItem onClick={() => onLoginAs(row)} disabled={isPending}>
+                            <LogIn className="mr-2 h-4 w-4 text-blue-600" /> <span className={isPending ? "" : "text-blue-600"}>Admin Kimi Daxil Ol</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                     </>
                 )}
 
-                <DropdownMenuItem onClick={() => onView(row)}>
-                    <Eye className="mr-2 h-4 w-4" /> Baxış
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit(row)} disabled={isPending}>
-                    <Building className="mr-2 h-4 w-4" /> Düzəliş
-                </DropdownMenuItem>
+                {/* PHASE 14G: Granular Actions */}
+                {actions[ACTION_KEYS.TENANTS_MANAGE_FEATURES] && (
+                    <>
+                        <DropdownMenuItem onClick={() => onModules(row)}>
+                            <Settings className="mr-2 h-4 w-4" /> Modullar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onResourceLimits(row)}>
+                            <Database className="mr-2 h-4 w-4" /> Resurs Limitləri
+                        </DropdownMenuItem>
+                    </>
+                )}
 
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => onUsers(row)} disabled={isPending}>
-                    <Users className="mr-2 h-4 w-4" /> İstifadəçilər
-                </DropdownMenuItem>
-
-                {/* SAP Security Actions */}
-                <DropdownMenuItem onClick={() => onResetPassword(row)} disabled={isPending}>
-                    <Key className="mr-2 h-4 w-4" /> Şifrəni Sıfırla
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => on2FAToggle(row)} disabled={isPending}>
-                    <Lock className="mr-2 h-4 w-4" />
-                    2FA Tətbiq/Ləğv Et
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => onLoginAs(row)} disabled={isPending}>
-                    <LogIn className="mr-2 h-4 w-4 text-blue-600" /> <span className={isPending ? "" : "text-blue-600"}>Admin Kimi Daxil Ol</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => onModules(row)}>
-                    <Settings className="mr-2 h-4 w-4" /> Modullar
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onResourceLimits(row)}>
-                    <Database className="mr-2 h-4 w-4" /> Resurs Limitləri
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onBilling(row)}>
-                    <CreditCard className="mr-2 h-4 w-4" /> Ödəniş Tarixçəsi
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAuditLogs(row)}>
-                    <Activity className="mr-2 h-4 w-4" /> Audit Loglar
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => onRestrictions(row)}>
-                    <ShieldAlert className="mr-2 h-4 w-4" /> Məhdudiyyətlər
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                {(isCancelled) ? (
-                    <DropdownMenuItem onClick={() => onSignContract(row)} className="text-green-600" disabled={isPending}>
-                        <FileSignature className="mr-2 h-4 w-4" /> Müqavilə Bağla
-                    </DropdownMenuItem>
-                ) : (
-                    <DropdownMenuItem onClick={() => onTerminate(row)} className="text-orange-600" disabled={isPending}>
-                        <FileX className="mr-2 h-4 w-4" /> Müqaviləni Sonlandır
+                {actions[ACTION_KEYS.TENANTS_MANAGE_BILLING] && (
+                    <DropdownMenuItem onClick={() => onBilling(row)}>
+                        <CreditCard className="mr-2 h-4 w-4" /> Ödəniş Tarixçəsi
                     </DropdownMenuItem>
                 )}
 
-                <DropdownMenuItem onClick={() => onSuspend(row)} disabled={isPending}>
-                    <Ban className="mr-2 h-4 w-4" /> {isActive ? 'Dayandır' : 'Aktivləşdir'}
-                </DropdownMenuItem>
+                {actions[ACTION_KEYS.TENANTS_VIEW_AUDIT] && (
+                    <DropdownMenuItem onClick={() => onAuditLogs(row)}>
+                        <Activity className="mr-2 h-4 w-4" /> Audit Loglar
+                    </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    className="text-red-500 hover:text-red-600"
-                    onClick={() => onDelete(row)}
-                    disabled={isPending}
-                >
-                    <XCircle className="mr-2 h-4 w-4" /> Sil
-                </DropdownMenuItem>
+
+                {actions[ACTION_KEYS.TENANTS_MANAGE_CONTRACT] && (
+                    <DropdownMenuItem onClick={() => onRestrictions(row)}>
+                        <ShieldAlert className="mr-2 h-4 w-4" /> Məhdudiyyətlər
+                    </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {actions[ACTION_KEYS.TENANTS_MANAGE_CONTRACT] && (
+                    <>
+
+                        {(isCancelled) ? (
+                            <DropdownMenuItem onClick={() => onSignContract(row)} className="text-green-600" disabled={isPending}>
+                                <FileSignature className="mr-2 h-4 w-4" /> Müqavilə Bağla
+                            </DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem onClick={() => onTerminate(row)} className="text-orange-600" disabled={isPending}>
+                                <FileX className="mr-2 h-4 w-4" /> Müqaviləni Sonlandır
+                            </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuItem onClick={() => onSuspend(row)} disabled={isPending}>
+                            <Ban className="mr-2 h-4 w-4" /> {isActive ? 'Dayandır' : 'Aktivləşdir'}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+                    </>
+                )}
+
+                {actions[ACTION_KEYS.TENANTS_DELETE] && (
+                    <DropdownMenuItem
+                        className="text-red-500 hover:text-red-600"
+                        onClick={() => onDelete(row)}
+                        disabled={isPending}
+                    >
+                        <XCircle className="mr-2 h-4 w-4" /> Sil
+                    </DropdownMenuItem>
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     )
@@ -173,8 +201,6 @@ const ActionCell = ({
 
 // Define props for creating columns to pass handlers
 interface CreateColumnsProps {
-    handleApprove: (t: Tenant) => void
-    handleReject: (t: Tenant) => void
     prepareView: (t: Tenant) => void
     prepareEdit: (t: Tenant) => void
     prepareUsers: (t: Tenant) => void
@@ -194,8 +220,6 @@ interface CreateColumnsProps {
 }
 
 export const createColumns = ({
-    handleApprove,
-    handleReject,
     prepareView,
     prepareEdit,
     prepareUsers,
@@ -211,7 +235,7 @@ export const createColumns = ({
     handleAuditLogs,
     handleResourceLimits,
     prepareRestrictions
-}: CreateColumnsProps): ColumnDef<Tenant>[] => [
+}: CreateColumnsProps, actions: ActionsMap): ColumnDef<Tenant>[] => [
         {
             accessorKey: "name",
             header: "Şirkət Adı",
@@ -288,8 +312,7 @@ export const createColumns = ({
             cell: ({ row }) => (
                 <ActionCell
                     row={row.original}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
+                    actions={actions}
                     onView={prepareView}
                     onEdit={prepareEdit}
                     onUsers={prepareUsers}

@@ -79,6 +79,7 @@ export class DecisionController {
             'Z_USERS': 'users',
             'Z_ROLES': 'roles',
             'Z_CURATORS': 'curators',
+            'Z_TENANTS': 'tenants',
             // Add more mappings as needed
         };
         return mapping[pageKey] || pageKey.toLowerCase().replace('z_', '');

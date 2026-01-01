@@ -36,12 +36,16 @@ import { TenantBillingDialog, TenantModulesDialog } from "./_components/TenantAd
 import { TenantRestrictionsDialog } from "./_components/TenantRestrictionsDialog"
 import { OnboardingWizard } from "./_components/OnboardingWizard"
 import { TenantEditDialog } from "./_components/TenantEditDialog"
-import { TenantViewDialog } from "./_components/TenantViewDialog"
+import { TenantDetailSheet } from "./_components/TenantDetailSheet"
 import { DataTableFacetedFilter } from "@/components/ui/data-table-faceted-filter"
 import { FilterDrawer } from "@/components/ui/filter-drawer"
 import { MOCK_SECTORS } from "@/shared/constants/reference-data"
 import { createColumns } from "./_components/tenants-columns"
 import { MOCK_TENANTS } from "@/shared/constants/reference-data"
+// PHASE 14G: Import page state hook
+import { usePageState } from "@/app/security/usePageState"
+import { ACTION_KEYS } from "@/app/navigation/action-keys"
+import { ExportModal } from "@/shared/components/ui/export-modal"
 
 const sectorOptions = MOCK_SECTORS.map(s => ({ label: s.name, value: s.id }))
 
@@ -78,6 +82,8 @@ export default function TenantList() {
     const [isBillingDialogOpen, setIsBillingDialogOpen] = useState(false)
     const [isModulesDialogOpen, setIsModulesDialogOpen] = useState(false)
     const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false)
+    const [isExporting, setIsExporting] = useState(false)
 
     const fetchTenants = useCallback(async () => {
         try {
@@ -128,21 +134,7 @@ export default function TenantList() {
         }
     }, [currentTenant])
 
-    const handleApprove = useCallback((tenant: Tenant) => {
-        // Mock API call
-        setTenants(prev => prev.map(t => t.id === tenant.id ? { ...t, status: "ACTIVE" } : t))
-        toast.success("Tenant təsdiqləndi.")
-    }, [])
 
-    const handleReject = useCallback((tenant: Tenant) => {
-        const reason = window.prompt("İmtina səbəbini qeyd edin:")
-        if (reason) {
-            // API call needed ideally
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setTenants(prev => prev.map(t => t.id === tenant.id ? { ...t, status: "CANCELLED", ['note']: ((t as any)['note'] || "") + `\n[REJECTED]: ${reason}` } : t))
-            toast.warning("Tenant sorğusu rədd edildi.")
-        }
-    }, [])
 
     // Update handleDeleteConfirm to use API
     const handleDeleteClick = useCallback(async (tenant: Tenant) => {
@@ -265,10 +257,26 @@ export default function TenantList() {
         return ""
     }
 
+    // PHASE 14G: Tenant Permissions Binding
+    const { actions } = usePageState('Z_TENANTS');
+    console.log('DEBUG TENANT ACTIONS:', actions);
+
+    // --- Handlers ---
+    const handleExport = async (mode: 'CURRENT' | 'ALL') => {
+        setIsExporting(true)
+        // Mock export simulation
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        toast.success(`${mode === 'CURRENT' ? 'Cari səhifə' : 'Bütün nəticələr'} müvəffəqiyyətlə ixrac edildi.`)
+        setIsExporting(false)
+        setIsExportModalOpen(false)
+    }
+
+    // --- Table Configuration ---
+
+
+
     // --- Table Configuration ---
     const columns = useMemo(() => createColumns({
-        handleApprove,
-        handleReject,
         prepareView,
         prepareEdit,
         prepareUsers,
@@ -284,11 +292,12 @@ export default function TenantList() {
         handleAuditLogs,
         handleResourceLimits,
         prepareRestrictions
-    }), [
-        handleApprove, handleReject, prepareView, prepareEdit, prepareUsers,
+    }, actions), [ // PHASE 14G: Pass actions dependency
+        prepareView, prepareEdit, prepareUsers,
         handleLoginAsAdmin, handleModulesClick, handleBillingClick, handleSignContract,
         confirmTerminate, confirmSuspend, deleteTenant,
-        handle2FAToggle, handleResetPassword, handleAuditLogs, handleResourceLimits, prepareRestrictions
+        handle2FAToggle, handleResetPassword, handleAuditLogs, handleResourceLimits, prepareRestrictions,
+        actions
     ])
 
     const table = useReactTable({
@@ -328,10 +337,11 @@ export default function TenantList() {
 
                         <DataTableToolbar
                             table={table}
-                            onAddClick={() => setIsCreateDialogOpen(true)}
+                            onAddClick={actions[ACTION_KEYS.TENANTS_CREATE] ? () => setIsCreateDialogOpen(true) : undefined}
                             addLabel="Yeni Tenant Əlavə Et"
                             searchPlaceholder="Axtarış..."
                             filterColumn="name"
+                            onExportClick={actions[ACTION_KEYS.TENANTS_EXPORT] ? () => setIsExportModalOpen(true) : undefined}
                         >
                             <FilterDrawer
                                 open={isFilterDrawerOpen}
@@ -434,12 +444,11 @@ export default function TenantList() {
                 />
             )}
 
-            {/* VIEW DIALOG */}
+            {/* VIEW DIALOG (DETAIL SHEET) */}
             {isViewDialogOpen && currentTenant && (
-                <TenantViewDialog
+                <TenantDetailSheet
                     open={isViewDialogOpen}
                     onOpenChange={setIsViewDialogOpen}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     tenant={currentTenant as any}
                 />
             )}
@@ -498,6 +507,17 @@ export default function TenantList() {
                     }}
                 />
             )}
+
+            {/* EXPORT MODAL */}
+            <ExportModal
+                open={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                onExport={handleExport}
+                isExporting={isExporting}
+                currentCount={table.getRowModel().rows.length}
+                totalCount={MOCK_TENANTS.length}
+                entityName="tenant"
+            />
 
             <ConfirmationDialog
                 open={isDeleteDialogOpen}

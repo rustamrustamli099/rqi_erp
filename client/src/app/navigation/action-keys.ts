@@ -15,6 +15,22 @@
 
 export const ACTION_KEYS = {
     // ─────────────────────────────────────────────────────────────────────────
+    // Tenants Entity (Phase 14G)
+    // ─────────────────────────────────────────────────────────────────────────
+    TENANTS_CREATE: 'GS_TENANTS_CREATE',
+    TENANTS_UPDATE: 'GS_TENANTS_UPDATE',
+    TENANTS_DELETE: 'GS_TENANTS_DELETE',
+    TENANTS_IMPERSONATE: 'GS_TENANTS_IMPERSONATE',
+    // Granular Actions (Phase 14G Refinement)
+    TENANTS_MANAGE_USERS: 'GS_TENANTS_MANAGE_USERS',
+    TENANTS_MANAGE_SECURITY: 'GS_TENANTS_MANAGE_SECURITY',
+    TENANTS_MANAGE_BILLING: 'GS_TENANTS_MANAGE_BILLING',
+    TENANTS_MANAGE_FEATURES: 'GS_TENANTS_MANAGE_FEATURES',
+    TENANTS_MANAGE_CONTRACT: 'GS_TENANTS_MANAGE_CONTRACT',
+    TENANTS_VIEW_AUDIT: 'GS_TENANTS_VIEW_AUDIT',
+    TENANTS_EXPORT: 'GS_TENANTS_EXPORT_TO_EXCEL',
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Users Entity - Synced with permission-structure.ts
     // ─────────────────────────────────────────────────────────────────────────
     USERS_CREATE: 'GS_USERS_CREATE',

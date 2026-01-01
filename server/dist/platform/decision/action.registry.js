@@ -3,6 +3,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ACTION_PERMISSIONS_REGISTRY = void 0;
 exports.ACTION_PERMISSIONS_REGISTRY = [
     {
+        entityKey: 'tenants',
+        scope: 'system',
+        actions: [
+            { actionKey: 'create', permissionSlug: 'system.tenants.create' },
+            { actionKey: 'update', permissionSlug: 'system.tenants.update' },
+            { actionKey: 'delete', permissionSlug: 'system.tenants.delete' },
+            { actionKey: 'impersonate', permissionSlug: 'system.tenants.impersonate' },
+            { actionKey: 'manage_users', permissionSlug: 'system.tenants.manage_users' },
+            { actionKey: 'manage_security', permissionSlug: 'system.tenants.manage_security' },
+            { actionKey: 'manage_billing', permissionSlug: 'system.tenants.manage_billing' },
+            { actionKey: 'manage_features', permissionSlug: 'system.tenants.manage_features' },
+            { actionKey: 'manage_contract', permissionSlug: 'system.tenants.manage_contract' },
+            { actionKey: 'view_audit', permissionSlug: 'system.tenants.view_audit' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.tenants.export_to_excel' },
+        ],
+    },
+    {
         entityKey: 'users',
         scope: 'system',
         actions: [
