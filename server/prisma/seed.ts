@@ -18,7 +18,10 @@ const SYSTEM_SLUGS = {
         CONNECT_TO_EMPLOYEE: 'system.users.users.connect_to_employee',
         // Synced with permission-structure.ts
         EXPORT_TO_EXCEL: 'system.users.users.export_to_excel',
-        CHANGE_STATUS: 'system.users.users.change_status'
+        CHANGE_STATUS: 'system.users.users.change_status',
+        // Row-level actions (Phase 14G)
+        IMPERSONATE: 'system.users.users.impersonate',
+        SEND_INVITE: 'system.users.users.send_invite'
     },
     CURATORS: {
         READ: 'system.users.curators.read',

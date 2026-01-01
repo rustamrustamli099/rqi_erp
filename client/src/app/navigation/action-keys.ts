@@ -25,6 +25,9 @@ export const ACTION_KEYS = {
     USERS_ACTIVATE: 'GS_USERS_CHANGE_STATUS',
     USERS_CONNECT_TO_EMPLOYEE: 'GS_USERS_CONNECT_TO_EMPLOYEE',
     USERS_INVITE: 'GS_USERS_INVITE',
+    // Row-level actions
+    USERS_IMPERSONATE: 'GS_USERS_IMPERSONATE',
+    USERS_SEND_INVITE: 'GS_USERS_SEND_INVITE',
 
     // ─────────────────────────────────────────────────────────────────────────
     // Roles Entity

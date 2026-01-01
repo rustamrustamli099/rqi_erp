@@ -14,6 +14,8 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
             { actionKey: 'change_status', permissionSlug: 'system.users.users.change_status' },
             { actionKey: 'connect_to_employee', permissionSlug: 'system.users.users.connect_to_employee' },
             { actionKey: 'invite', permissionSlug: 'system.users.users.invite' },
+            { actionKey: 'impersonate', permissionSlug: 'system.users.users.impersonate' },
+            { actionKey: 'send_invite', permissionSlug: 'system.users.users.send_invite' },
         ],
     },
     {
