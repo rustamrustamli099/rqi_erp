@@ -1,37 +1,40 @@
 import React from "react";
 import { useFeatureFlags } from "./context/FeatureFlagContext";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
 
+/**
+ * SAP-GRADE: Feature Flag Guard
+ * 
+ * This component ONLY checks feature flags, NOT permissions.
+ * Permission checking is handled by:
+ * 1. ProtectedRoute (route-level guard)
+ * 2. Decision Center (resolveNavigationTree)
+ * 
+ * If you need both feature flag AND permission check:
+ * - Permission is enforced at the route level
+ * - Feature flag is checked here
+ * 
+ * The `permission` prop has been REMOVED to comply with GEMINI Constitution.
+ */
 interface FeatureFlagGuardProps {
     flag: string; // The Feature Flag key (e.g., 'beta_ai_assistant')
-    permission?: string; // Optional permission slug (e.g., 'ai.chat.view')
-    fallback?: React.ReactNode; // What to show if access denied (null by default)
+    fallback?: React.ReactNode; // What to show if feature disabled (null by default)
     children: React.ReactNode;
 }
 
-export const FeatureFlagGuard: React.FC<FeatureFlagGuardProps> = ({ 
-    flag, 
-    permission, 
-    fallback = null, 
-    children 
+export const FeatureFlagGuard: React.FC<FeatureFlagGuardProps> = ({
+    flag,
+    fallback = null,
+    children
 }) => {
     const { isEnabled } = useFeatureFlags();
-    const { hasPermission } = usePermissions();
 
-    // 1. Check Feature Flag
+    // SAP-GRADE: Only check Feature Flag, NOT permissions
+    // Permissions are enforced by Decision Center at route level
     const featureEnabled = isEnabled(flag);
+
     if (!featureEnabled) {
         return <>{fallback}</>;
     }
 
-    // 2. Check Permission (if provided)
-    if (permission) {
-        const hasAccess = hasPermission(permission);
-        if (!hasAccess) {
-            return <>{fallback}</>;
-        }
-    }
-
-    // 3. Render Content
     return <>{children}</>;
 };

@@ -13,20 +13,28 @@ import {
 } from '@/app/navigation/tabSubTab.registry';
 
 describe('normalizePermissions', () => {
-    it('should add read when write actions exist', () => {
+    /**
+     * SAP-GRADE: normalizePermissions does NOT infer permissions.
+     * It only deduplicates the input array.
+     * NO .read inference from .create/.update/.delete
+     */
+    it('should NOT add read when write actions exist (SAP EXACT MATCH)', () => {
         const perms = ['system.users.create', 'system.users.delete'];
         const normalized = normalizePermissions(perms);
 
         expect(normalized).toContain('system.users.create');
-        expect(normalized).toContain('system.users.read'); // Implied
+        expect(normalized).toContain('system.users.delete');
+        // SAP-GRADE: NO inference - read is NOT added
+        expect(normalized).not.toContain('system.users.read');
     });
 
-    it('should not duplicate read', () => {
-        const perms = ['system.users.read', 'system.users.update'];
+    it('should deduplicate permissions', () => {
+        const perms = ['system.users.read', 'system.users.read', 'system.users.update'];
         const normalized = normalizePermissions(perms);
 
         const readCount = normalized.filter(p => p === 'system.users.read').length;
         expect(readCount).toBe(1);
+        expect(normalized.length).toBe(2);
     });
 });
 

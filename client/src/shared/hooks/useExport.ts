@@ -2,19 +2,23 @@
  * SAP-Grade Export Hook
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * Filters, search və sorting-ə riayət edən export funksionallığı.
+ * SAP-GRADE: Export permission comes from RESOLVED ACTIONS, not UI checks.
+ * The caller MUST pass `canExport` from the Decision Center's resolved tree.
  * 
  * İstifadə:
- * const { canExport, isExporting, openModal, exportData } = useExport({
+ * // Get canExport from resolved actions in navigation tree
+ * const exportAction = resolvedActions?.byContext.toolbar.find(a => a.actionKey === 'export');
+ * const canExport = exportAction?.state === 'enabled';
+ * 
+ * const { isExporting, openModal, exportData } = useExport({
  *     endpoint: '/api/v1/admin/roles/export',
- *     permissionSlug: 'system.settings.security.user_rights.roles_permissions.export_to_excel',
+ *     canExport: canExport,  // FROM RESOLVED ACTIONS
  *     query: query
  * });
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { useState, useCallback } from 'react';
-import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { toast } from 'sonner';
 
 // =============================================================================
@@ -26,8 +30,11 @@ export type ExportMode = 'CURRENT' | 'ALL';
 export interface ExportOptions {
     /** Backend export endpoint */
     endpoint: string;
-    /** Permission slug for export (e.g., system.roles.export) */
-    permissionSlug: string;
+    /** 
+     * SAP-GRADE: Export permission from RESOLVED ACTIONS.
+     * Must come from Decision Center, NOT from UI permission check.
+     */
+    canExport: boolean;
     /** Current ListQuery state */
     query: {
         search?: string;
@@ -42,7 +49,7 @@ export interface ExportOptions {
 }
 
 export interface UseExportResult {
-    /** User has export permission */
+    /** User has export permission (from resolved actions) */
     canExport: boolean;
     /** Export in progress */
     isExporting: boolean;
@@ -60,12 +67,16 @@ export interface UseExportResult {
 // HOOK
 // =============================================================================
 
+/**
+ * SAP-GRADE: This hook does NOT check permissions.
+ * Permission (canExport) must be passed from resolved actions.
+ */
 export function useExport(options: ExportOptions): UseExportResult {
-    const { hasPermission } = usePermissions();
     const [isExporting, setIsExporting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const canExport = hasPermission(options.permissionSlug);
+    // SAP-GRADE: canExport comes from Decision Center via options
+    const canExport = options.canExport;
 
     const openModal = useCallback(() => {
         if (!canExport) {

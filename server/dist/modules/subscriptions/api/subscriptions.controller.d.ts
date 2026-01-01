@@ -22,8 +22,8 @@ export declare class SubscriptionsController {
         };
         package: {
             name: string;
-            priceMonthly: import("@prisma/client/runtime/library").Decimal;
             currency: string;
+            priceMonthly: import("@prisma/client/runtime/library").Decimal;
         };
     } & {
         id: string;
