@@ -165,12 +165,21 @@ export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {/* PHASE 14G: Row actions - conditional rendering */}
-                            <DropdownMenuItem onClick={() => {
-                                navigator.clipboard.writeText(curator.id);
-                                toast.success("ID kopyalandı");
-                            }}>
-                                ID kopyala
-                            </DropdownMenuItem>
+                            {actions[ACTION_KEYS.CURATORS_COPY_ID] && (
+                                <DropdownMenuItem onClick={() => {
+                                    navigator.clipboard.writeText(curator.id);
+                                    toast.success("ID kopyalandı");
+                                }}>
+                                    ID kopyala
+                                </DropdownMenuItem>
+                            )}
+                            {actions[ACTION_KEYS.CURATORS_CHANGE_STATUS] && (
+                                <DropdownMenuItem onClick={() => {
+                                    toast.info("Status dəyişmə funksiyası tezliklə aktiv olacaq");
+                                }}>
+                                    Status Dəyiş
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {actions[ACTION_KEYS.CURATORS_UPDATE] && (
                                 <DropdownMenuItem onClick={() => setEditingCurator(curator)}>
