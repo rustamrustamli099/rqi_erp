@@ -38,6 +38,8 @@ import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { identityApi, type User } from "../api/identity.contract";
 import { useImpersonate } from "@/app/auth/hooks/useImpersonate";
 import { LogIn } from "lucide-react";
+// PHASE 14G: Import canonical action keys
+import { ACTION_KEYS, type ActionsMap } from "@/app/navigation/action-keys";
 
 const roleOptions = [
     { label: "Super Admin", value: "SuperAdmin" },
@@ -55,7 +57,12 @@ const statusOptions = [
     { label: "Deaktiv", value: "Inactive" },
 ]
 
-export function UsersListTab() {
+// PHASE 14G: Props interface
+interface UsersListTabProps {
+    actions?: ActionsMap;
+}
+
+export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) {
     const [data, setData] = useState<User[]>([]);
     const { impersonate } = useImpersonate();
 
@@ -273,20 +280,25 @@ export function UsersListTab() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => confirmAction(user, 'toggle')}>
-                                {user.status === "Active" ? <Lock className="mr-2 h-4 w-4" /> : <Unlock className="mr-2 h-4 w-4" />}
-                                {user.status === "Active" ? "Deaktiv Et" : "Aktiv Et"}
-                            </DropdownMenuItem>
+                            {/* PHASE 14G: Row actions - conditional rendering */}
+                            {actions[ACTION_KEYS.USERS_ACTIVATE] && (
+                                <DropdownMenuItem onClick={() => confirmAction(user, 'toggle')}>
+                                    {user.status === "Active" ? <Lock className="mr-2 h-4 w-4" /> : <Unlock className="mr-2 h-4 w-4" />}
+                                    {user.status === "Active" ? "Deaktiv Et" : "Aktiv Et"}
+                                </DropdownMenuItem>
+                            )}
 
                             <DropdownMenuItem onClick={() => handleOpenRestrictions(user)}>
                                 <Timer className="mr-2 h-4 w-4" /> Məhdudiyyətlər
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem onClick={() => impersonate(user.id, user.name)}>
-                                <LogIn className="mr-2 h-4 w-4" /> Simulyasiya Et (Impersonate)
-                            </DropdownMenuItem>
+                            {actions[ACTION_KEYS.USERS_IMPERSONATE] && (
+                                <DropdownMenuItem onClick={() => impersonate(user.id, user.name)}>
+                                    <LogIn className="mr-2 h-4 w-4" /> Simulyasiya Et (Impersonate)
+                                </DropdownMenuItem>
+                            )}
 
-                            {!user.isVerified && (
+                            {actions[ACTION_KEYS.USERS_SEND_INVITE] && !user.isVerified && (
                                 <DropdownMenuItem onClick={() => confirmAction(user, 'invite')}>
                                     <Mail className="mr-2 h-4 w-4" /> Dəvət Göndər
                                 </DropdownMenuItem>
@@ -296,12 +308,16 @@ export function UsersListTab() {
                             </DropdownMenuItem>
 
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openEditDialog(user)}>
-                                <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => confirmDelete(user)}>
-                                <Trash className="mr-2 h-4 w-4" /> Sil
-                            </DropdownMenuItem>
+                            {actions[ACTION_KEYS.USERS_UPDATE] && (
+                                <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
+                                </DropdownMenuItem>
+                            )}
+                            {actions[ACTION_KEYS.USERS_DELETE] && (
+                                <DropdownMenuItem className="text-red-600" onClick={() => confirmDelete(user)}>
+                                    <Trash className="mr-2 h-4 w-4" /> Sil
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )
@@ -362,10 +378,11 @@ export function UsersListTab() {
 
                     <DataTableToolbar
                         table={table}
-                        onAddClick={openCreateDialog}
+                        // PHASE 14G: Conditional rendering based on actions
+                        onAddClick={actions[ACTION_KEYS.USERS_CREATE] ? openCreateDialog : undefined}
                         addLabel="İstifadəçi Əlavə Et"
                         searchPlaceholder="Axtarış..."
-                        onExportClick={() => {
+                        onExportClick={actions[ACTION_KEYS.USERS_EXPORT] ? () => {
                             const headers = ['Ad Soyad', 'Email', 'Rol', 'Status'];
                             const csvRows = [
                                 headers.join(','),
@@ -385,7 +402,7 @@ export function UsersListTab() {
                             link.click();
                             URL.revokeObjectURL(url);
                             toast.success('İstifadəçilər CSV olaraq ixrac edildi');
-                        }}
+                        } : undefined}
                     >
                         <FilterDrawer
                             open={isFilterDrawerOpen}

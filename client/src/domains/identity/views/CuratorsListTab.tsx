@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, User as UserIcon, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal, User as UserIcon, ArrowUpDown, Edit, Trash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
@@ -24,11 +24,14 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
 import { CuratorAssignmentForm } from "./CuratorAssignmentForm";
+// PHASE 14G: Import canonical action keys
+import { ACTION_KEYS, type ActionsMap } from "@/app/navigation/action-keys";
 
 // Mock Data
 const MOCK_ASSIGNMENTS = [
@@ -61,7 +64,12 @@ const MOCK_ASSIGNMENTS = [
     }
 ];
 
-export function CuratorsListTab() {
+// PHASE 14G: Props interface
+interface CuratorsListTabProps {
+    actions?: ActionsMap;
+}
+
+export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabProps) {
     // State Hoisting
     const [data] = useState(MOCK_ASSIGNMENTS);
     const [sorting, setSorting] = useState<SortingState>([]);
@@ -156,18 +164,24 @@ export function CuratorsListTab() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            {/* PHASE 14G: Row actions - conditional rendering */}
                             <DropdownMenuItem onClick={() => {
                                 navigator.clipboard.writeText(curator.id);
                                 toast.success("ID kopyalandı");
                             }}>
                                 ID kopyala
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setEditingCurator(curator)}>
-                                Düzəliş et
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => setDeletingId(curator.id)}>
-                                Sil
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {actions[ACTION_KEYS.CURATORS_UPDATE] && (
+                                <DropdownMenuItem onClick={() => setEditingCurator(curator)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Düzəliş et
+                                </DropdownMenuItem>
+                            )}
+                            {actions[ACTION_KEYS.CURATORS_DELETE] && (
+                                <DropdownMenuItem className="text-red-600" onClick={() => setDeletingId(curator.id)}>
+                                    <Trash className="mr-2 h-4 w-4" /> Sil
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu >
                 );
@@ -200,10 +214,11 @@ export function CuratorsListTab() {
                 <CardContent className="p-0 flex flex-col overflow-hidden">
                     <DataTableToolbar
                         table={table}
-                        onAddClick={() => setIsAddOpen(true)}
+                        // PHASE 14G: Conditional rendering based on actions
+                        onAddClick={actions[ACTION_KEYS.CURATORS_CREATE] ? () => setIsAddOpen(true) : undefined}
                         addLabel="Yeni Təyinat"
                         searchPlaceholder="Axtarış..."
-                        onExportClick={() => {
+                        onExportClick={actions[ACTION_KEYS.CURATORS_EXPORT] ? () => {
                             const headers = ['İstifadəçi', 'Səviyyə', 'Hədəf Növü', 'Hədəf ID', 'Rejim'];
                             const csvRows = [
                                 headers.join(','),
@@ -224,7 +239,7 @@ export function CuratorsListTab() {
                             link.click();
                             URL.revokeObjectURL(url);
                             toast.success('Kuratorlar CSV olaraq ixrac edildi');
-                        }}
+                        } : undefined}
                     />
                     <div className="rounded-md border bg-card overflow-auto mt-2">
                         <Table>

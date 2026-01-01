@@ -8,6 +8,8 @@ import { usePermissions } from "@/app/auth/hooks/usePermissions";
 import { resolveNavigationTree } from "@/app/security/navigationResolver";
 import { useHelp } from "@/app/context/HelpContext";
 import { useEffect, useMemo } from "react";
+// PHASE 14G: Import usePageState for action rendering
+import { usePageState } from "@/app/security/usePageState";
 
 // Tab icons
 const TAB_ICONS: Record<string, React.ComponentType<any>> = {
@@ -19,6 +21,11 @@ export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { setPageKey } = useHelp();
     const { permissions } = usePermissions();
+
+    // PHASE 14G: Get page state from Decision Center
+    // This is the ONLY source for action visibility
+    const { actions: usersActions } = usePageState('Z_USERS');
+    const { actions: curatorsActions } = usePageState('Z_CURATORS');
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once
     const navTree = useMemo(() => {
@@ -93,15 +100,15 @@ export default function UsersPage() {
                         </TabsList>
                     </div>
 
-                    {/* SAP-GRADE: Only render ALLOWED TabsContent */}
+                    {/* PHASE 14G: Pass actions to child components */}
                     {allowedKeys.includes('users') && (
                         <TabsContent value="users" className="flex-1 overflow-auto pt-4 min-h-0">
-                            <UsersListTab />
+                            <UsersListTab actions={usersActions} />
                         </TabsContent>
                     )}
                     {allowedKeys.includes('curators') && (
                         <TabsContent value="curators" className="flex-1 overflow-auto pt-4 min-h-0">
-                            <CuratorsListTab />
+                            <CuratorsListTab actions={curatorsActions} />
                         </TabsContent>
                     )}
                 </Tabs>
@@ -109,4 +116,3 @@ export default function UsersPage() {
         </div>
     );
 }
-

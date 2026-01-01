@@ -9,8 +9,27 @@ const SYSTEM_SLUGS = {
     DASHBOARD: { READ: 'system.dashboard.read' },
     TENANTS: { READ: 'system.tenants.read', CREATE: 'system.tenants.create', UPDATE: 'system.tenants.update', DELETE: 'system.tenants.delete', IMPERSONATE: 'system.tenants.impersonate', MANAGE: 'system.tenants.manage_subscription' },
     BRANCHES: { READ: 'system.branches.read', CREATE: 'system.branches.create', UPDATE: 'system.branches.update', DELETE: 'system.branches.delete' },
-    USERS: { READ: 'system.users.users.read', CREATE: 'system.users.users.create', UPDATE: 'system.users.users.update', DELETE: 'system.users.users.delete', INVITE: 'system.users.users.invite', CONNECT_TO_EMPLOYEE: 'system.users.users.connect_to_employee' },
-    CURATORS: { READ: 'system.users.curators.read', CREATE: 'system.users.curators.create', UPDATE: 'system.users.curators.update', DELETE: 'system.users.curators.delete' },
+    USERS: {
+        READ: 'system.users.users.read',
+        CREATE: 'system.users.users.create',
+        UPDATE: 'system.users.users.update',
+        DELETE: 'system.users.users.delete',
+        INVITE: 'system.users.users.invite',
+        CONNECT_TO_EMPLOYEE: 'system.users.users.connect_to_employee',
+        // Synced with permission-structure.ts
+        EXPORT_TO_EXCEL: 'system.users.users.export_to_excel',
+        CHANGE_STATUS: 'system.users.users.change_status'
+    },
+    CURATORS: {
+        READ: 'system.users.curators.read',
+        CREATE: 'system.users.curators.create',
+        UPDATE: 'system.users.curators.update',
+        DELETE: 'system.users.curators.delete',
+        // Synced with permission-structure.ts
+        EXPORT_TO_EXCEL: 'system.users.curators.export_to_excel',
+        CHANGE_STATUS: 'system.users.curators.change_status',
+        COPY_ID: 'system.users.curators.copy_id'
+    },
 
     // USER RIGHTS - NEW SEPARATED SUBTABS
     USER_RIGHTS: {
