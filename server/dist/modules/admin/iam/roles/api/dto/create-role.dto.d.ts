@@ -3,5 +3,6 @@ export declare class CreateRoleDto {
     description?: string;
     scope: 'SYSTEM' | 'TENANT';
     permissionIds?: string[];
+    permissionSlugs?: string[];
     childRoleIds?: string[];
 }

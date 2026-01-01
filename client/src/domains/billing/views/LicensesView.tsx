@@ -9,6 +9,8 @@ import { Check, Shield, Zap, Box, History, AlertTriangle, ArrowRight } from "luc
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { PermissionSlugs } from "@/app/security/permission-slugs";
 
 const PLANS = [
     { id: "p1", name: "Starter Pack", price: "299 ₼/ay", users: "10", storage: "5 GB", features: ["HR Core", "Maliyyə Standart"] },
@@ -27,6 +29,10 @@ export function LicensesView() {
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string>("p3"); // Mock selection
+
+    // Permission Check
+    const { permissions } = usePermissions();
+    const canManage = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.MANAGE);
 
     const handleChangePlan = () => {
         setIsPlanModalOpen(false);
@@ -49,7 +55,9 @@ export function LicensesView() {
                         <Button variant="outline" size="sm" onClick={() => setIsAuditModalOpen(true)}>
                             <History className="w-4 h-4 mr-2" /> Audit Tarixçəsi
                         </Button>
-                        <Button size="sm" onClick={() => setIsPlanModalOpen(true)}>Planı Dəyiş</Button>
+                        {canManage && (
+                            <Button size="sm" onClick={() => setIsPlanModalOpen(true)}>Planı Dəyiş</Button>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -219,4 +227,3 @@ export function LicensesView() {
         </div>
     );
 }
-

@@ -11,7 +11,14 @@ import {
 } from "@/shared/components/ui/collapsible"
 
 import { getLeafSlugs } from "./permission-utils"
-import type { PermissionNode } from "./permission-utils"
+export type PermissionNode = {
+    id: string
+    label: string
+    description?: string
+    isDangerous?: boolean
+    scope?: 'SYSTEM' | 'TENANT'
+    children?: PermissionNode[]
+}
 
 interface PermissionTreeEditorProps {
     permissions: PermissionNode[]

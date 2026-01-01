@@ -3,7 +3,7 @@ import {
     CreditCard, Package, ShoppingBag, BarChart3,
     Check, Plus, Settings, AlertTriangle, MoreHorizontal,
     Edit, Trash2, Eye, PauseCircle, PlayCircle, XCircle,
-    Save, Building, Search, Filter, ArrowRight, Shield, Zap, Box, Link2, Boxes
+    Save, Building, Search, Filter, ArrowRight, Shield, Zap, Box, Link2, Boxes, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,10 @@ function SubscriptionsView() {
     const [editingPlan, setEditingPlan] = useState<any | null>(null);
     const [formData, setFormData] = useState<any>({});
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, description: string, variant: "default" | "destructive", action: () => void }>({ isOpen: false, title: "", description: "", variant: "default", action: () => { } });
+
+    // Permission State
+    const { permissions } = usePermissions();
+    const canManage = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.MANAGE);
 
     const handleSavePlan = (data: any) => {
         if (editingPlan) {
@@ -111,7 +115,9 @@ function SubscriptionsView() {
                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full" /> Aktiv ({plans.filter(p => p.active).length})</div>
                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-400 rounded-full" /> Deaktiv ({plans.filter(p => !p.active).length})</div>
                 </div>
-                <Button size="sm" onClick={openCreate}><Plus className="mr-2 h-3.5 w-3.5" /> Plan Yarat</Button>
+                {canManage && (
+                    <Button size="sm" onClick={openCreate}><Plus className="mr-2 h-3.5 w-3.5" /> Plan Yarat</Button>
+                )}
             </div>
 
             <div className="grid gap-4">
@@ -140,22 +146,24 @@ function SubscriptionsView() {
                                 <div className="text-xl font-bold tabular-nums">{plan.price} {plan.currency === 'AZN' ? '₼' : plan.currency}</div>
                                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{plan.interval === 'monthly' ? 'Aylıq' : 'İllik'}</div>
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openEdit(plan)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Redaktə Et
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(plan.id)}>
-                                        <Trash2 className="mr-2 h-4 w-4" /> Sil
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {canManage && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => openEdit(plan)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Redaktə Et
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(plan.id)}>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Sil
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
                         </div>
                     </Card>
                 ))}
@@ -428,9 +436,20 @@ export default function BillingPage() {
 
 // --- SUB-COMPONENTS ---
 
+import { PermissionSlugs } from "@/app/security/permission-slugs";
+
+
 function MarketplaceView() {
     // Data State
     const [products, setProducts] = useState<Product[]>(MARKETPLACE_FEATURES);
+
+    // Permission State
+    const { permissions } = usePermissions();
+    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.CREATE);
+    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.UPDATE);
+    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.DELETE);
+    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.CHANGE_STATUS);
+    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.EXPORT);
 
     // UI State
     const [searchTerm, setSearchTerm] = useState("");
@@ -464,6 +483,14 @@ function MarketplaceView() {
     );
 
     // --- HANDLERS ---
+
+    const handleExport = () => {
+        toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+            loading: "Excel faylı hazırlanır...",
+            success: "Məhsullar ixrac edildi",
+            error: "Xəta baş verdi"
+        });
+    };
 
     const handleDelete = (id: string) => {
         setConfirmState({
@@ -561,7 +588,16 @@ function MarketplaceView() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <Button onClick={openCreateModal}><Plus className="mr-2 h-4 w-4" /> Yeni Məhsul Yarat</Button>
+                <div className="flex gap-2">
+                    {canExport && (
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" /> Export to Excel
+                        </Button>
+                    )}
+                    {canCreate && (
+                        <Button onClick={openCreateModal}><Plus className="mr-2 h-4 w-4" /> Yeni Məhsul Yarat</Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -575,9 +611,11 @@ function MarketplaceView() {
                                         <Icon className="w-3 h-3" />
                                         {feature.type}
                                     </Badge>
-                                    <div onClick={(e) => { e.stopPropagation(); handleToggleStatus(feature.id, feature.active); }}>
-                                        <Switch checked={feature.active} className="scale-75 cursor-pointer" />
-                                    </div>
+                                    {canChangeStatus && (
+                                        <div onClick={(e) => { e.stopPropagation(); handleToggleStatus(feature.id, feature.active); }}>
+                                            <Switch checked={feature.active} className="scale-75 cursor-pointer" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-baseline mt-1">
                                     <CardTitle className="text-xl">{feature.name}</CardTitle>
@@ -597,12 +635,16 @@ function MarketplaceView() {
                                     <Eye className="w-3.5 h-3.5" /> Bax
                                 </Button>
                                 <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-blue-600" onClick={() => openEditModal(feature)}>
-                                        <Edit className="w-3.5 h-3.5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(feature.id)}>
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
+                                    {canUpdate && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-blue-600" onClick={() => openEditModal(feature)}>
+                                            <Edit className="w-3.5 h-3.5" />
+                                        </Button>
+                                    )}
+                                    {canDelete && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(feature.id)}>
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    )}
                                 </div>
                             </CardFooter>
                         </Card>
@@ -908,6 +950,10 @@ function PackagesView() {
     const [packages, setPackages] = useState(PACKAGES);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
 
+    // Permission State
+    const { permissions } = usePermissions();
+    const canManage = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.MANAGE);
+
     const handleCreatePackage = (pkg: any) => {
         const newPkg = { id: `pkg_${Date.now()}`, ...pkg };
         setPackages([...packages, newPkg]);
@@ -921,7 +967,9 @@ function PackagesView() {
                     <h3 className="text-lg font-medium">Kompakt Paketlər</h3>
                     <p className="text-sm text-muted-foreground">Şirkətlər üçün hazır konfiqurasiya olunmuş planlar.</p>
                 </div>
-                <Button onClick={() => setIsWizardOpen(true)}><Plus className="mr-2 h-4 w-4" /> Yeni Paket</Button>
+                {canManage && (
+                    <Button onClick={() => setIsWizardOpen(true)}><Plus className="mr-2 h-4 w-4" /> Yeni Paket</Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

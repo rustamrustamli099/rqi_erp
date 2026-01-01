@@ -11,6 +11,8 @@ import { Download, Eye, FileText, Mail, MoreHorizontal, RefreshCw } from "lucide
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { PermissionSlugs } from "@/app/security/permission-slugs";
 
 interface Invoice {
     id: string;
@@ -34,6 +36,10 @@ export function InvoicesView() {
     const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
     const [confirmDownload, setConfirmDownload] = useState<string | null>(null);
     const [confirmResend, setConfirmResend] = useState<string | null>(null);
+
+    // Permission Check
+    const { permissions } = usePermissions();
+    const canApprove = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.APPROVE);
 
     const handleDownload = (id: string) => {
         toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
@@ -113,15 +119,17 @@ export function InvoicesView() {
                             <DropdownMenuItem onClick={() => setConfirmDownload(row.original.id)}>
                                 <Download className="mr-2 h-4 w-4" /> PDF Endir
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setConfirmResend(row.original.id)}>
-                                <Mail className="mr-2 h-4 w-4" /> Yenidən Göndər
-                            </DropdownMenuItem>
+                            {canApprove && (
+                                <DropdownMenuItem onClick={() => setConfirmResend(row.original.id)}>
+                                    <Mail className="mr-2 h-4 w-4" /> Yenidən Göndər
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
             )
         }
-    ], []);
+    ], [canApprove]);
 
     return (
         <div className="space-y-6">

@@ -53,7 +53,14 @@ export const PERMISSION_TREE_DATA: PermissionNode[] = [
                         delete: PermissionSlugs.SYSTEM.TENANTS.DELETE
                     }).children!,
                     leaf(PermissionSlugs.SYSTEM.TENANTS.IMPERSONATE, "Impersonate (Giriş et)", true),
-                    leaf(PermissionSlugs.SYSTEM.TENANTS.MANAGE, "Manage Subscription")
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.EXPORT, "Export to Excel"),
+                    // Granular Management
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.MANAGE_USERS, "Manage Users"),
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.MANAGE_SECURITY, "Manage Security (2FA, Password)"),
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.MANAGE_BILLING, "Manage Billing & History"),
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.MANAGE_FEATURES, "Manage Features & Limits"),
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.MANAGE_CONTRACT, "Manage Contract (Suspend/Term)", true),
+                    leaf(PermissionSlugs.SYSTEM.TENANTS.VIEW_AUDIT, "View Audit Logs")
                 ]
             },
             {
@@ -73,10 +80,10 @@ export const PERMISSION_TREE_DATA: PermissionNode[] = [
                         delete: PermissionSlugs.SYSTEM.CURATORS.DELETE
                     }),
                     crud('roles', 'Roles & Rights', {
-                        read: PermissionSlugs.SYSTEM.ROLES.READ,
-                        create: PermissionSlugs.SYSTEM.ROLES.CREATE,
-                        update: PermissionSlugs.SYSTEM.ROLES.UPDATE,
-                        delete: PermissionSlugs.SYSTEM.ROLES.DELETE
+                        read: PermissionSlugs.SYSTEM.USER_RIGHTS.ROLES.READ,
+                        create: PermissionSlugs.SYSTEM.USER_RIGHTS.ROLES.CREATE,
+                        update: PermissionSlugs.SYSTEM.USER_RIGHTS.ROLES.UPDATE,
+                        delete: PermissionSlugs.SYSTEM.USER_RIGHTS.ROLES.DELETE
                     })
                 ]
             },

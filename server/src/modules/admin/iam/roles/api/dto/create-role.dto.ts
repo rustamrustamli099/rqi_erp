@@ -15,10 +15,12 @@ export class CreateRoleDto {
     @IsArray()
     @IsString({ each: true })
     @IsOptional()
+    permissionIds?: string[];
+
     @IsArray()
     @IsString({ each: true })
     @IsOptional()
-    permissionIds?: string[];
+    permissionSlugs?: string[];
 
     @IsArray()
     @IsString({ each: true })

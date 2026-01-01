@@ -52,8 +52,9 @@ let RolesService = RolesService_1 = class RolesService {
         }
         let permissionConnect = [];
         let permissionSlugs = [];
-        if (dto.permissionIds && dto.permissionIds.length > 0) {
-            const uniqueSlugs = [...new Set(dto.permissionIds)];
+        const inputPerms = dto.permissionIds || dto.permissionSlugs || [];
+        if (inputPerms.length > 0) {
+            const uniqueSlugs = [...new Set(inputPerms)];
             permissionSlugs = uniqueSlugs;
             const permissions = await this.prisma.permission.findMany({
                 where: {
@@ -266,13 +267,14 @@ let RolesService = RolesService_1 = class RolesService {
         }
         let newStatus = role.status;
         const auditDetails = { roleId: id };
-        if (dto.permissionIds) {
+        const inputPerms = dto.permissionIds || dto.permissionSlugs;
+        if (inputPerms) {
             const oldPermissionsMap = new Map();
             role.permissions.forEach(rp => {
                 oldPermissionsMap.set(rp.permission.slug, rp.permissionId);
             });
             const oldSlugs = Array.from(oldPermissionsMap.keys());
-            let newSlugsUnique = [...new Set(dto.permissionIds)];
+            let newSlugsUnique = [...new Set(inputPerms)];
             const potentialReadSlugs = new Set();
             newSlugsUnique.forEach(slug => {
                 const parts = slug.split('.');
@@ -318,6 +320,13 @@ let RolesService = RolesService_1 = class RolesService {
             const slugsToAdd = newSlugs.filter(s => !oldSlugs.includes(s));
             const idsToRemove = slugsToRemove.map(s => oldPermissionsMap.get(s)).filter(Boolean);
             const idsToAdd = slugsToAdd.map(s => newPermissionsMap.get(s)).filter(Boolean);
+            console.log("---------------- ROLE UPDATE DEBUG ----------------");
+            console.log("Input Slugs:", inputPerms);
+            console.log("DB Valid Slugs:", validNewPermissions.map(p => p.slug));
+            console.log("Invalid Scope Slugs:", invalidScopePerms.map(p => p.slug));
+            console.log("Slugs To ADD:", slugsToAdd);
+            console.log("Slugs To REMOVE:", slugsToRemove);
+            console.log("---------------------------------------------------");
             await this.prisma.$transaction(async (tx) => {
                 if (idsToRemove.length > 0) {
                     await tx.rolePermission.deleteMany({

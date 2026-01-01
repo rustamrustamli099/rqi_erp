@@ -10,7 +10,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
         perms: ['read']
     },
     tenants: {
-        perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'tenant_users', 'reset_password', '2fa_app_cancel', '2fa_app_enable', '2fa_app_generate', 'impersonate', 'modules', 'storage_limit', 'billing_history', 'limitations', 'sign_contract', 'terminate_contract', 'suspend']
+        perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'impersonate', 'manage_users', 'manage_security', 'manage_billing', 'manage_features', 'manage_contract', 'view_audit']
     },
     branches: { perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'read_details', "change_status"] },
     users: {
@@ -26,16 +26,16 @@ export const ADMIN_PERMISSION_HIERARCHY = {
             perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status']
         },
         compact_packages: {
-            perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status']
+            perms: ['read', 'create']
         },
         plans: {
-            perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status']
+            perms: ['read', 'create']
         },
         invoices: {
-            perms: ['read', 'download_pdf', "send_email", 'approve']
+            perms: ['read', 'approve']
         },
         licenses: {
-            perms: ['read', 'audit_logs', 'change_plan']
+            perms: ['read', 'change_plan']
         },
     },
     approvals: {
@@ -372,6 +372,13 @@ const ACTION_LABEL_MAP: Record<string, string> = {
     '2fa_app_cancel': '2FA Ləğv Et',
     '2fa_app_enable': '2FA Aktiv Et',
     '2fa_app_generate': '2FA Generasiya Et',
+    // Granular Management
+    manage_users: 'İstifadəçiləri İdarə Et',
+    manage_security: 'Təhlükəsizliyi İdarə Et',
+    manage_billing: 'Bilinq və Tarixçə',
+    manage_features: 'Modul və Limitlər',
+    manage_contract: 'Müqavilə İdarəetməsi',
+    view_audit: 'Audit Qeydləri',
     // System Guide
     share: 'Paylaş',
     edit: 'Redaktə Et',

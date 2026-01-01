@@ -10,7 +10,14 @@ const SYSTEM_SLUGS = {
         UPDATE: 'system.tenants.update',
         DELETE: 'system.tenants.delete',
         IMPERSONATE: 'system.tenants.impersonate',
-        MANAGE: 'system.tenants.manage_subscription',
+        EXPORT: 'system.tenants.export_to_excel',
+        // Granular Actions
+        MANAGE_USERS: 'system.tenants.manage_users',
+        MANAGE_SECURITY: 'system.tenants.manage_security',
+        MANAGE_BILLING: 'system.tenants.manage_billing',
+        MANAGE_FEATURES: 'system.tenants.manage_features',
+        MANAGE_CONTRACT: 'system.tenants.manage_contract',
+        VIEW_AUDIT: 'system.tenants.view_audit',
     },
     BRANCHES: {
         READ: 'system.branches.read',
@@ -129,7 +136,11 @@ const SYSTEM_SLUGS = {
         READ: 'system.billing.read',
         MARKETPLACE: {
             READ: 'system.billing.market_place.read',
-            MANAGE: 'system.billing.market_place.create'
+            CREATE: 'system.billing.market_place.create',
+            UPDATE: 'system.billing.market_place.update',
+            DELETE: 'system.billing.market_place.delete',
+            CHANGE_STATUS: 'system.billing.market_place.change_status',
+            EXPORT: 'system.billing.market_place.export_to_excel'
         },
         PACKAGES: {
             READ: 'system.billing.compact_packages.read',

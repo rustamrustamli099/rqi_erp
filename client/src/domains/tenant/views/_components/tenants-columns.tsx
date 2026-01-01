@@ -71,7 +71,12 @@ const ActionCell = ({
     const isPending = row.status === 'PENDING'
     const isCancelled = row.status === 'CANCELLED'
     const isActive = row.status === 'ACTIVE'
-    // const isContractExpired = row.contractEndDate && new Date(row.contractEndDate) < new Date()
+
+    // Group Visibility Flags (SAP-GRADE UI)
+    const hasIdentity = actions[ACTION_KEYS.TENANTS_MANAGE_USERS] || actions[ACTION_KEYS.TENANTS_MANAGE_SECURITY] || actions[ACTION_KEYS.TENANTS_IMPERSONATE];
+    const hasOps = actions[ACTION_KEYS.TENANTS_MANAGE_FEATURES] || actions[ACTION_KEYS.TENANTS_MANAGE_BILLING] || actions[ACTION_KEYS.TENANTS_VIEW_AUDIT];
+    const hasLegal = actions[ACTION_KEYS.TENANTS_MANAGE_CONTRACT];
+    const hasDestructive = actions[ACTION_KEYS.TENANTS_DELETE];
 
     return (
         <DropdownMenu>
@@ -83,10 +88,7 @@ const ActionCell = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 max-h-[300px] overflow-y-auto">
 
-
-
-                {/* VIEW is allowed by page authorization, but explicit VIEW actions should be guarded? 
-                    Usually READ implies view details. We show 'Baxış' always if row is visible (implied READ). */}
+                {/* GROUP 1: General (Always View) */}
                 <DropdownMenuItem onClick={() => onView(row)}>
                     <Eye className="mr-2 h-4 w-4" /> Baxış
                 </DropdownMenuItem>
@@ -97,76 +99,67 @@ const ActionCell = ({
                     </DropdownMenuItem>
                 )}
 
-                <DropdownMenuSeparator />
-
-                {/* PHASE 14G: User Management (Granular) */}
-                {actions[ACTION_KEYS.TENANTS_MANAGE_USERS] && (
-                    <DropdownMenuItem onClick={() => onUsers(row)} disabled={isPending}>
-                        <Users className="mr-2 h-4 w-4" /> İstifadəçilər
-                    </DropdownMenuItem>
-                )}
-
-                {/* SAP Security Actions (Granular) */}
-                {actions[ACTION_KEYS.TENANTS_MANAGE_SECURITY] && (
+                {/* GROUP 2: Identity & Security */}
+                {hasIdentity && (
                     <>
-                        <DropdownMenuItem onClick={() => onResetPassword(row)} disabled={isPending}>
-                            <Key className="mr-2 h-4 w-4" /> Şifrəni Sıfırla
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => on2FAToggle(row)} disabled={isPending}>
-                            <Lock className="mr-2 h-4 w-4" />
-                            2FA Tətbiq/Ləğv Et
-                        </DropdownMenuItem>
-
                         <DropdownMenuSeparator />
+                        {actions[ACTION_KEYS.TENANTS_MANAGE_USERS] && (
+                            <DropdownMenuItem onClick={() => onUsers(row)} disabled={isPending}>
+                                <Users className="mr-2 h-4 w-4" /> İstifadəçilər
+                            </DropdownMenuItem>
+                        )}
+                        {actions[ACTION_KEYS.TENANTS_MANAGE_SECURITY] && (
+                            <>
+                                <DropdownMenuItem onClick={() => onResetPassword(row)} disabled={isPending}>
+                                    <Key className="mr-2 h-4 w-4" /> Şifrəni Sıfırla
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => on2FAToggle(row)} disabled={isPending}>
+                                    <Lock className="mr-2 h-4 w-4" /> 2FA Tətbiq/Ləğv Et
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                        {actions[ACTION_KEYS.TENANTS_IMPERSONATE] && (
+                            <DropdownMenuItem onClick={() => onLoginAs(row)} disabled={isPending}>
+                                <LogIn className="mr-2 h-4 w-4 text-blue-600" /> <span className={isPending ? "" : "text-blue-600"}>Admin Kimi Daxil Ol</span>
+                            </DropdownMenuItem>
+                        )}
                     </>
                 )}
 
-                {actions[ACTION_KEYS.TENANTS_IMPERSONATE] && (
+                {/* GROUP 3: Operations (Features, Billing, Audit) */}
+                {hasOps && (
                     <>
-                        <DropdownMenuItem onClick={() => onLoginAs(row)} disabled={isPending}>
-                            <LogIn className="mr-2 h-4 w-4 text-blue-600" /> <span className={isPending ? "" : "text-blue-600"}>Admin Kimi Daxil Ol</span>
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        {actions[ACTION_KEYS.TENANTS_MANAGE_FEATURES] && (
+                            <>
+                                <DropdownMenuItem onClick={() => onModules(row)}>
+                                    <Settings className="mr-2 h-4 w-4" /> Modullar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onResourceLimits(row)}>
+                                    <Database className="mr-2 h-4 w-4" /> Resurs Limitləri
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                        {actions[ACTION_KEYS.TENANTS_MANAGE_BILLING] && (
+                            <DropdownMenuItem onClick={() => onBilling(row)}>
+                                <CreditCard className="mr-2 h-4 w-4" /> Ödəniş Tarixçəsi
+                            </DropdownMenuItem>
+                        )}
+                        {actions[ACTION_KEYS.TENANTS_VIEW_AUDIT] && (
+                            <DropdownMenuItem onClick={() => onAuditLogs(row)}>
+                                <Activity className="mr-2 h-4 w-4" /> Audit Loglar
+                            </DropdownMenuItem>
+                        )}
                     </>
                 )}
 
-                {/* PHASE 14G: Granular Actions */}
-                {actions[ACTION_KEYS.TENANTS_MANAGE_FEATURES] && (
+                {/* GROUP 4: Legal & Contract */}
+                {hasLegal && (
                     <>
-                        <DropdownMenuItem onClick={() => onModules(row)}>
-                            <Settings className="mr-2 h-4 w-4" /> Modullar
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onRestrictions(row)}>
+                            <ShieldAlert className="mr-2 h-4 w-4" /> Məhdudiyyətlər
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onResourceLimits(row)}>
-                            <Database className="mr-2 h-4 w-4" /> Resurs Limitləri
-                        </DropdownMenuItem>
-                    </>
-                )}
-
-                {actions[ACTION_KEYS.TENANTS_MANAGE_BILLING] && (
-                    <DropdownMenuItem onClick={() => onBilling(row)}>
-                        <CreditCard className="mr-2 h-4 w-4" /> Ödəniş Tarixçəsi
-                    </DropdownMenuItem>
-                )}
-
-                {actions[ACTION_KEYS.TENANTS_VIEW_AUDIT] && (
-                    <DropdownMenuItem onClick={() => onAuditLogs(row)}>
-                        <Activity className="mr-2 h-4 w-4" /> Audit Loglar
-                    </DropdownMenuItem>
-                )}
-
-                <DropdownMenuSeparator />
-
-                {actions[ACTION_KEYS.TENANTS_MANAGE_CONTRACT] && (
-                    <DropdownMenuItem onClick={() => onRestrictions(row)}>
-                        <ShieldAlert className="mr-2 h-4 w-4" /> Məhdudiyyətlər
-                    </DropdownMenuItem>
-                )}
-
-                <DropdownMenuSeparator />
-
-                {actions[ACTION_KEYS.TENANTS_MANAGE_CONTRACT] && (
-                    <>
-
                         {(isCancelled) ? (
                             <DropdownMenuItem onClick={() => onSignContract(row)} className="text-green-600" disabled={isPending}>
                                 <FileSignature className="mr-2 h-4 w-4" /> Müqavilə Bağla
@@ -176,23 +169,24 @@ const ActionCell = ({
                                 <FileX className="mr-2 h-4 w-4" /> Müqaviləni Sonlandır
                             </DropdownMenuItem>
                         )}
-
                         <DropdownMenuItem onClick={() => onSuspend(row)} disabled={isPending}>
                             <Ban className="mr-2 h-4 w-4" /> {isActive ? 'Dayandır' : 'Aktivləşdir'}
                         </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
                     </>
                 )}
 
-                {actions[ACTION_KEYS.TENANTS_DELETE] && (
-                    <DropdownMenuItem
-                        className="text-red-500 hover:text-red-600"
-                        onClick={() => onDelete(row)}
-                        disabled={isPending}
-                    >
-                        <XCircle className="mr-2 h-4 w-4" /> Sil
-                    </DropdownMenuItem>
+                {/* GROUP 5: Destructive */}
+                {hasDestructive && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => onDelete(row)}
+                            disabled={isPending}
+                        >
+                            <XCircle className="mr-2 h-4 w-4" /> Sil
+                        </DropdownMenuItem>
+                    </>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>

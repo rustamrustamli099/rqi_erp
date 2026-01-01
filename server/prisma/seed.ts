@@ -141,7 +141,41 @@ const SYSTEM_SLUGS = {
             }
         }
     },
-    BILLING: { READ: 'system.billing.read', MARKETPLACE: { READ: 'system.billing.market_place.read', MANAGE: 'system.billing.market_place.create' }, PACKAGES: { READ: 'system.billing.compact_packages.read', MANAGE: 'system.billing.compact_packages.create' }, PLANS: { READ: 'system.billing.plans.read', MANAGE: 'system.billing.plans.create' }, INVOICES: { READ: 'system.billing.invoices.read', APPROVE: 'system.billing.invoices.approve' }, LICENSES: { READ: 'system.billing.licenses.read', MANAGE: 'system.billing.licenses.change_plan' } },
+    BILLING: {
+        READ: 'system.billing.read',
+        MARKETPLACE: {
+            READ: 'system.billing.market_place.read',
+            CREATE: 'system.billing.market_place.create',
+            UPDATE: 'system.billing.market_place.update',
+            DELETE: 'system.billing.market_place.delete',
+            CHANGE_STATUS: 'system.billing.market_place.change_status',
+            EXPORT_TO_EXCEL: 'system.billing.market_place.export_to_excel'
+        },
+        PACKAGES: {
+            READ: 'system.billing.compact_packages.read',
+            CREATE: 'system.billing.compact_packages.create',
+            UPDATE: 'system.billing.compact_packages.update',
+            DELETE: 'system.billing.compact_packages.delete',
+            CHANGE_STATUS: 'system.billing.compact_packages.change_status',
+            EXPORT_TO_EXCEL: 'system.billing.compact_packages.export_to_excel'
+        },
+        PLANS: {
+            READ: 'system.billing.plans.read',
+            CREATE: 'system.billing.plans.create',
+            UPDATE: 'system.billing.plans.update',
+            DELETE: 'system.billing.plans.delete',
+            CHANGE_STATUS: 'system.billing.plans.change_status',
+            EXPORT_TO_EXCEL: 'system.billing.plans.export_to_excel'
+        },
+        INVOICES: {
+            READ: 'system.billing.invoices.read',
+            APPROVE: 'system.billing.invoices.approve'
+        },
+        LICENSES: {
+            READ: 'system.billing.licenses.read',
+            CHANGE_PLAN: 'system.billing.licenses.change_plan'
+        }
+    },
     CONSOLE: {
         READ: 'system.system_console.read',
         DASHBOARD: 'system.system_console.dashboard.read',

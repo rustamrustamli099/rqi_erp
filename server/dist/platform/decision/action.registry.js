@@ -63,5 +63,33 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
             { actionKey: 'copy_id', permissionSlug: 'system.users.curators.copy_id' },
         ],
     },
+    {
+        entityKey: 'marketplace',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.billing.market_place.read' },
+            { actionKey: 'create', permissionSlug: 'system.billing.market_place.create' },
+            { actionKey: 'update', permissionSlug: 'system.billing.market_place.update' },
+            { actionKey: 'delete', permissionSlug: 'system.billing.market_place.delete' },
+            { actionKey: 'change_status', permissionSlug: 'system.billing.market_place.change_status' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.billing.market_place.export_to_excel' },
+        ],
+    },
+    {
+        entityKey: 'invoices',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.billing.invoices.read' },
+            { actionKey: 'approve', permissionSlug: 'system.billing.invoices.approve' },
+        ],
+    },
+    {
+        entityKey: 'licenses',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.billing.licenses.read' },
+            { actionKey: 'change_plan', permissionSlug: 'system.billing.licenses.change_plan' },
+        ],
+    },
 ];
 //# sourceMappingURL=action.registry.js.map

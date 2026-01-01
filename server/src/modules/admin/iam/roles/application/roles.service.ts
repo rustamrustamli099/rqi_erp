@@ -72,9 +72,12 @@ export class RolesService {
         let permissionConnect: { permissionId: string }[] = [];
         let permissionSlugs: string[] = [];
 
-        if (dto.permissionIds && dto.permissionIds.length > 0) {
+        // Resolve Permissions if provided (Support both Ids and Slugs aliases)
+        const inputPerms = dto.permissionIds || dto.permissionSlugs || [];
+
+        if (inputPerms.length > 0) {
             // Deduplicate input
-            const uniqueSlugs = [...new Set(dto.permissionIds)];
+            const uniqueSlugs = [...new Set(inputPerms)];
             permissionSlugs = uniqueSlugs;
 
             // Fetch permissions by SLUGS to get UUIDs
@@ -331,7 +334,8 @@ export class RolesService {
         const auditDetails: any = { roleId: id };
 
         // Handle Permissions (FULL REPLACE DIFF LOGIC)
-        if (dto.permissionIds) {
+        const inputPerms = dto.permissionIds || dto.permissionSlugs;
+        if (inputPerms) {
             // 1. Current Permissions (Old State)
             const oldPermissionsMap = new Map<string, string>(); // Slug -> UUID
             role.permissions.forEach(rp => {
@@ -340,7 +344,7 @@ export class RolesService {
             const oldSlugs = Array.from(oldPermissionsMap.keys());
 
             // 2. New Permissions (New State) - From Payload
-            let newSlugsUnique = [...new Set(dto.permissionIds)]; // Dedupe
+            let newSlugsUnique = [...new Set(inputPerms)]; // Dedupe
 
             // --- AUTO-READ RULE (SAP / Oracle Standard) ---
             // If any action exists (create, update, delete, etc.), ensure 'read' is present.
@@ -407,6 +411,14 @@ export class RolesService {
             const idsToAdd = slugsToAdd.map(s => newPermissionsMap.get(s)).filter(Boolean) as string[];
 
             // 5. Atomic Execution
+            console.log("---------------- ROLE UPDATE DEBUG ----------------");
+            console.log("Input Slugs:", inputPerms);
+            console.log("DB Valid Slugs:", validNewPermissions.map(p => p.slug));
+            console.log("Invalid Scope Slugs:", invalidScopePerms.map(p => p.slug));
+            console.log("Slugs To ADD:", slugsToAdd);
+            console.log("Slugs To REMOVE:", slugsToRemove);
+            console.log("---------------------------------------------------");
+
             await this.prisma.$transaction(async (tx) => {
                 if (idsToRemove.length > 0) {
                     await tx.rolePermission.deleteMany({
