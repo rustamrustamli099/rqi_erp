@@ -20,7 +20,7 @@ The result is an ERP-grade platform that is easy to audit, resilient to drift, a
 
 ERP platforms commonly fail their security and operational goals because authorization decisions become fragmented across:
 - UI components (conditional rendering, feature gating, permission checks)
-- multiple backend “helpers” or parallel engines
+- multiple backend "helpers" or parallel engines
 - implicit permission inference (e.g., write implies read)
 - ad-hoc caching without explicit invalidation
 
@@ -79,7 +79,7 @@ RQI ERP ships as a single deployable unit but is internally structured as strict
 Modules communicate via explicit interfaces/contracts.
 
 ### 3.2 Microservice-Ready
-“Microservice-ready” means modules can be extracted without redesign because:
+"Microservice-ready" means modules can be extracted without redesign because:
 - domain logic is pure and stateless where appropriate
 - orchestration is separated from domain rules
 - infrastructure concerns are abstracted
@@ -137,7 +137,7 @@ Forbidden:
 ### 4.7 Performance SLOs (Phase 12)
 - measurement-only baselines and SLO targets
 - no code changes or optimizations
-- explicit “DO NOT OPTIMIZE” guardrails
+- explicit "DO NOT OPTIMIZE" guardrails
 
 ---
 
