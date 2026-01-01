@@ -58,12 +58,17 @@ export class DecisionController {
             }
         }
 
-        return {
+        const result = {
             authorized: true, // If user reached here, page is authorized
             pageKey,
             sections: {}, // Future: section-level visibility
             actions
         };
+
+        // DEBUG: Log response
+        console.log('[PAGE-STATE] Response for', pageKey, ':', JSON.stringify(result, null, 2));
+
+        return result;
     }
 
     /**

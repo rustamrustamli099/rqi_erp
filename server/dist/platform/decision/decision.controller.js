@@ -35,12 +35,14 @@ let DecisionController = class DecisionController {
                 actions[semanticKey] = actionSet.has(action.permissionSlug);
             }
         }
-        return {
+        const result = {
             authorized: true,
             pageKey,
             sections: {},
             actions
         };
+        console.log('[PAGE-STATE] Response for', pageKey, ':', JSON.stringify(result, null, 2));
+        return result;
     }
     mapPageKeyToEntity(pageKey) {
         const mapping = {

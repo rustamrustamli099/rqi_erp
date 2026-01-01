@@ -38,8 +38,12 @@ export function usePageState(pageKey: string, options?: UsePageStateOptions) {
     const query = useQuery({
         queryKey: ['pageState', pageKey],
         queryFn: async (): Promise<PageState> => {
+            console.log('[usePageState] Fetching page-state for:', pageKey);
             const response = await api.get(`/decision/page-state/${pageKey}`);
-            return response.data;
+            // API returns { statusCode, data: {...}, timestamp } - extract nested data
+            const pageState = response.data?.data ?? response.data;
+            console.log('[usePageState] Extracted pageState:', pageState);
+            return pageState;
         },
         staleTime: 5 * 60 * 1000, // 5 minutes (aligned with backend cache TTL)
         gcTime: 10 * 60 * 1000,
