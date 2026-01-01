@@ -134,7 +134,15 @@ export default tseslint.config(
       // ═══════════════════════════════════════════════════════════════════════
       "no-restricted-syntax": [
         "error",
-        // Ban: hasPermission(), can(), hasAny(), hasAll() calls in domain components
+        // Ban: can(), hasPermission(), hasAny(), hasAll() calls in domain components
+        {
+          "selector": "CallExpression[callee.name='can']",
+          "message": "GEMINI § 4 VIOLATION: UI components MUST NOT call can(). Use resolved actions from Decision Center."
+        },
+        {
+          "selector": "CallExpression[callee.property.name='can']",
+          "message": "GEMINI § 4 VIOLATION: UI components MUST NOT call can(). Use resolved actions from Decision Center."
+        },
         {
           "selector": "CallExpression[callee.name='hasPermission']",
           "message": "GEMINI § 4 VIOLATION: UI components MUST NOT call hasPermission(). Use resolved actions from Decision Center."

@@ -29,6 +29,15 @@ import { format } from "date-fns"
 import { useHelp } from "@/app/context/HelpContext"
 import { useEffect } from "react"
 
+/**
+ * SAP-GRADE: This component renders ONLY if user has access.
+ * Access is enforced by:
+ * 1. ProtectedRoute (route-level guard)
+ * 2. Decision Center (resolveNavigationTree)
+ * 
+ * NO UI-level permission checks needed.
+ */
+
 // --- Components ---
 
 export function CalendarDateRangePicker({
@@ -180,14 +189,8 @@ const GRAPH_DATA = Array.from({ length: 12 }).map((_, i) => ({
     orders: Math.floor(Math.random() * 200) + 50
 }))
 
-import { useAuth } from "@/domains/auth/context/AuthContext"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
-import { PermissionSlugs } from "@/app/security/permission-slugs"
-
 export default function AdminDashboard() {
     const { setPageKey } = useHelp();
-    const { can } = usePermissions();
-    const hasReadAccess = can(PermissionSlugs.PLATFORM.DASHBOARD.READ);
 
     useEffect(() => {
         setPageKey("dashboard");
@@ -198,22 +201,8 @@ export default function AdminDashboard() {
         to: addDays(new Date(2023, 0, 20), 20),
     })
 
-    if (!hasReadAccess) {
-        return (
-            <div className="space-y-6 animate-in fade-in duration-500">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/50 p-4 rounded-lg border shadow-sm backdrop-blur">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">System Admin Dashboard</h2>
-                        <p className="text-sm text-muted-foreground">Access Restricted. View-only mode active.</p>
-                    </div>
-                </div>
-                <div className="p-8 text-center border rounded-lg bg-muted/20">
-                    <p className="text-muted-foreground">You do not have permission to view performance data.</p>
-                </div>
-            </div>
-        )
-    }
-
+    // SAP-GRADE: Access is enforced by ProtectedRoute
+    // NO UI-level permission checks - render directly
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header / Filter Toolbar */}
@@ -268,7 +257,6 @@ export default function AdminDashboard() {
                         </p>
                     </CardContent>
                 </Card>
-                {/* ... more admin cards ... */}
             </div>
 
             {/* Charts Section */}
