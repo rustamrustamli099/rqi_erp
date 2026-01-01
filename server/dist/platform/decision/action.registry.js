@@ -117,6 +117,9 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
         actions: [
             { actionKey: 'read', permissionSlug: 'system.billing.licenses.read' },
             { actionKey: 'change_plan', permissionSlug: 'system.billing.licenses.change_plan' },
+            { actionKey: 'manage_seats', permissionSlug: 'system.billing.licenses.manage_seats' },
+            { actionKey: 'cancel', permissionSlug: 'system.billing.licenses.cancel' },
+            { actionKey: 'view_audit', permissionSlug: 'system.billing.licenses.view_audit' },
         ],
     },
 ];

@@ -2,41 +2,59 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
-import { Separator } from "@/shared/components/ui/separator";
-import { Check, Shield, Zap, Box, History, AlertTriangle, ArrowRight } from "lucide-react";
+import { Check, Shield, Zap, Box, History, Users, Ban } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePermissions } from "@/app/auth/hooks/usePermissions";
 import { PermissionSlugs } from "@/app/security/permission-slugs";
+import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
 
 const PLANS = [
-    { id: "p1", name: "Starter Pack", price: "299 ₼/ay", users: "10", storage: "5 GB", features: ["HR Core", "Maliyyə Standart"] },
-    { id: "p2", name: "Business Pro", price: "599 ₼/ay", users: "50", storage: "50 GB", features: ["HR Core", "Bordro", "Maliyyə", "Audit Pro"] },
+    { id: "p1", name: "Başlanğıc (Starter)", price: "299 ₼/ay", users: "10", storage: "5 GB", features: ["HR Core", "Maliyyə Standart"] },
+    { id: "p2", name: "Biznes Pro", price: "599 ₼/ay", users: "50", storage: "50 GB", features: ["HR Core", "Bordro", "Maliyyə", "Audit Pro"] },
     { id: "p3", name: "Enterprise", price: "1200 ₼/ay", users: "999+", storage: "1 TB", features: ["Bütün Modullar", "SSO", "API Gateway"] },
 ];
 
 const AUDIT_LOGS = [
-    { id: 1, date: "2024-12-15 14:30", action: "Plan Updated", details: "Upgraded to Enterprise", user: "Admin User", ip: "10.0.0.1" },
-    { id: 2, date: "2024-11-10 09:15", action: "Payment Success", details: "Invoice #INV-2024-110", user: "System", ip: "-" },
-    { id: 3, date: "2024-10-05 11:20", action: "Module Added", details: "Activated 'Audit Pro'", user: "Admin User", ip: "192.168.1.50" },
-    { id: 4, date: "2024-09-01 10:00", action: "Subscription Started", details: "Business Pro Trial", user: "Admin User", ip: "192.168.1.50" },
+    { id: 1, date: "2024-12-15 14:30", action: "Plan Yeniləndi", details: "Enterprise paketinə keçid edildi", user: "Admin User", ip: "10.0.0.1" },
+    { id: 2, date: "2024-11-10 09:15", action: "Ödəniş Uğurlu", details: "Faktura #INV-2024-110", user: "Sistem", ip: "-" },
+    { id: 3, date: "2024-10-05 11:20", action: "Modul Əlavə Edildi", details: "'Audit Pro' aktivləşdirildi", user: "Admin User", ip: "192.168.1.50" },
+    { id: 4, date: "2024-09-01 10:00", action: "Abunəlik Başladı", details: "Biznes Pro Sınaq Müddəti", user: "Admin User", ip: "192.168.1.50" },
 ];
 
 export function LicensesView() {
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+    const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
+    const [confirmCancel, setConfirmCancel] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string>("p3"); // Mock selection
+    const [seatCount, setSeatCount] = useState(5); // Additional seats
 
     // Permission Check
     const { permissions } = usePermissions();
-    const canManage = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.MANAGE);
+    const canChangePlan = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.CHANGE_PLAN);
+    const canManageSeats = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.MANAGE_SEATS);
+    const canCancel = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.CANCEL);
+    const canViewAudit = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.VIEW_AUDIT);
 
     const handleChangePlan = () => {
         setIsPlanModalOpen(false);
-        toast.success("Plan dəyişikliyi sorğusu göndərildi (Mock)");
+        toast.success("Plan dəyişikliyi sorğusu qəbul edildi");
+    };
+
+    const handleUpdateSeats = () => {
+        setIsSeatModalOpen(false);
+        toast.success(`${seatCount} əlavə istifadəçi yeri əlavə edildi`);
+    };
+
+    const handleCancelSubscription = () => {
+        setConfirmCancel(false);
+        toast.error("Abunəlik ləğv edildi");
     };
 
     return (
@@ -51,12 +69,24 @@ export function LicensesView() {
                             Abunəlik bitmə tarixi: <span className="font-medium text-foreground">10 Yanvar 2025</span> (26 gün qalıb)
                         </CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setIsAuditModalOpen(true)}>
-                            <History className="w-4 h-4 mr-2" /> Audit Tarixçəsi
-                        </Button>
-                        {canManage && (
+                    <div className="flex flex-wrap gap-2 justify-end max-w-[50%]">
+                        {canViewAudit && (
+                            <Button variant="outline" size="sm" onClick={() => setIsAuditModalOpen(true)}>
+                                <History className="w-4 h-4 mr-2" /> Audit Tarixçəsi
+                            </Button>
+                        )}
+                        {canManageSeats && (
+                            <Button variant="outline" size="sm" onClick={() => setIsSeatModalOpen(true)}>
+                                <Users className="w-4 h-4 mr-2" /> İstifadəçi Limitini Artır
+                            </Button>
+                        )}
+                        {canChangePlan && (
                             <Button size="sm" onClick={() => setIsPlanModalOpen(true)}>Planı Dəyiş</Button>
+                        )}
+                        {canCancel && (
+                            <Button variant="destructive" size="sm" onClick={() => setConfirmCancel(true)}>
+                                <Ban className="w-4 h-4 mr-2" /> Ləğv Et
+                            </Button>
                         )}
                     </div>
                 </CardHeader>
@@ -181,6 +211,39 @@ export function LicensesView() {
                 </DialogContent>
             </Dialog>
 
+            {/* Manage Seats Modal */}
+            <Dialog open={isSeatModalOpen} onOpenChange={setIsSeatModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>İstifadəçi Limitini Artır</DialogTitle>
+                        <DialogDescription>
+                            Cari plana əlavə istifadəçi yeri əlavə edin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="seats" className="text-right">
+                                Say
+                            </Label>
+                            <Input
+                                id="seats"
+                                type="number"
+                                value={seatCount}
+                                onChange={(e) => setSeatCount(parseInt(e.target.value))}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <p className="text-sm text-muted-foreground ml-auto w-3/4">
+                            Hər əlavə istifadəçi yeri üçün: <span className="font-bold">10 ₼/ay</span>
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsSeatModalOpen(false)}>Ləğv et</Button>
+                        <Button onClick={handleUpdateSeats}>Yenilə</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Audit History Modal */}
             <Dialog open={isAuditModalOpen} onOpenChange={setIsAuditModalOpen}>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -224,6 +287,16 @@ export function LicensesView() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Cancel Confirmation */}
+            <ConfirmationDialog
+                open={confirmCancel}
+                onOpenChange={setConfirmCancel}
+                title="Abunəliyi Ləğv Et"
+                description="Abunəliyinizi ləğv etmək istədiyinizə əminsiniz? Bu əməliyyat bütün xidmətləri dayandıracaq."
+                variant="destructive"
+                onConfirm={handleCancelSubscription}
+            />
         </div>
     );
 }

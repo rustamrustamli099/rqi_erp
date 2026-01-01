@@ -35,7 +35,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
             perms: ['read', 'download', 'resend', 'void', 'pay', 'export_to_excel']
         },
         licenses: {
-            perms: ['read', 'change_plan']
+            perms: ['read', 'change_plan', 'manage_seats', 'cancel', 'view_audit']
         },
     },
     approvals: {

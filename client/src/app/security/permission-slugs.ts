@@ -168,7 +168,10 @@ const SYSTEM_SLUGS = {
         },
         LICENSES: {
             READ: 'system.billing.licenses.read',
-            MANAGE: 'system.billing.licenses.change_plan'
+            CHANGE_PLAN: 'system.billing.licenses.change_plan',
+            MANAGE_SEATS: 'system.billing.licenses.manage_seats',
+            CANCEL: 'system.billing.licenses.cancel',
+            VIEW_AUDIT: 'system.billing.licenses.view_audit'
         }
     },
     CONSOLE: {
