@@ -50,16 +50,60 @@ const PLANS_MOCK = [
     { id: "p3", name: "Enterprise", price: 199.99, currency: "AZN", interval: "yearly", userLimit: 999, storage: 1000, active: true },
 ];
 
+function PlanDetailsDialog({ open, onOpenChange, plan }: { open: boolean, onOpenChange: (open: boolean) => void, plan: any }) {
+    if (!plan) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        {plan.name}
+                        <Badge variant={plan.active ? 'default' : 'secondary'} className={plan.active ? 'bg-green-600' : ''}>
+                            {plan.active ? 'Aktiv' : 'Deaktiv'}
+                        </Badge>
+                    </DialogTitle>
+                    <DialogDescription>Abunəlik planı haqqında ətraflı məlumat</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="flex justify-between items-center bg-muted/40 p-4 rounded-lg">
+                        <span className="text-muted-foreground font-medium">Qiymət</span>
+                        <div className="text-xl font-bold">{plan.price} {plan.currency} <span className="text-sm font-normal text-muted-foreground">/{plan.interval}</span></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1 p-3 border rounded-md">
+                            <span className="text-xs font-bold text-muted-foreground uppercase">İstifadəçi Limiti</span>
+                            <div className="font-medium text-lg">{plan.userLimit}</div>
+                        </div>
+                        <div className="space-y-1 p-3 border rounded-md">
+                            <span className="text-xs font-bold text-muted-foreground uppercase">Yaddaş Həcmi</span>
+                            <div className="font-medium text-lg">{plan.storage} GB</div>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={() => onOpenChange(false)} className="w-full">Bağla</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function SubscriptionsView() {
     const [plans, setPlans] = useState<any[]>(PLANS_MOCK);
     const [isSubModalOpen, setIsSubModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<any | null>(null);
+    const [viewingPlan, setViewingPlan] = useState<any | null>(null);
     const [formData, setFormData] = useState<any>({});
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, description: string, variant: "default" | "destructive", action: () => void }>({ isOpen: false, title: "", description: "", variant: "default", action: () => { } });
 
     // Permission State
     const { permissions } = usePermissions();
-    const canManage = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.MANAGE);
+    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.CREATE);
+    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.UPDATE);
+    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.DELETE);
+    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.CHANGE_STATUS);
+    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.EXPORT);
 
     const handleSavePlan = (data: any) => {
         if (editingPlan) {
@@ -92,6 +136,28 @@ function SubscriptionsView() {
         });
     };
 
+    const handleToggleStatus = (id: string, currentStatus: boolean = true) => {
+        const action = currentStatus ? "deaktiv etmək" : "aktivləşdirmək";
+        setConfirmState({
+            isOpen: true,
+            title: "Statusu Dəyiş",
+            description: `Bu planı ${action} istədiyinizə əminsiniz?`,
+            variant: currentStatus ? "destructive" : "default",
+            action: () => {
+                toast.success(`Status dəyişdirildi`);
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const handleExport = () => {
+        toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+            loading: "Planlar ixrac edilir...",
+            success: "Planlar ixrac edildi",
+            error: "Xəta baş verdi"
+        });
+    };
+
     const openEdit = (plan: any) => {
         setEditingPlan(plan);
         setFormData(plan);
@@ -115,9 +181,16 @@ function SubscriptionsView() {
                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full" /> Aktiv ({plans.filter(p => p.active).length})</div>
                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-400 rounded-full" /> Deaktiv ({plans.filter(p => !p.active).length})</div>
                 </div>
-                {canManage && (
-                    <Button size="sm" onClick={openCreate}><Plus className="mr-2 h-3.5 w-3.5" /> Plan Yarat</Button>
-                )}
+                <div className="flex gap-2">
+                    {canExport && (
+                        <Button variant="outline" className="h-10" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" /> Export
+                        </Button>
+                    )}
+                    {canCreate && (
+                        <Button className="h-10" onClick={openCreate}><Plus className="mr-2 h-4 w-4" /> Plan Yarat</Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid gap-4">
@@ -146,24 +219,41 @@ function SubscriptionsView() {
                                 <div className="text-xl font-bold tabular-nums">{plan.price} {plan.currency === 'AZN' ? '₼' : plan.currency}</div>
                                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{plan.interval === 'monthly' ? 'Aylıq' : 'İllik'}</div>
                             </div>
-                            {canManage && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setViewingPlan(plan)}>
+                                        <Eye className="mr-2 h-4 w-4" /> Detallar
+                                    </DropdownMenuItem>
+
+                                    {(canUpdate || canChangeStatus || canDelete) && <DropdownMenuSeparator />}
+
+                                    {canUpdate && (
                                         <DropdownMenuItem onClick={() => openEdit(plan)}>
                                             <Edit className="mr-2 h-4 w-4" /> Redaktə Et
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(plan.id)}>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Sil
+                                    )}
+                                    {canChangeStatus && (
+                                        <DropdownMenuItem onClick={() => handleToggleStatus(plan.id, plan.active)}>
+                                            {plan.active ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                            {plan.active ? 'Deaktiv Et' : 'Aktivləşdir'}
                                         </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
+                                    )}
+                                    {canDelete && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(plan.id)}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Sil
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </Card>
                 ))}
@@ -234,6 +324,12 @@ function SubscriptionsView() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <PlanDetailsDialog
+                open={!!viewingPlan}
+                onOpenChange={(val) => !val && setViewingPlan(null)}
+                plan={viewingPlan}
+            />
             <AlertDialog open={confirmState.isOpen} onOpenChange={(open) => setConfirmState(prev => ({ ...prev, isOpen: open }))}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -590,12 +686,12 @@ function MarketplaceView() {
                 </div>
                 <div className="flex gap-2">
                     {canExport && (
-                        <Button variant="outline" onClick={handleExport}>
+                        <Button variant="outline" className="h-10" onClick={handleExport}>
                             <Download className="mr-2 h-4 w-4" /> Export to Excel
                         </Button>
                     )}
                     {canCreate && (
-                        <Button onClick={openCreateModal}><Plus className="mr-2 h-4 w-4" /> Yeni Məhsul Yarat</Button>
+                        <Button className="h-10" onClick={openCreateModal}><Plus className="mr-2 h-4 w-4" /> Yeni Məhsul Yarat</Button>
                     )}
                 </div>
             </div>
@@ -1109,12 +1205,12 @@ function PackagesView() {
                 </div>
                 <div className="flex gap-2">
                     {canExport && (
-                        <Button variant="outline" onClick={handleExport}>
+                        <Button variant="outline" className="h-10" onClick={handleExport}>
                             <Download className="mr-2 h-4 w-4" /> Export to Excel
                         </Button>
                     )}
                     {canCreate && (
-                        <Button onClick={handleCreateClick}><Plus className="mr-2 h-4 w-4" /> Yeni Paket</Button>
+                        <Button className="h-10" onClick={handleCreateClick}><Plus className="mr-2 h-4 w-4" /> Yeni Paket</Button>
                     )}
                 </div>
             </div>

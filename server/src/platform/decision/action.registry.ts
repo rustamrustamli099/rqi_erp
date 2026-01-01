@@ -126,6 +126,18 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
         ],
     },
     {
+        entityKey: 'plans',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.billing.plans.read' },
+            { actionKey: 'create', permissionSlug: 'system.billing.plans.create' },
+            { actionKey: 'update', permissionSlug: 'system.billing.plans.update' },
+            { actionKey: 'delete', permissionSlug: 'system.billing.plans.delete' },
+            { actionKey: 'change_status', permissionSlug: 'system.billing.plans.change_status' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.billing.plans.export_to_excel' },
+        ],
+    },
+    {
         entityKey: 'invoices',
         scope: 'system',
         actions: [

@@ -152,7 +152,11 @@ const SYSTEM_SLUGS = {
         },
         PLANS: {
             READ: 'system.billing.plans.read',
-            MANAGE: 'system.billing.plans.create'
+            CREATE: 'system.billing.plans.create',
+            UPDATE: 'system.billing.plans.update',
+            DELETE: 'system.billing.plans.delete',
+            CHANGE_STATUS: 'system.billing.plans.change_status',
+            EXPORT: 'system.billing.plans.export_to_excel'
         },
         INVOICES: {
             READ: 'system.billing.invoices.read',
