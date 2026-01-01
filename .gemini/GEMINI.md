@@ -208,3 +208,26 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
 - Caching logic that alters authorization outcome is FORBIDDEN.
 - Stale cache must fail-safe (deny access, not grant).
 
+---
+
+### PHASE 10.2 — Effective Permissions Cache (LOCKED)
+
+**STATUS:** ✅ IMPLEMENTED
+
+**CONSTRAINTS (IMMUTABLE):**
+
+1. Cache ONLY wraps `EffectivePermissionsService.computeEffectivePermissions()` output.
+2. NO authorization behavior change is allowed.
+3. Cache keys are scope-explicit and deterministic:
+   ```
+   effPerm:user:{userId}:scope:{scopeType}:{scopeId|SYSTEM}
+   ```
+4. `DecisionCenterService` remains cache-UNAWARE.
+5. TTL: 5 minutes (300 seconds).
+6. Invalidation Methods:
+   - `invalidateUser(userId)` — Clears all scopes for user
+   - `invalidateScope(scopeType, scopeId)` — Clears all users in scope
+
+**ANY DEVIATION INVALIDATES THE PHASE.**
+
+

@@ -12,7 +12,7 @@ var DecisionOrchestrator_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DecisionOrchestrator = void 0;
 const common_1 = require("@nestjs/common");
-const effective_permissions_service_1 = require("../auth/effective-permissions.service");
+const cached_effective_permissions_service_1 = require("../auth/cached-effective-permissions.service");
 const decision_center_service_1 = require("./decision-center.service");
 const menu_definition_1 = require("../menu/menu.definition");
 let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
@@ -55,7 +55,7 @@ let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
 exports.DecisionOrchestrator = DecisionOrchestrator;
 exports.DecisionOrchestrator = DecisionOrchestrator = DecisionOrchestrator_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [effective_permissions_service_1.EffectivePermissionsService,
+    __metadata("design:paramtypes", [cached_effective_permissions_service_1.CachedEffectivePermissionsService,
         decision_center_service_1.DecisionCenterService])
 ], DecisionOrchestrator);
 //# sourceMappingURL=decision.orchestrator.js.map

@@ -20,8 +20,10 @@ const mfa_service_1 = require("./mfa.service");
 const permission_service_1 = require("./permission.service");
 const refresh_token_service_1 = require("./refresh-token.service");
 const effective_permissions_service_1 = require("./effective-permissions.service");
+const cached_effective_permissions_service_1 = require("./cached-effective-permissions.service");
 const prisma_service_1 = require("../../prisma.service");
 const menu_module_1 = require("../menu/menu.module");
+const cache_module_1 = require("../cache/cache.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -32,6 +34,7 @@ exports.AuthModule = AuthModule = __decorate([
             (0, common_1.forwardRef)(() => identity_module_1.IdentityModule),
             passport_1.PassportModule,
             (0, common_1.forwardRef)(() => menu_module_1.MenuModule),
+            cache_module_1.CacheModule,
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 useFactory: async (configService) => ({
@@ -41,9 +44,9 @@ exports.AuthModule = AuthModule = __decorate([
                 inject: [config_1.ConfigService],
             }),
         ],
-        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, mfa_service_1.MfaService, prisma_service_1.PrismaService, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService],
+        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, mfa_service_1.MfaService, prisma_service_1.PrismaService, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService, cached_effective_permissions_service_1.CachedEffectivePermissionsService],
         controllers: [auth_controller_1.AuthController],
-        exports: [auth_service_1.AuthService, jwt_1.JwtModule, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService],
+        exports: [auth_service_1.AuthService, jwt_1.JwtModule, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService, cached_effective_permissions_service_1.CachedEffectivePermissionsService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

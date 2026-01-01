@@ -12,10 +12,12 @@ import { PermissionsService } from './permission.service';
 import { PermissionCacheService } from './permission-cache.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { EffectivePermissionsService } from './effective-permissions.service';
+import { CachedEffectivePermissionsService } from './cached-effective-permissions.service';
 
 import { PrismaService } from '../../prisma.service';
 import { MenuService } from '../menu/menu.service';
 import { MenuModule } from '../menu/menu.module';
+import { CacheModule } from '../cache/cache.module';
 
 @Global()
 @Module({
@@ -23,6 +25,7 @@ import { MenuModule } from '../menu/menu.module';
     forwardRef(() => IdentityModule),
     PassportModule,
     forwardRef(() => MenuModule), // Needed for PermissionsService (circular dependency risk? MenuService needs what? MenuDefinition is static)
+    CacheModule, // PHASE 10.2: For CachedEffectivePermissionsService
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -32,8 +35,8 @@ import { MenuModule } from '../menu/menu.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, RefreshTokenService, EffectivePermissionsService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, RefreshTokenService, EffectivePermissionsService, CachedEffectivePermissionsService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, PermissionsService, RefreshTokenService, EffectivePermissionsService],
+  exports: [AuthService, JwtModule, PermissionsService, RefreshTokenService, EffectivePermissionsService, CachedEffectivePermissionsService],
 })
 export class AuthModule { }

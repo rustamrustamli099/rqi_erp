@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EffectivePermissionsService } from '../auth/effective-permissions.service';
+import { CachedEffectivePermissionsService } from '../auth/cached-effective-permissions.service';
 import { DecisionCenterService } from './decision-center.service';
 import { ADMIN_MENU_TREE, MenuItem } from '../menu/menu.definition';
 
@@ -10,13 +10,15 @@ import { ADMIN_MENU_TREE, MenuItem } from '../menu/menu.definition';
  * - Application Service Layer
  * - Binds Context + specialized Domain Services
  * - "The Glue"
+ * 
+ * PHASE 10.2: Now uses CachedEffectivePermissionsService for caching.
  */
 @Injectable()
 export class DecisionOrchestrator {
     private readonly logger = new Logger(DecisionOrchestrator.name);
 
     constructor(
-        private readonly effectivePermissionsService: EffectivePermissionsService,
+        private readonly effectivePermissionsService: CachedEffectivePermissionsService,
         private readonly decisionCenter: DecisionCenterService
     ) { }
 
