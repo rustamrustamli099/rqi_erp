@@ -69,9 +69,12 @@ const RoleTable = ({
     // Filter Connections
     query, setFilter, reset,
     // Export Support
-    onExportClick
+    // Export Support
+    onExportClick,
+    searchParams // SAP-GRADE: Pass searchParams for row highlighting
 }: any) => {
     // Local state for "Apply" logic
+
     const [draftFilters, setDraftFilters] = useState(query.filters || {});
 
     // Sync draft with URL when query changes
@@ -210,7 +213,11 @@ const RoleTable = ({
                                     <TableRow
                                         key={row.id}
                                         data-state={row.getIsSelected() && "selected"}
-                                        className="cursor-pointer"
+                                        className={cn(
+                                            "cursor-pointer transition-colors",
+                                            // SAP-GRADE: Visual indicator for selected row
+                                            row.original.id === searchParams.get('roleId') && "bg-muted/60 border-l-4 border-l-primary"
+                                        )}
                                         onClick={() => onRowClick(row.original)}
                                     >
                                         {row.getVisibleCells().map((cell) => (
@@ -253,6 +260,9 @@ interface RolesPageProps {
 export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps) {
     useTranslation()
     const [searchParams, setSearchParams] = useSearchParams();
+
+    // SAP-GRADE: URL Sync for Role Selection
+    const selectedRoleId = searchParams.get('roleId');
 
     // SAP-GRADE: Consume precomputed actions from decision center (DIRECTLY FROM TREE)
     // 1. Identify CURRENT node (SubTab or Tab)
@@ -412,11 +422,29 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
             setOriginalPermissions(perms);
 
             setSelectedRole(roleLite.name);
+
+            // SAP-GRADE: Sync URL
+            setSearchParams(prev => {
+                const newParams = new URLSearchParams(prev);
+                newParams.set('roleId', roleLite.id);
+                return newParams;
+            }, { replace: true });
+
         } catch (e) {
             toast.error("Rol detalları yüklənə bilmədi");
             console.error(e);
         }
     }
+
+    // SAP-GRADE: Auto-select role from URL on mount or when roles data changes
+    useEffect(() => {
+        if (selectedRoleId && roles.length > 0 && !currentRole) {
+            const roleToSelect = roles.find((r: Role) => r.id === selectedRoleId);
+            if (roleToSelect) {
+                handleRoleSelect(roleToSelect);
+            }
+        }
+    }, [selectedRoleId, roles, currentRole]);
 
     // Column definitions - extracted to separate file
     const columns = useMemo(() => createRoleColumns({
@@ -687,6 +715,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                     URL.revokeObjectURL(url);
                     toast.success('Rollar CSV olaraq ixrac edildi');
                 } : undefined}
+                searchParams={searchParams}
             />
         ),
         matrix_view: <PermissionMatrix roles={roles} />,
@@ -972,6 +1001,8 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 <p className="text-muted-foreground">Rolun statusu "Təsdiq Gözləyir" olacaq.</p>
             </Modal>
 
+
         </div >
     )
 }
+
