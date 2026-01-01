@@ -114,6 +114,15 @@ exports.AppModule = AppModule = __decorate([
                             req.headers = { ...req.headers };
                             delete req.headers['authorization'];
                             delete req.headers['cookie'];
+                            if (req.user) {
+                                try {
+                                    JSON.stringify(req.user);
+                                }
+                                catch (e) {
+                                    console.error('[FATAL-PINO] Circular Reference detected in req.user! Logging Sanitized User ID only.');
+                                    req.user = { id: req.user.id, note: 'SANITIZED for Circular Ref' };
+                                }
+                            }
                             return req;
                         },
                     },

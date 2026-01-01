@@ -508,14 +508,14 @@ let RolesService = RolesService_1 = class RolesService {
         return false;
     }
     async getAffectedUsers(roleId) {
-        const directAssignments = await this.prisma.userRoleAssignment.findMany({
+        const directAssignments = await this.prisma.userRole.findMany({
             where: { roleId: roleId },
             select: { userId: true }
         });
         const userIds = new Set(directAssignments.map((a) => a.userId));
         const parentRoles = await this.getParentRoles(roleId);
         for (const parentRoleId of parentRoles) {
-            const parentAssignments = await this.prisma.userRoleAssignment.findMany({
+            const parentAssignments = await this.prisma.userRole.findMany({
                 where: { roleId: parentRoleId },
                 select: { userId: true }
             });

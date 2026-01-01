@@ -14,4 +14,5 @@ export declare class AuditService {
         userAgent?: string;
         details?: any;
     }): Promise<void>;
+    private tryStringify;
 }

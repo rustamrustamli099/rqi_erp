@@ -14,6 +14,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 ? exception.getStatus()
                 : HttpStatus.INTERNAL_SERVER_ERROR;
 
+        if (httpStatus === HttpStatus.INTERNAL_SERVER_ERROR) {
+            console.error('[FATAL-FILTER] Uncaught Exception:', exception);
+            if (exception instanceof Error) {
+                console.error(exception.stack);
+            }
+        }
+
         const responseBody = {
             statusCode: httpStatus,
             timestamp: new Date().toISOString(),

@@ -684,7 +684,8 @@ export class RolesService {
      */
     private async getAffectedUsers(roleId: string): Promise<string[]> {
         // 1. Direct assignments via UserRoleAssignment
-        const directAssignments = await (this.prisma as any).userRoleAssignment.findMany({
+        // 1. Direct assignments via UserRole (Schema: UserRole, property: userRole)
+        const directAssignments = await this.prisma.userRole.findMany({
             where: { roleId: roleId },
             select: { userId: true }
         });
@@ -695,7 +696,7 @@ export class RolesService {
         const parentRoles = await this.getParentRoles(roleId);
 
         for (const parentRoleId of parentRoles) {
-            const parentAssignments = await (this.prisma as any).userRoleAssignment.findMany({
+            const parentAssignments = await this.prisma.userRole.findMany({
                 where: { roleId: parentRoleId },
                 select: { userId: true }
             });

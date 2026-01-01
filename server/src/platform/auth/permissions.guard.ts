@@ -38,6 +38,8 @@ export class PermissionsGuard implements CanActivate {
         };
 
         try {
+            console.log('[DEBUG-GUARD] PermissionsGuard: Checking...', { userId: auditContext.userId, url: request.url });
+
             // [STRICT] Permissions via EffectivePermissionsService
             const userPermissionSlugs = await this.effectivePermissionsService.computeEffectivePermissions({
                 userId: auditContext.userId,
@@ -49,16 +51,20 @@ export class PermissionsGuard implements CanActivate {
             const validation = PermissionDryRunEngine.evaluate(userPermissionSlugs!, requiredPermissions);
 
             if (!validation.allowed) {
+                console.log('[DEBUG-GUARD] PermissionsGuard: DENIED');
                 await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED', details: { ...auditContext.details, reason: 'Insufficient Permissions' } });
                 throw new ForbiddenException('Insufficient Permissions');
             }
 
             // Log Success
+            console.log('[DEBUG-GUARD] PermissionsGuard: GRANTED -> Logging Action...');
             await this.auditService.logAction({ ...auditContext, action: 'ACCESS_GRANTED' });
+            console.log('[DEBUG-GUARD] PermissionsGuard: Action Logged Successfully');
 
             return true;
 
         } catch (error) {
+            console.error('[FATAL-GUARD] PermissionsGuard CRASH:', error);
             if (error instanceof ForbiddenException) throw error;
             // Log unexpected errors
             await this.auditService.logAction({ ...auditContext, action: 'ACCESS_ERROR', details: { error: error.message } });

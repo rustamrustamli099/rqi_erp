@@ -98,6 +98,16 @@ import { DecisionModule } from './platform/decision/decision.module';
             req.headers = { ...req.headers };
             delete req.headers['authorization']; // REDACT
             delete req.headers['cookie']; // REDACT
+
+            // [DEBUG] Check for Circular References in User Object
+            if ((req as any).user) {
+              try {
+                JSON.stringify((req as any).user);
+              } catch (e) {
+                console.error('[FATAL-PINO] Circular Reference detected in req.user! Logging Sanitized User ID only.');
+                (req as any).user = { id: (req as any).user.id, note: 'SANITIZED for Circular Ref' };
+              }
+            }
             return req;
           },
         },

@@ -43,12 +43,22 @@ export class AuditService {
                     branchId: data.branchId || null,
                     ipAddress: data.ipAddress || data.ip || null, // Map ip/ipAddress to schema column
                     userAgent: data.userAgent || null,
-                    details: data.details ? JSON.stringify(data.details) : undefined,
+                    details: this.tryStringify(data.details),
                 },
             });
         } catch (error) {
             console.error('[AUDIT] Failed to persist log:', error);
             // Non-blocking: Don't throw
+        }
+    }
+
+    private tryStringify(obj: any): string | undefined {
+        if (!obj) return undefined;
+        try {
+            return JSON.stringify(obj);
+        } catch (e) {
+            console.error('[FATAL-AUDIT] JSON.stringify FAILED (Circular Reference?):', e.message);
+            return '{"error": "Circular Reference Detected"}';
         }
     }
 }

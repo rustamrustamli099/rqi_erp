@@ -47,6 +47,7 @@ let PermissionsGuard = class PermissionsGuard {
             details: { required: requiredPermissions }
         };
         try {
+            console.log('[DEBUG-GUARD] PermissionsGuard: Checking...', { userId: auditContext.userId, url: request.url });
             const userPermissionSlugs = await this.effectivePermissionsService.computeEffectivePermissions({
                 userId: auditContext.userId,
                 scopeType: auditContext.scopeType,
@@ -54,13 +55,17 @@ let PermissionsGuard = class PermissionsGuard {
             });
             const validation = dry_run_engine_1.PermissionDryRunEngine.evaluate(userPermissionSlugs, requiredPermissions);
             if (!validation.allowed) {
+                console.log('[DEBUG-GUARD] PermissionsGuard: DENIED');
                 await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED', details: { ...auditContext.details, reason: 'Insufficient Permissions' } });
                 throw new common_1.ForbiddenException('Insufficient Permissions');
             }
+            console.log('[DEBUG-GUARD] PermissionsGuard: GRANTED -> Logging Action...');
             await this.auditService.logAction({ ...auditContext, action: 'ACCESS_GRANTED' });
+            console.log('[DEBUG-GUARD] PermissionsGuard: Action Logged Successfully');
             return true;
         }
         catch (error) {
+            console.error('[FATAL-GUARD] PermissionsGuard CRASH:', error);
             if (error instanceof common_1.ForbiddenException)
                 throw error;
             await this.auditService.logAction({ ...auditContext, action: 'ACCESS_ERROR', details: { error: error.message } });

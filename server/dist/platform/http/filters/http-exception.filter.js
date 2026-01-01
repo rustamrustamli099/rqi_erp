@@ -23,6 +23,12 @@ let GlobalExceptionFilter = class GlobalExceptionFilter {
         const httpStatus = exception instanceof common_1.HttpException
             ? exception.getStatus()
             : common_1.HttpStatus.INTERNAL_SERVER_ERROR;
+        if (httpStatus === common_1.HttpStatus.INTERNAL_SERVER_ERROR) {
+            console.error('[FATAL-FILTER] Uncaught Exception:', exception);
+            if (exception instanceof Error) {
+                console.error(exception.stack);
+            }
+        }
         const responseBody = {
             statusCode: httpStatus,
             timestamp: new Date().toISOString(),
