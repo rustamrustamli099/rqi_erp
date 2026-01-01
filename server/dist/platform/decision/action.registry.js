@@ -104,7 +104,11 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
         scope: 'system',
         actions: [
             { actionKey: 'read', permissionSlug: 'system.billing.invoices.read' },
-            { actionKey: 'approve', permissionSlug: 'system.billing.invoices.approve' },
+            { actionKey: 'download', permissionSlug: 'system.billing.invoices.download' },
+            { actionKey: 'resend', permissionSlug: 'system.billing.invoices.resend' },
+            { actionKey: 'void', permissionSlug: 'system.billing.invoices.void' },
+            { actionKey: 'pay', permissionSlug: 'system.billing.invoices.pay' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.billing.invoices.export_to_excel' },
         ],
     },
     {

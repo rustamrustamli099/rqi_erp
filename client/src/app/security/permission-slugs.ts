@@ -160,7 +160,11 @@ const SYSTEM_SLUGS = {
         },
         INVOICES: {
             READ: 'system.billing.invoices.read',
-            APPROVE: 'system.billing.invoices.approve'
+            DOWNLOAD: 'system.billing.invoices.download',
+            RESEND: 'system.billing.invoices.resend',
+            VOID: 'system.billing.invoices.void',
+            PAY: 'system.billing.invoices.pay',
+            EXPORT_TO_EXCEL: 'system.billing.invoices.export_to_excel'
         },
         LICENSES: {
             READ: 'system.billing.licenses.read',

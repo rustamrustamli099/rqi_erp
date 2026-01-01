@@ -181,10 +181,10 @@ function SubscriptionsView() {
                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full" /> Aktiv ({plans.filter(p => p.active).length})</div>
                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-400 rounded-full" /> Deaktiv ({plans.filter(p => !p.active).length})</div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     {canExport && (
                         <Button variant="outline" className="h-10" onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" /> Export
+                            <Download className="mr-2 h-4 w-4" /> Excel-ə İxrac
                         </Button>
                     )}
                     {canCreate && (
@@ -684,10 +684,10 @@ function MarketplaceView() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     {canExport && (
                         <Button variant="outline" className="h-10" onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" /> Export to Excel
+                            <Download className="mr-2 h-4 w-4" /> Excel-ə İxrac
                         </Button>
                     )}
                     {canCreate && (
@@ -1203,10 +1203,10 @@ function PackagesView() {
                     <h3 className="text-lg font-medium">Kompakt Paketlər</h3>
                     <p className="text-sm text-muted-foreground">Şirkətlər üçün hazır konfiqurasiya olunmuş planlar.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     {canExport && (
                         <Button variant="outline" className="h-10" onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" /> Export to Excel
+                            <Download className="mr-2 h-4 w-4" /> Excel-ə İxrac
                         </Button>
                     )}
                     {canCreate && (

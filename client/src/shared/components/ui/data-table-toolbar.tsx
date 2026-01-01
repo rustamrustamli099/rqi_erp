@@ -47,7 +47,7 @@ export function DataTableToolbar<TData>({
     onExportClick,
 }: DataTableToolbarProps<TData>) {
     const isFiltered = table.getState().columnFilters.length > 0
-    const placeholder = searchPlaceholder || filterPlaceholder || "Filter...";
+    const placeholder = searchPlaceholder || filterPlaceholder || "Axtar...";
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const value = event.target.value;
@@ -85,7 +85,7 @@ export function DataTableToolbar<TData>({
                         onClick={() => table.resetColumnFilters()}
                         className="h-8 px-2 lg:px-3"
                     >
-                        Reset
+                        Sıfırla
                         <X className="ml-2 h-4 w-4" />
                     </Button>
                 )}

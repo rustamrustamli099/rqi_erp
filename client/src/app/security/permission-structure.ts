@@ -32,7 +32,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
             perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status']
         },
         invoices: {
-            perms: ['read', 'approve']
+            perms: ['read', 'download', 'resend', 'void', 'pay', 'export_to_excel']
         },
         licenses: {
             perms: ['read', 'change_plan']

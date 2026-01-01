@@ -37,6 +37,7 @@ interface DataTableProps<TData, TValue> {
     addLabel?: string
     onRowSelectionChange?: (value: any) => void
     rowSelection?: any
+    onExportClick?: () => void
 }
 
 export function DataTable<TData, TValue>({
@@ -50,7 +51,8 @@ export function DataTable<TData, TValue>({
     onAddClick,
     addLabel,
     onRowSelectionChange,
-    rowSelection: rowSelectionProp
+    rowSelection: rowSelectionProp,
+    onExportClick
 }: DataTableProps<TData, TValue>) {
     const [internalRowSelection, setInternalRowSelection] = React.useState({})
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -90,6 +92,7 @@ export function DataTable<TData, TValue>({
                 filterPlaceholder={filterPlaceholder}
                 onAddClick={onAddClick}
                 addLabel={addLabel}
+                onExportClick={onExportClick}
             >
                 {children}
                 {toolbarContent && toolbarContent(table)}
