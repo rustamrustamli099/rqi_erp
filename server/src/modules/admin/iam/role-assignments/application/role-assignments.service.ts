@@ -1,13 +1,27 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../../prisma.service';
 import { AssignRoleDto } from '../api/dto/assign-role.dto';
 import { AuditService } from '../../../../../system/audit/audit.service';
+import { CacheInvalidationService } from '../../../../../platform/cache/cache-invalidation.service';
+
+/**
+ * ROLE ASSIGNMENTS SERVICE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * PHASE 10.4: Cache invalidation hooks added.
+ * 
+ * On assign/revoke: invalidateUser(userId) is called to clear ALL caches.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 
 @Injectable()
 export class RoleAssignmentsService {
+    private readonly logger = new Logger(RoleAssignmentsService.name);
+
     constructor(
         private prisma: PrismaService,
-        private auditService: AuditService
+        private auditService: AuditService,
+        private cacheInvalidation: CacheInvalidationService
     ) { }
 
     async assign(dto: AssignRoleDto, assignedBy: string, context: { scopeType: string, scopeId: string | null }) {
@@ -16,23 +30,11 @@ export class RoleAssignmentsService {
         if (!role) throw new NotFoundException('Role not found');
 
         // 2. Strict Scope Validation (PFCG Rule)
-        // Check if the current context ALLOWS assigning THIS role.
-
         if (context.scopeType === 'TENANT') {
-            // Tenant Context: Can assign Roles that are:
-            // a) Scoped to THIS Tenant
-            // b) Scoped to SYSTEM (Global Roles used in Tenant)
-
             if (role.scope === 'TENANT' && role.tenantId !== context.scopeId) {
                 throw new ForbiddenException('Security Violation: Cannot assign a role belonging to another tenant.');
             }
-            // System roles are allowed.
         } else if (context.scopeType === 'SYSTEM') {
-            // System Context: Can assign SYSTEM roles only?
-            // If I am System Admin, I assign roles for System Management.
-            // If I want to assign a Tenant Role to a User, I should ideally be in Tenant Context?
-            // OR I can do it if I specify the target tenant. But our Context-Driven model says "Switch to Tenant to Manage Tenant".
-
             if (role.scope === 'TENANT') {
                 throw new BadRequestException('Context Mismatch: Switch to the specific Tenant context to assign Tenant Roles.');
             }
@@ -82,6 +84,12 @@ export class RoleAssignmentsService {
             tenantId: context.scopeId || undefined
         });
 
+        // ═══════════════════════════════════════════════════════════════════
+        // PHASE 10.4: CACHE INVALIDATION (SYNCHRONOUS, BEFORE RESPONSE)
+        // ═══════════════════════════════════════════════════════════════════
+        await this.cacheInvalidation.invalidateUser(dto.userId);
+        this.logger.log(`Cache invalidated for user ${dto.userId} after role assignment`);
+
         return result;
     }
 
@@ -120,13 +128,16 @@ export class RoleAssignmentsService {
             tenantId: context.scopeId || undefined
         });
 
+        // ═══════════════════════════════════════════════════════════════════
+        // PHASE 10.4: CACHE INVALIDATION (SYNCHRONOUS, BEFORE RESPONSE)
+        // ═══════════════════════════════════════════════════════════════════
+        await this.cacheInvalidation.invalidateUser(userId);
+        this.logger.log(`Cache invalidated for user ${userId} after role revocation`);
+
         return { success: true };
     }
 
     async listByUser(targetUserId: string, context: { scopeType: string, scopeId: string | null }) {
-        // List all roles assigned to this user IN THIS SCOPE.
-        // We do *not* show roles from other scopes (e.g. System roles if in Tenant context, UNLESS they are assigned IN Tenant context)
-
         return (this.prisma as any).userRoleAssignment.findMany({
             where: {
                 userId: targetUserId,
@@ -134,8 +145,7 @@ export class RoleAssignmentsService {
                 scopeId: context.scopeId
             },
             include: {
-                role: true // Assuming relation exists. If not, we fetch manually?
-                // Let's assume relation exists for now based on typical Prisma usage
+                role: true
             }
         });
     }

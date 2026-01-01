@@ -16,4 +16,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./cache.service"), exports);
 __exportStar(require("./cache.module"), exports);
+__exportStar(require("./decision-cache.service"), exports);
+__exportStar(require("./cache-invalidation.service"), exports);
 //# sourceMappingURL=index.js.map

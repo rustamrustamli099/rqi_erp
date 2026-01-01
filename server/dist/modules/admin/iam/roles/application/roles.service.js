@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var RolesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesService = void 0;
 const common_1 = require("@nestjs/common");
@@ -15,12 +16,16 @@ const prisma_service_1 = require("../../../../../prisma.service");
 const client_1 = require("@prisma/client");
 const audit_service_1 = require("../../../../../system/audit/audit.service");
 const query_parser_1 = require("../../../../../common/utils/query-parser");
-let RolesService = class RolesService {
+const cache_invalidation_service_1 = require("../../../../../platform/cache/cache-invalidation.service");
+let RolesService = RolesService_1 = class RolesService {
     prisma;
     auditService;
-    constructor(prisma, auditService) {
+    cacheInvalidation;
+    logger = new common_1.Logger(RolesService_1.name);
+    constructor(prisma, auditService, cacheInvalidation) {
         this.prisma = prisma;
         this.auditService = auditService;
+        this.cacheInvalidation = cacheInvalidation;
     }
     async debugCount() {
         const total = await this.prisma.role.count();
@@ -438,6 +443,9 @@ let RolesService = class RolesService {
             userId: userId,
             tenantId: role.tenantId || undefined
         });
+        const affectedUsers = await this.getAffectedUsers(id);
+        await this.cacheInvalidation.invalidateUsers(affectedUsers);
+        this.logger.log(`Cache invalidated for ${affectedUsers.length} users after role update`);
         return updatedRole;
     }
     async remove(id, userId, context) {
@@ -450,6 +458,7 @@ let RolesService = class RolesService {
         if (assignmentCount > 0) {
             throw new common_1.BadRequestException(`Cannot delete role '${role.name}' because it has ${assignmentCount} active assignments.`);
         }
+        const affectedUsers = await this.getAffectedUsers(id);
         await this.prisma.$transaction([
             this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
             this.prisma.role.delete({ where: { id } })
@@ -462,6 +471,8 @@ let RolesService = class RolesService {
             userId: userId,
             tenantId: role.tenantId || undefined
         });
+        await this.cacheInvalidation.invalidateUsers(affectedUsers);
+        this.logger.log(`Cache invalidated for ${affectedUsers.length} users after role deletion`);
         return { success: true };
     }
     verifyOwnership(role, context, action) {
@@ -496,11 +507,48 @@ let RolesService = class RolesService {
         }
         return false;
     }
+    async getAffectedUsers(roleId) {
+        const directAssignments = await this.prisma.userRoleAssignment.findMany({
+            where: { roleId: roleId },
+            select: { userId: true }
+        });
+        const userIds = new Set(directAssignments.map((a) => a.userId));
+        const parentRoles = await this.getParentRoles(roleId);
+        for (const parentRoleId of parentRoles) {
+            const parentAssignments = await this.prisma.userRoleAssignment.findMany({
+                where: { roleId: parentRoleId },
+                select: { userId: true }
+            });
+            parentAssignments.forEach((a) => userIds.add(a.userId));
+        }
+        return Array.from(userIds);
+    }
+    async getParentRoles(roleId) {
+        const parentIds = new Set();
+        const toVisit = [roleId];
+        while (toVisit.length > 0) {
+            const current = toVisit.pop();
+            if (!current)
+                continue;
+            const parents = await this.prisma.compositeRole.findMany({
+                where: { childRoleId: current },
+                select: { parentRoleId: true }
+            });
+            for (const p of parents) {
+                if (!parentIds.has(p.parentRoleId)) {
+                    parentIds.add(p.parentRoleId);
+                    toVisit.push(p.parentRoleId);
+                }
+            }
+        }
+        return Array.from(parentIds);
+    }
 };
 exports.RolesService = RolesService;
-exports.RolesService = RolesService = __decorate([
+exports.RolesService = RolesService = RolesService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        cache_invalidation_service_1.CacheInvalidationService])
 ], RolesService);
 //# sourceMappingURL=roles.service.js.map

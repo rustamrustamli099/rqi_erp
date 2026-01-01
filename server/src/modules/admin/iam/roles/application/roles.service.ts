@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../../prisma.service';
 import { RoleStatus } from '@prisma/client';
 import { CreateRoleDto } from '../api/dto/create-role.dto';
@@ -6,12 +6,25 @@ import { UpdateRoleDto } from '../api/dto/update-role.dto';
 import { AuditService } from '../../../../../system/audit/audit.service';
 import { ListQueryDto, PaginatedResult } from '../../../../../common/dto/pagination.dto';
 import { QueryParser } from '../../../../../common/utils/query-parser';
+import { CacheInvalidationService } from '../../../../../platform/cache/cache-invalidation.service';
 
+/**
+ * ROLES SERVICE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * PHASE 10.4: Cache invalidation hooks added.
+ * 
+ * On update/remove: getAffectedUsers() is called, then invalidateUser() for each.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 @Injectable()
 export class RolesService {
+    private readonly logger = new Logger(RolesService.name);
+
     constructor(
         private prisma: PrismaService,
-        private auditService: AuditService
+        private auditService: AuditService,
+        private cacheInvalidation: CacheInvalidationService
     ) { }
 
     async debugCount() {
@@ -558,6 +571,13 @@ export class RolesService {
             tenantId: role.tenantId || undefined
         });
 
+        // ═══════════════════════════════════════════════════════════════════
+        // PHASE 10.4: CACHE INVALIDATION (SYNCHRONOUS, BEFORE RESPONSE)
+        // ═══════════════════════════════════════════════════════════════════
+        const affectedUsers = await this.getAffectedUsers(id);
+        await this.cacheInvalidation.invalidateUsers(affectedUsers);
+        this.logger.log(`Cache invalidated for ${affectedUsers.length} users after role update`);
+
         return updatedRole;
     }
 
@@ -578,6 +598,9 @@ export class RolesService {
             throw new BadRequestException(`Cannot delete role '${role.name}' because it has ${assignmentCount} active assignments.`);
         }
 
+        // PHASE 10.4: Get affected users BEFORE deletion
+        const affectedUsers = await this.getAffectedUsers(id);
+
         await this.prisma.$transaction([
             this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
             this.prisma.role.delete({ where: { id } })
@@ -591,6 +614,13 @@ export class RolesService {
             userId: userId,
             tenantId: role.tenantId || undefined
         });
+
+        // ═══════════════════════════════════════════════════════════════════
+        // PHASE 10.4: CACHE INVALIDATION (SYNCHRONOUS, BEFORE RESPONSE)
+        // Note: affectedUsers collected BEFORE deletion transaction
+        // ═══════════════════════════════════════════════════════════════════
+        await this.cacheInvalidation.invalidateUsers(affectedUsers);
+        this.logger.log(`Cache invalidated for ${affectedUsers.length} users after role deletion`);
 
         return { success: true };
     }
@@ -644,5 +674,61 @@ export class RolesService {
             }
         }
         return false;
+    }
+
+    /**
+     * PHASE 10.4: Get all users affected by role changes.
+     * 
+     * This computes users who have this role directly assigned.
+     * For composite roles, it also includes users with parent roles.
+     */
+    private async getAffectedUsers(roleId: string): Promise<string[]> {
+        // 1. Direct assignments via UserRoleAssignment
+        const directAssignments = await (this.prisma as any).userRoleAssignment.findMany({
+            where: { roleId: roleId },
+            select: { userId: true }
+        });
+
+        const userIds = new Set<string>(directAssignments.map((a: any) => a.userId));
+
+        // 2. If this role is a child in composite roles, get parent roles recursively
+        const parentRoles = await this.getParentRoles(roleId);
+
+        for (const parentRoleId of parentRoles) {
+            const parentAssignments = await (this.prisma as any).userRoleAssignment.findMany({
+                where: { roleId: parentRoleId },
+                select: { userId: true }
+            });
+            parentAssignments.forEach((a: any) => userIds.add(a.userId));
+        }
+
+        return Array.from(userIds);
+    }
+
+    /**
+     * Get all parent roles recursively (for composite role invalidation).
+     */
+    private async getParentRoles(roleId: string): Promise<string[]> {
+        const parentIds = new Set<string>();
+        const toVisit = [roleId];
+
+        while (toVisit.length > 0) {
+            const current = toVisit.pop();
+            if (!current) continue;
+
+            const parents = await (this.prisma as any).compositeRole.findMany({
+                where: { childRoleId: current },
+                select: { parentRoleId: true }
+            });
+
+            for (const p of parents) {
+                if (!parentIds.has(p.parentRoleId)) {
+                    parentIds.add(p.parentRoleId);
+                    toVisit.push(p.parentRoleId);
+                }
+            }
+        }
+
+        return Array.from(parentIds);
     }
 }

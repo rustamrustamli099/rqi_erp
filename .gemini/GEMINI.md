@@ -230,4 +230,49 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
 
 **ANY DEVIATION INVALIDATES THE PHASE.**
 
+---
+
+### PHASE 10.3 — Decision Result Cache (LOCKED)
+
+**STATUS:** ✅ IMPLEMENTED
+
+**CONSTRAINTS (IMMUTABLE):**
+
+1. Cache ONLY wraps DecisionOrchestrator decision output.
+2. Cached data: navigation, actions, canonicalPath.
+3. Cache key includes route hash:
+   ```
+   decision:user:{userId}:scope:{scopeType}:{scopeId|SYSTEM}:route:{routeHash}
+   ```
+4. `DecisionCenterService` remains cache-UNAWARE.
+5. TTL: 5 minutes (300 seconds).
+
+**ANY DEVIATION INVALIDATES THE PHASE.**
+
+---
+
+### PHASE 10.4 — Cache Invalidation Hooks (LOCKED)
+
+**STATUS:** ✅ IMPLEMENTED
+
+**CONSTRAINTS (IMMUTABLE):**
+
+1. ALL authorization-affecting changes trigger invalidation.
+2. BOTH caches (effective permissions + decision) are invalidated.
+3. `CacheInvalidationService` depends ONLY on cache services:
+   - `CachedEffectivePermissionsService`
+   - `DecisionCacheService`
+4. IAM services compute affected users explicitly.
+5. Invalidation is synchronous (before response).
+
+**INVALIDATION EVENTS:**
+- Role assigned/revoked → invalidateUser(userId)
+- Role updated/deleted → invalidateUsers(affectedUsers)
+
+**ANY DEVIATION INVALIDATES THE PHASE.**
+
+---
+
+## PHASE 10 — CLOSED ✅
+
 

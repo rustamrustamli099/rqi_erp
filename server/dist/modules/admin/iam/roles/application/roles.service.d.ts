@@ -3,10 +3,13 @@ import { CreateRoleDto } from '../api/dto/create-role.dto';
 import { UpdateRoleDto } from '../api/dto/update-role.dto';
 import { AuditService } from '../../../../../system/audit/audit.service';
 import { ListQueryDto, PaginatedResult } from '../../../../../common/dto/pagination.dto';
+import { CacheInvalidationService } from '../../../../../platform/cache/cache-invalidation.service';
 export declare class RolesService {
     private prisma;
     private auditService;
-    constructor(prisma: PrismaService, auditService: AuditService);
+    private cacheInvalidation;
+    private readonly logger;
+    constructor(prisma: PrismaService, auditService: AuditService, cacheInvalidation: CacheInvalidationService);
     debugCount(): Promise<{
         total: number;
         first: {
@@ -198,4 +201,6 @@ export declare class RolesService {
     }>;
     private verifyOwnership;
     private detectCycle;
+    private getAffectedUsers;
+    private getParentRoles;
 }

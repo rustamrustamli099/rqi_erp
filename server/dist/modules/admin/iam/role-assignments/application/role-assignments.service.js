@@ -8,17 +8,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var RoleAssignmentsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoleAssignmentsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../../../../prisma.service");
 const audit_service_1 = require("../../../../../system/audit/audit.service");
-let RoleAssignmentsService = class RoleAssignmentsService {
+const cache_invalidation_service_1 = require("../../../../../platform/cache/cache-invalidation.service");
+let RoleAssignmentsService = RoleAssignmentsService_1 = class RoleAssignmentsService {
     prisma;
     auditService;
-    constructor(prisma, auditService) {
+    cacheInvalidation;
+    logger = new common_1.Logger(RoleAssignmentsService_1.name);
+    constructor(prisma, auditService, cacheInvalidation) {
         this.prisma = prisma;
         this.auditService = auditService;
+        this.cacheInvalidation = cacheInvalidation;
     }
     async assign(dto, assignedBy, context) {
         const role = await this.prisma.role.findUnique({ where: { id: dto.roleId } });
@@ -71,6 +76,8 @@ let RoleAssignmentsService = class RoleAssignmentsService {
             userId: assignedBy,
             tenantId: context.scopeId || undefined
         });
+        await this.cacheInvalidation.invalidateUser(dto.userId);
+        this.logger.log(`Cache invalidated for user ${dto.userId} after role assignment`);
         return result;
     }
     async revoke(userId, roleId, revokedBy, context) {
@@ -101,6 +108,8 @@ let RoleAssignmentsService = class RoleAssignmentsService {
             userId: revokedBy,
             tenantId: context.scopeId || undefined
         });
+        await this.cacheInvalidation.invalidateUser(userId);
+        this.logger.log(`Cache invalidated for user ${userId} after role revocation`);
         return { success: true };
     }
     async listByUser(targetUserId, context) {
@@ -117,9 +126,10 @@ let RoleAssignmentsService = class RoleAssignmentsService {
     }
 };
 exports.RoleAssignmentsService = RoleAssignmentsService;
-exports.RoleAssignmentsService = RoleAssignmentsService = __decorate([
+exports.RoleAssignmentsService = RoleAssignmentsService = RoleAssignmentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        cache_invalidation_service_1.CacheInvalidationService])
 ], RoleAssignmentsService);
 //# sourceMappingURL=role-assignments.service.js.map

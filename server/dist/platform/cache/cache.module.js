@@ -9,14 +9,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheModule = void 0;
 const common_1 = require("@nestjs/common");
 const cache_service_1 = require("./cache.service");
+const decision_cache_service_1 = require("./decision-cache.service");
+const cache_invalidation_service_1 = require("./cache-invalidation.service");
+const auth_module_1 = require("../auth/auth.module");
 let CacheModule = class CacheModule {
 };
 exports.CacheModule = CacheModule;
 exports.CacheModule = CacheModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
-        providers: [cache_service_1.CacheService],
-        exports: [cache_service_1.CacheService]
+        imports: [
+            (0, common_1.forwardRef)(() => auth_module_1.AuthModule)
+        ],
+        providers: [
+            cache_service_1.CacheService,
+            decision_cache_service_1.DecisionCacheService,
+            cache_invalidation_service_1.CacheInvalidationService
+        ],
+        exports: [
+            cache_service_1.CacheService,
+            decision_cache_service_1.DecisionCacheService,
+            cache_invalidation_service_1.CacheInvalidationService
+        ]
     })
 ], CacheModule);
 //# sourceMappingURL=cache.module.js.map
