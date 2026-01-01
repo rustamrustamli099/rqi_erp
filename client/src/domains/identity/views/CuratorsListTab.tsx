@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, User as UserIcon, ArrowUpDown, Edit, Trash, Eye } from "lucide-react";
+import { MoreHorizontal, User as UserIcon, ArrowUpDown, Edit, Trash, Eye, Copy, RefreshCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
@@ -184,14 +184,14 @@ export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabP
                                     navigator.clipboard.writeText(curator.id);
                                     toast.success("ID kopyalandı");
                                 }}>
-                                    ID kopyala
+                                    <Copy className="mr-2 h-4 w-4" /> ID kopyala
                                 </DropdownMenuItem>
                             )}
                             {actions[ACTION_KEYS.CURATORS_CHANGE_STATUS] && (
                                 <DropdownMenuItem onClick={() => {
                                     toast.info("Status dəyişmə funksiyası tezliklə aktiv olacaq");
                                 }}>
-                                    Status Dəyiş
+                                    <RefreshCcw className="mr-2 h-4 w-4" /> Status Dəyiş
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
