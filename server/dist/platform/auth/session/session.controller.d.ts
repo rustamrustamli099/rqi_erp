@@ -11,11 +11,7 @@ export declare class SessionController {
         scopeType: any;
         scopeId: any;
     }>;
-    getBootstrap(req: any): Promise<{
-        navigation: import("../../menu/menu.definition").MenuItem[];
-        actions: string[];
-        canonicalPath: string | null;
-    }>;
+    getBootstrap(req: any): Promise<import("../../decision/decision.orchestrator").DecisionResult>;
     switchContext(req: any, dto: SwitchContextDto): Promise<{
         access_token: string;
         user: {

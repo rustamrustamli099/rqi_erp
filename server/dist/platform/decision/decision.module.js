@@ -11,13 +11,17 @@ const common_1 = require("@nestjs/common");
 const decision_center_service_1 = require("./decision-center.service");
 const decision_orchestrator_1 = require("./decision.orchestrator");
 const auth_module_1 = require("../auth/auth.module");
+const cache_module_1 = require("../cache/cache.module");
 let DecisionModule = class DecisionModule {
 };
 exports.DecisionModule = DecisionModule;
 exports.DecisionModule = DecisionModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
+        imports: [
+            (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
+            cache_module_1.CacheModule
+        ],
         providers: [decision_center_service_1.DecisionCenterService, decision_orchestrator_1.DecisionOrchestrator],
         exports: [decision_center_service_1.DecisionCenterService, decision_orchestrator_1.DecisionOrchestrator]
     })
