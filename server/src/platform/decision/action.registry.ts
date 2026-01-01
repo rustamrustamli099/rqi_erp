@@ -114,6 +114,18 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
         ],
     },
     {
+        entityKey: 'packages',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.billing.compact_packages.read' },
+            { actionKey: 'create', permissionSlug: 'system.billing.compact_packages.create' },
+            { actionKey: 'update', permissionSlug: 'system.billing.compact_packages.update' },
+            { actionKey: 'delete', permissionSlug: 'system.billing.compact_packages.delete' },
+            { actionKey: 'change_status', permissionSlug: 'system.billing.compact_packages.change_status' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.billing.compact_packages.export_to_excel' },
+        ],
+    },
+    {
         entityKey: 'invoices',
         scope: 'system',
         actions: [

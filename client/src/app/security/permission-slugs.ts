@@ -144,7 +144,11 @@ const SYSTEM_SLUGS = {
         },
         PACKAGES: {
             READ: 'system.billing.compact_packages.read',
-            MANAGE: 'system.billing.compact_packages.create'
+            CREATE: 'system.billing.compact_packages.create',
+            UPDATE: 'system.billing.compact_packages.update',
+            DELETE: 'system.billing.compact_packages.delete',
+            CHANGE_STATUS: 'system.billing.compact_packages.change_status',
+            EXPORT: 'system.billing.compact_packages.export_to_excel'
         },
         PLANS: {
             READ: 'system.billing.plans.read',

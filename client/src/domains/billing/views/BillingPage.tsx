@@ -945,19 +945,159 @@ function PackageWizard({ isOpen, onClose, onSave, initialData }: { isOpen: boole
     );
 }
 
+// Package Details Dialog
+function PackageDetailsDialog({ open, onOpenChange, pkg }: { open: boolean, onOpenChange: (open: boolean) => void, pkg: any }) {
+
+    if (!pkg) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl flex items-center justify-between">
+                        {pkg.name}
+                        <Badge variant="outline" className="text-primary border-primary">{pkg.basePrice} ₼ / ay</Badge>
+                    </DialogTitle>
+                    <DialogDescription>Paket konfiqurasiyası detalları</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 p-4 rounded-lg">
+                        <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs uppercase font-bold">İstifadəçi Limiti</span>
+                            <div className="font-medium">{pkg.userLimit} istifadəçi</div>
+                        </div>
+                        <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs uppercase font-bold">Yaddaş Limiti</span>
+                            <div className="font-medium">{pkg.storageLimit || 5} GB</div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <span className="text-muted-foreground text-xs uppercase font-bold px-1">Daxil olan Modullar</span>
+                        <div className="flex flex-wrap gap-2">
+                            {pkg.modules && pkg.modules.length > 0 ? (
+                                pkg.modules.map((m: string) => (
+                                    <Badge key={m} variant="secondary" className="px-3 py-1">{m}</Badge>
+                                ))
+                            ) : (
+                                <span className="text-sm text-muted-foreground italic pl-1">Modul seçilməyib</span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <span className="text-muted-foreground text-xs uppercase font-bold px-1">Funksionallıqlar</span>
+                        <ul className="grid grid-cols-1 gap-2">
+                            {(pkg.features || []).map((feat: string, i: number) => (
+                                <li key={i} className="flex items-center gap-2 text-sm bg-background border p-2 rounded-md">
+                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                    <span>{feat}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <Button onClick={() => onOpenChange(false)} className="w-full">Bağla</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // Packages View Component
 function PackagesView() {
     const [packages, setPackages] = useState(PACKAGES);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
 
+    // Edit & View States
+    const [editingPackage, setEditingPackage] = useState<any | null>(null);
+    const [viewingPackage, setViewingPackage] = useState<any | null>(null);
+
     // Permission State
     const { permissions } = usePermissions();
-    const canManage = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.MANAGE);
+    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.CREATE);
+    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.UPDATE);
+    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.DELETE);
+    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.CHANGE_STATUS);
+    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.EXPORT);
 
-    const handleCreatePackage = (pkg: any) => {
-        const newPkg = { id: `pkg_${Date.now()}`, ...pkg };
-        setPackages([...packages, newPkg]);
-        toast.success("Paket uğurla yaradıldı");
+    // Confirmation State
+    const [confirmState, setConfirmState] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        action: () => void;
+        variant?: "destructive" | "default";
+    }>({
+        isOpen: false,
+        title: "",
+        description: "",
+        action: () => { },
+        variant: "default"
+    });
+
+    const handleCreateClick = () => {
+        setEditingPackage(null); // Reset for create
+        setIsWizardOpen(true);
+    }
+
+    const handleEditClick = (pkg: any) => {
+        setEditingPackage(pkg);
+        setIsWizardOpen(true);
+    };
+
+    const handleSavePackage = (pkg: any) => {
+        if (editingPackage) {
+            // Updated
+            setPackages(prev => prev.map(p => p.id === pkg.id ? { ...pkg } : p));
+            toast.success("Paket yeniləndi");
+        } else {
+            // Create
+            const newPkg = { ...pkg, id: `pkg_${Date.now()}` }; // Ensure ID
+            setPackages([...packages, newPkg]);
+            toast.success("Paket uğurla yaradıldı");
+        }
+        setIsWizardOpen(false);
+        setEditingPackage(null);
+    };
+
+    const handleExport = () => {
+        toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+            loading: "Paketlər ixrac edilir...",
+            success: "Paketlər ixrac edildi",
+            error: "Xəta baş verdi"
+        });
+    };
+
+    const handleDelete = (id: string) => {
+        setConfirmState({
+            isOpen: true,
+            title: "Paketi Sil",
+            description: "Bu paketi silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.",
+            variant: "destructive",
+            action: () => {
+                setPackages(prev => prev.filter(p => p.id !== id));
+                toast.success("Paket silindi");
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const handleToggleStatus = (id: string, currentStatus: boolean = true) => {
+        const action = currentStatus ? "deaktiv etmək" : "aktivləşdirmək";
+        setConfirmState({
+            isOpen: true,
+            title: "Statusu Dəyiş",
+            description: `Bu paketi ${action} istədiyinizə əminsiniz?`,
+            variant: currentStatus ? "destructive" : "default",
+            action: () => {
+                toast.success(`Status dəyişdirildi`);
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
     return (
@@ -967,16 +1107,30 @@ function PackagesView() {
                     <h3 className="text-lg font-medium">Kompakt Paketlər</h3>
                     <p className="text-sm text-muted-foreground">Şirkətlər üçün hazır konfiqurasiya olunmuş planlar.</p>
                 </div>
-                {canManage && (
-                    <Button onClick={() => setIsWizardOpen(true)}><Plus className="mr-2 h-4 w-4" /> Yeni Paket</Button>
-                )}
+                <div className="flex gap-2">
+                    {canExport && (
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" /> Export to Excel
+                        </Button>
+                    )}
+                    {canCreate && (
+                        <Button onClick={handleCreateClick}><Plus className="mr-2 h-4 w-4" /> Yeni Paket</Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {packages.map(pkg => (
-                    <Card key={pkg.id} className="flex flex-col">
+                    <Card key={pkg.id} className="flex flex-col relative group">
                         <CardHeader>
-                            <CardTitle>{pkg.name}</CardTitle>
+                            <div className="flex justify-between items-start">
+                                <CardTitle>{pkg.name}</CardTitle>
+                                {canChangeStatus && (
+                                    <div onClick={(e) => { e.stopPropagation(); handleToggleStatus(pkg.id); }}>
+                                        <Switch defaultChecked className="scale-75 cursor-pointer" />
+                                    </div>
+                                )}
+                            </div>
                             <div className="text-2xl font-bold mt-2">{pkg.basePrice} ₼ <span className="text-sm font-normal text-muted-foreground">/ay</span></div>
                         </CardHeader>
                         <CardContent className="flex-1 space-y-4">
@@ -992,8 +1146,20 @@ function PackagesView() {
                                 ))}
                             </div>
                         </CardContent>
-                        <CardFooter>
-                            <Button variant="outline" className="w-full">Detallar</Button>
+                        <CardFooter className="pt-2 border-t bg-muted/5 flex justify-between">
+                            <Button variant="outline" className="w-full mr-2" onClick={() => setViewingPackage(pkg)}>Detallar</Button>
+                            <div className="flex gap-1">
+                                {canUpdate && (
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 hover:text-blue-600" onClick={() => handleEditClick(pkg)}>
+                                        <Edit className="w-4 h-4" />
+                                    </Button>
+                                )}
+                                {canDelete && (
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 hover:text-destructive" onClick={() => handleDelete(pkg.id)}>
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </CardFooter>
                     </Card>
                 ))}
@@ -1002,8 +1168,36 @@ function PackagesView() {
             <PackageWizard
                 isOpen={isWizardOpen}
                 onClose={() => setIsWizardOpen(false)}
-                onSave={handleCreatePackage}
+                onSave={handleSavePackage}
+                initialData={editingPackage}
             />
+
+            <PackageDetailsDialog
+                open={!!viewingPackage}
+                onOpenChange={(val) => !val && setViewingPackage(null)}
+                pkg={viewingPackage}
+            />
+
+            {/* Confirmation Dialog */}
+            <AlertDialog open={confirmState.isOpen} onOpenChange={(open) => setConfirmState(prev => ({ ...prev, isOpen: open }))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{confirmState.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {confirmState.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Ləğv et</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmState.action}
+                            className={confirmState.variant === "destructive" ? "bg-destructive hover:bg-destructive/90" : ""}
+                        >
+                            Təsdiqlə
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
