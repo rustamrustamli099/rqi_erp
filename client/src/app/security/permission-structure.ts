@@ -15,7 +15,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
     branches: { perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'read_details', "change_status"] },
     users: {
         users: {
-            perms: ['read', 'create', 'update', 'delete', 'export_to_excel', "change_status", 'connect_to_employee', 'invite']
+            perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status', 'connect_to_employee', 'invite', 'impersonate', 'send_invite', 'manage_restrictions']
         },
         curators: {
             perms: ['read', 'create', 'update', 'delete', 'export_to_excel', "change_status", 'copy_id']
@@ -304,8 +304,91 @@ const formatLabel = (key: string): string => {
         .join(' ');
 }
 
+// ACTION LABELS - Azerbaijani
+const ACTION_LABEL_MAP: Record<string, string> = {
+    // CRUD
+    read: 'Oxu',
+    create: 'Yarat',
+    update: 'Redaktə Et',
+    delete: 'Sil',
+    // Export
+    export_to_excel: 'Excel-ə İxrac',
+    export: 'İxrac',
+    download: 'Yüklə',
+    download_pdf: 'PDF Yüklə',
+    // Status
+    change_status: 'Status Dəyiş',
+    activate: 'Aktivləşdir',
+    deactivate: 'Deaktivləşdir',
+    suspend: 'Dayandır',
+    // Users
+    invite: 'Dəvət Et',
+    send_invite: 'Dəvət Göndər',
+    impersonate: 'Simulyasiya Et',
+    manage_restrictions: 'Məhdudiyyətləri İdarə Et',
+    connect_to_employee: 'İşçiyə Bağla',
+    reset_password: 'Şifrəni Sıfırla',
+    copy_id: 'ID Kopyala',
+    // Approvals / Workflow
+    approve: 'Təsdiqlə',
+    reject: 'Rədd Et',
+    forward: 'Yönləndir',
+    delegate: 'Delege Et',
+    escalate: 'Yüksəlt',
+    cancel_process: 'Prosesi Ləğv Et',
+    // Settings
+    configurate: 'Konfiqurasiya Et',
+    set_default: 'Öndəfinəm Təyin Et',
+    // Console
+    clear_cache: 'Keşi Təmizlə',
+    end_all_sessions: 'Bütün Sessiyaları Bitir',
+    change_technical_inspection_mode: 'Texniki Yoxlama Rejimi',
+    // File Manager
+    create_folder: 'Qovluq Yarat',
+    upload: 'Yüklə',
+    delete_file: 'Faylı Sil',
+    rename_folder: 'Qovluğu Adlandır',
+    move_folder: 'Qovluğu Köçür',
+    share_folder: 'Qovluğu Paylaş',
+    permissions_configuration: 'İcazə Konfiqurasiyası',
+    delete_folder: 'Qovluğu Sil',
+    rename_file: 'Faylı Adlandır',
+    move_file: 'Faylı Köçür',
+    copy_file: 'Faylı Kopyala',
+    share_file: 'Faylı Paylaş',
+    version: 'Versiya',
+    // Billing
+    pay_invoice: 'Fakturanı Ödə',
+    send_email: 'Email Göndər',
+    audit_logs: 'Audit Qeydləri',
+    change_plan: 'Planı Dəyiş',
+    billing_history: 'Ödəniş Tarixçəsi',
+    limitations: 'Limitlər',
+    sign_contract: 'Müqavilə İmzala',
+    terminate_contract: 'Müqavilə Bitir',
+    storage_limit: 'Yaddaş Limiti',
+    modules: 'Modullar',
+    tenant_users: 'Tenant İstifadəçiləri',
+    '2fa_app_cancel': '2FA Ləğv Et',
+    '2fa_app_enable': '2FA Aktiv Et',
+    '2fa_app_generate': '2FA Generasiya Et',
+    // System Guide
+    share: 'Paylaş',
+    edit: 'Redaktə Et',
+    publish: 'Yayımla',
+    // Monitoring
+    refresh: 'Yenilə',
+    read_details: 'Detalları Oxu',
+    logs: 'Qeydlər',
+    // Developer Hub
+    send_test_payload: 'Test Göndər',
+};
+
 const formatAction = (action: string): string => {
-    // "view" -> "View", "export_to_excel" -> "Export to Excel"
+    // Check ACTION_LABEL_MAP first for Azerbaijani labels
+    if (ACTION_LABEL_MAP[action]) return ACTION_LABEL_MAP[action];
+
+    // Fallback: "export_to_excel" -> "Export To Excel"
     return action
         .split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))

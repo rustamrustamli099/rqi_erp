@@ -38,6 +38,7 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             // Row-level actions
             { actionKey: 'impersonate', permissionSlug: 'system.users.users.impersonate' },
             { actionKey: 'send_invite', permissionSlug: 'system.users.users.send_invite' },
+            { actionKey: 'manage_restrictions', permissionSlug: 'system.users.users.manage_restrictions' },
         ],
     },
 

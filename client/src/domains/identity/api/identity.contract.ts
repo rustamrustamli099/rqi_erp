@@ -35,9 +35,12 @@ export interface UpdateUserRequest {
 export const identityApi = {
     getUsers: async (): Promise<User[]> => {
         try {
-            // Try real API
+            // Try real API - API returns { statusCode, data: [...], timestamp }
             const response = await api.get<User[]>("/users");
-            return response.data;
+            // Extract nested data if present
+            const users = (response.data as any)?.data ?? response.data;
+            console.log('[identityApi] getUsers result:', users);
+            return users;
         } catch (e) {
             console.warn("Using mock users");
             return MOCK_USERS as User[];

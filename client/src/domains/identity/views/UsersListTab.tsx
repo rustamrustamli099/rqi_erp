@@ -40,6 +40,8 @@ import { useImpersonate } from "@/app/auth/hooks/useImpersonate";
 import { LogIn } from "lucide-react";
 // PHASE 14G: Import canonical action keys
 import { ACTION_KEYS, type ActionsMap } from "@/app/navigation/action-keys";
+// SAP Fiori Style: Read-only detail view
+import { UserDetailSheet } from "../components/UserDetailSheet";
 
 const roleOptions = [
     { label: "Super Admin", value: "SuperAdmin" },
@@ -97,6 +99,9 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
     const [userFormMode, setUserFormMode] = useState<'create' | 'edit'>('create');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+    // SAP Fiori: Read-only detail view state
+    const [viewingUser, setViewingUser] = useState<User | null>(null);
+    const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
 
     const handleOpenRestrictions = (user: User) => {
         setSelectedUserForRestrictions(user);
@@ -281,6 +286,15 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {/* PHASE 14G: Row actions - conditional rendering */}
+                            {/* SAP-GRADE: READ permission allows viewing details */}
+                            {actions[ACTION_KEYS.USERS_READ] && (
+                                <DropdownMenuItem onClick={() => {
+                                    setViewingUser(user);
+                                    setIsDetailSheetOpen(true);
+                                }}>
+                                    <UserIcon className="mr-2 h-4 w-4" /> Detallara Bax
+                                </DropdownMenuItem>
+                            )}
                             {actions[ACTION_KEYS.USERS_ACTIVATE] && (
                                 <DropdownMenuItem onClick={() => confirmAction(user, 'toggle')}>
                                     {user.status === "Active" ? <Lock className="mr-2 h-4 w-4" /> : <Unlock className="mr-2 h-4 w-4" />}
@@ -288,9 +302,11 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
                                 </DropdownMenuItem>
                             )}
 
-                            <DropdownMenuItem onClick={() => handleOpenRestrictions(user)}>
-                                <Timer className="mr-2 h-4 w-4" /> Məhdudiyyətlər
-                            </DropdownMenuItem>
+                            {actions[ACTION_KEYS.USERS_MANAGE_RESTRICTIONS] && (
+                                <DropdownMenuItem onClick={() => handleOpenRestrictions(user)}>
+                                    <Timer className="mr-2 h-4 w-4" /> Məhdudiyyətlər
+                                </DropdownMenuItem>
+                            )}
 
                             {actions[ACTION_KEYS.USERS_IMPERSONATE] && (
                                 <DropdownMenuItem onClick={() => impersonate(user.id, user.name)}>
@@ -303,9 +319,11 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
                                     <Mail className="mr-2 h-4 w-4" /> Dəvət Göndər
                                 </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => toast.info("İşçi bazasına keçid funksiyası tezliklə aktiv olacaq (User-Employee Link)")}>
-                                <LinkIcon className="mr-2 h-4 w-4" /> İşçiyə Bağla
-                            </DropdownMenuItem>
+                            {actions[ACTION_KEYS.USERS_CONNECT_TO_EMPLOYEE] && (
+                                <DropdownMenuItem onClick={() => toast.info("İşçi bazasına keçid funksiyası tezliklə aktiv olacaq (User-Employee Link)")}>
+                                    <LinkIcon className="mr-2 h-4 w-4" /> İşçiyə Bağla
+                                </DropdownMenuItem>
+                            )}
 
                             <DropdownMenuSeparator />
                             {actions[ACTION_KEYS.USERS_UPDATE] && (
@@ -507,6 +525,13 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
                     status: selectedUser.status as "Active" | "Inactive"
                 } : undefined}
                 onSubmit={userFormMode === 'create' ? handleCreateUser : handleUpdateUser}
+            />
+
+            {/* SAP Fiori Style: Read-only Detail Sheet */}
+            <UserDetailSheet
+                user={viewingUser}
+                open={isDetailSheetOpen}
+                onOpenChange={setIsDetailSheetOpen}
             />
         </div>
     );

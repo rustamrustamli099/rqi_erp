@@ -16,6 +16,7 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
             { actionKey: 'invite', permissionSlug: 'system.users.users.invite' },
             { actionKey: 'impersonate', permissionSlug: 'system.users.users.impersonate' },
             { actionKey: 'send_invite', permissionSlug: 'system.users.users.send_invite' },
+            { actionKey: 'manage_restrictions', permissionSlug: 'system.users.users.manage_restrictions' },
         ],
     },
     {

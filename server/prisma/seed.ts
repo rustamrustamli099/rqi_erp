@@ -21,7 +21,8 @@ const SYSTEM_SLUGS = {
         CHANGE_STATUS: 'system.users.users.change_status',
         // Row-level actions (Phase 14G)
         IMPERSONATE: 'system.users.users.impersonate',
-        SEND_INVITE: 'system.users.users.send_invite'
+        SEND_INVITE: 'system.users.users.send_invite',
+        MANAGE_RESTRICTIONS: 'system.users.users.manage_restrictions'
     },
     CURATORS: {
         READ: 'system.users.curators.read',

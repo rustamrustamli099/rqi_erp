@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, User as UserIcon, ArrowUpDown, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, User as UserIcon, ArrowUpDown, Edit, Trash, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
@@ -32,6 +32,8 @@ import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
 import { CuratorAssignmentForm } from "./CuratorAssignmentForm";
 // PHASE 14G: Import canonical action keys
 import { ACTION_KEYS, type ActionsMap } from "@/app/navigation/action-keys";
+// SAP Fiori Style: Read-only detail view
+import { CuratorDetailSheet } from "../components/CuratorDetailSheet";
 
 // Mock Data
 const MOCK_ASSIGNMENTS = [
@@ -81,6 +83,9 @@ export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabP
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingCurator, setEditingCurator] = useState<typeof MOCK_ASSIGNMENTS[0] | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    // SAP Fiori: Read-only detail view state
+    const [viewingCurator, setViewingCurator] = useState<typeof MOCK_ASSIGNMENTS[0] | null>(null);
+    const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
 
     // Handlers
     const handleCreate = (newData: any) => {
@@ -165,6 +170,15 @@ export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {/* PHASE 14G: Row actions - conditional rendering */}
+                            {/* SAP-GRADE: READ permission allows viewing details */}
+                            {actions[ACTION_KEYS.CURATORS_READ] && (
+                                <DropdownMenuItem onClick={() => {
+                                    setViewingCurator(curator);
+                                    setIsDetailSheetOpen(true);
+                                }}>
+                                    <Eye className="mr-2 h-4 w-4" /> Detallara Bax
+                                </DropdownMenuItem>
+                            )}
                             {actions[ACTION_KEYS.CURATORS_COPY_ID] && (
                                 <DropdownMenuItem onClick={() => {
                                     navigator.clipboard.writeText(curator.id);
@@ -339,6 +353,13 @@ export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabP
                 description="Bu kurator təyinatını silmək istədiyinizə əminsiniz?"
                 variant="destructive"
                 onConfirm={handleDelete}
+            />
+
+            {/* SAP Fiori Style: Read-only Detail Sheet */}
+            <CuratorDetailSheet
+                curator={viewingCurator}
+                open={isDetailSheetOpen}
+                onOpenChange={setIsDetailSheetOpen}
             />
         </div>
     )

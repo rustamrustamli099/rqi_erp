@@ -28,6 +28,7 @@ export const ACTION_KEYS = {
     // Row-level actions
     USERS_IMPERSONATE: 'GS_USERS_IMPERSONATE',
     USERS_SEND_INVITE: 'GS_USERS_SEND_INVITE',
+    USERS_MANAGE_RESTRICTIONS: 'GS_USERS_MANAGE_RESTRICTIONS',
 
     // ─────────────────────────────────────────────────────────────────────────
     // Roles Entity
