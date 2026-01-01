@@ -163,3 +163,48 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
 - **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
 
 **If behavior diverges from these laws, IT IS A BUG.**
+
+---
+
+## 10. CACHING STRATEGY (PHASE 10 — IN PROGRESS)
+
+**LAW:** Caching must NEVER change authorization behavior.
+
+### Cacheable Layers (Read-Only):
+
+1. **Effective Permissions** (`flat string[]`)
+   - Cache Key: `user:{id}:scope:{type}:{id}`
+   - TTL: 5-15 minutes
+
+2. **Decision Output**
+   - Resolved navigation tree
+   - Resolved actions
+   - Canonical route
+   - Cache Key: `user:{id}:context:{ctx}`
+
+3. **Static Registries** (App Lifetime)
+   - `ACTION_PERMISSIONS_REGISTRY`
+   - `TAB_SUBTAB_REGISTRY`
+   - `SOD_RULES`
+
+### Hard Rules:
+
+1. **Correctness-First Invalidation:**
+   - Any role mutation → Invalidate affected caches
+   - Any composite role mutation → Invalidate affected caches
+   - Any user-role assignment mutation → Invalidate user cache
+
+2. **NOT Cacheable (FORBIDDEN):**
+   - JWT Token Validation
+   - Session Context Switching
+   - Real-time Impersonation State
+
+3. **No Implicit Inference:**
+   - Cached permissions are EXACT strings only
+   - No `.read` inference from `.create`
+   - Cache must mirror backend computation exactly
+
+**VIOLATION:**
+- Caching logic that alters authorization outcome is FORBIDDEN.
+- Stale cache must fail-safe (deny access, not grant).
+
