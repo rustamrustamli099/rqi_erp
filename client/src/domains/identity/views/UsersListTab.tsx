@@ -365,6 +365,27 @@ export function UsersListTab() {
                         onAddClick={openCreateDialog}
                         addLabel="İstifadəçi Əlavə Et"
                         searchPlaceholder="Axtarış..."
+                        onExportClick={() => {
+                            const headers = ['Ad Soyad', 'Email', 'Rol', 'Status'];
+                            const csvRows = [
+                                headers.join(','),
+                                ...data.map((u) => [
+                                    `"${u.name || ''}"`,
+                                    `"${u.email || ''}"`,
+                                    `"${u.role || ''}"`,
+                                    u.status || 'N/A'
+                                ].join(','))
+                            ];
+                            const csvContent = csvRows.join('\n');
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+                            link.click();
+                            URL.revokeObjectURL(url);
+                            toast.success('İstifadəçilər CSV olaraq ixrac edildi');
+                        }}
                     >
                         <FilterDrawer
                             open={isFilterDrawerOpen}

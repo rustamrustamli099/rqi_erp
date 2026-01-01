@@ -203,6 +203,28 @@ export function CuratorsListTab() {
                         onAddClick={() => setIsAddOpen(true)}
                         addLabel="Yeni Təyinat"
                         searchPlaceholder="Axtarış..."
+                        onExportClick={() => {
+                            const headers = ['İstifadəçi', 'Səviyyə', 'Hədəf Növü', 'Hədəf ID', 'Rejim'];
+                            const csvRows = [
+                                headers.join(','),
+                                ...data.map((c) => [
+                                    `"${c.user || ''}"`,
+                                    `"${c.scopeLevel || ''}"`,
+                                    `"${c.targetType || ''}"`,
+                                    `"${c.targetId || ''}"`,
+                                    c.mode || 'N/A'
+                                ].join(','))
+                            ];
+                            const csvContent = csvRows.join('\n');
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `curators_export_${new Date().toISOString().slice(0, 10)}.csv`;
+                            link.click();
+                            URL.revokeObjectURL(url);
+                            toast.success('Kuratorlar CSV olaraq ixrac edildi');
+                        }}
                     />
                     <div className="rounded-md border bg-card overflow-auto mt-2">
                         <Table>
