@@ -402,6 +402,50 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
     },
 
     // ═══════════════════════════════════════════════════════════════════════
+    // Billing Configurations (Granular)
+    // ═══════════════════════════════════════════════════════════════════════
+    {
+        entityKey: 'pricing',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.pricing.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'limits',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.limits.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'overuse',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.overuse.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'grace',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.grace.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'currency',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.currency_tax.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'invoice',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.invoice.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'events',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.events.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+    {
+        entityKey: 'security',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.security.update', contexts: ['toolbar'], label: 'Saxla' }]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════
     // TENANT SCOPE - Will be extended in future phases
     // ═══════════════════════════════════════════════════════════════════════
 ];

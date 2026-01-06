@@ -16,7 +16,16 @@ async function check() {
         'system.settings.security.user_rights.compliance.download_report',
         'system.settings.security.user_rights.compliance.generate_evidence',
         'system.settings.security.user_rights.compliance.download_json_soc2',
-        'system.settings.security.user_rights.compliance.download_json_iso'
+        'system.settings.security.user_rights.compliance.download_json_iso',
+        // Billing Config Updates
+        'system.settings.system_configurations.billing_configurations.pricing.update',
+        'system.settings.system_configurations.billing_configurations.limits.update',
+        'system.settings.system_configurations.billing_configurations.overuse.update',
+        'system.settings.system_configurations.billing_configurations.grace.update',
+        'system.settings.system_configurations.billing_configurations.currency_tax.update',
+        'system.settings.system_configurations.billing_configurations.invoice.update',
+        'system.settings.system_configurations.billing_configurations.events.update',
+        'system.settings.system_configurations.billing_configurations.security.update'
     ];
 
     const found = await prisma.permission.findMany({

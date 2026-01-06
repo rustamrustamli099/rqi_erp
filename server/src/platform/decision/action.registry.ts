@@ -299,4 +299,50 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'download_json_iso', permissionSlug: 'system.settings.security.user_rights.compliance.download_json_iso' },
         ],
     },
+    // Billing Configurations
+    {
+        entityKey: 'pricing',
+        scope: 'system',
+        actions: [
+            {
+                actionKey: 'update',
+                permissionSlug: 'system.settings.system_configurations.billing_configurations.pricing.update'
+            }
+        ]
+    },
+    {
+        entityKey: 'limits',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.limits.update' }]
+    },
+    {
+        entityKey: 'overuse',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.overuse.update' }]
+    },
+    {
+        entityKey: 'grace',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.grace.update' }]
+    },
+    {
+        entityKey: 'currency',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.currency_tax.update' }]
+    },
+    {
+        entityKey: 'invoice',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.invoice.update' }]
+    },
+    {
+        entityKey: 'events',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.events.update' }]
+    },
+    {
+        entityKey: 'security',
+        scope: 'system',
+        actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.security.update' }]
+    },
 ];

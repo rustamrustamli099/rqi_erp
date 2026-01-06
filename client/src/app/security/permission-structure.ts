@@ -98,31 +98,28 @@ export const ADMIN_PERMISSION_HIERARCHY = {
         system_configurations: {
             billing_configurations: {
                 pricing: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 limits: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 overuse: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 grace: {
-                    perms: ['read', 'create', 'update']
-                },
-                grace_requirements: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 currency_tax: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 invoice: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 events: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
                 security: {
-                    perms: ['read', 'create', 'update']
+                    perms: ['read', 'update']
                 },
             },
             dictionary: {

@@ -40,6 +40,13 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
     const urlSubTab = searchParams.get('subTab') || '';
     const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : '';
 
+    // SAP-GRADE: Check Granular Update Permission
+    const activeNode = resolvedSubTabs.find(st => (st.subTabKey || st.id) === currentSubTab);
+    // actions property comes from resolveNavigationTree -> populateActions
+    // It returns the ResolvedActions object, which has an 'actions' array property
+    const updateAction = activeNode?.actions?.actions?.find(a => a.actionKey === 'update');
+    const canUpdate = updateAction && updateAction.state !== 'disabled' && updateAction.state !== 'hidden';
+
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;
         const newParams = new URLSearchParams(searchParams);
@@ -98,12 +105,12 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                         <Label>Aylıq / İllik Rejimi Aktivdir</Label>
                                         <p className="text-xs text-muted-foreground">İstifadəçilərə illik ödəniş seçimi təklif et.</p>
                                     </div>
-                                    <Switch defaultChecked />
+                                    <Switch defaultChecked disabled={!canUpdate} />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Endirim Növü (İllik)</Label>
-                                        <Select defaultValue="percent">
+                                        <Select defaultValue="percent" disabled={!canUpdate}>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="percent">Faiz (%)</SelectItem>
@@ -113,12 +120,12 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Endirim Dəyəri</Label>
-                                        <Input type="number" defaultValue="20" />
+                                        <Input type="number" defaultValue="20" disabled={!canUpdate} />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Minimum Məbləğ (Charge Floor)</Label>
-                                    <Input type="number" defaultValue="1.00" />
+                                    <Input type="number" defaultValue="1.00" disabled={!canUpdate} />
                                     <p className="text-xs text-muted-foreground">Bundan aşağı məbləğlər üçün faktura yaradılmayacaq.</p>
                                 </div>
                             </CardContent>
@@ -137,15 +144,15 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Maks. İstifadəçi (User Cap)</Label>
-                                        <Input type="number" defaultValue="1000" />
+                                        <Input type="number" defaultValue="1000" disabled={!canUpdate} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Storage Limiti (GB)</Label>
-                                        <Input type="number" defaultValue="500" />
+                                        <Input type="number" defaultValue="500" disabled={!canUpdate} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>API Sorğu Limiti (req/min)</Label>
-                                        <Input type="number" defaultValue="60" />
+                                        <Input type="number" defaultValue="60" disabled={!canUpdate} />
                                     </div>
                                 </div>
                             </CardContent>
@@ -166,7 +173,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>User Limiti Bitdikdə</Label>
-                                            <Select defaultValue="soft_block">
+                                            <Select defaultValue="soft_block" disabled={!canUpdate}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="warn">Xəbərdarlıq (Warn)</SelectItem>
@@ -177,7 +184,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Storage Dolduqda</Label>
-                                            <Select defaultValue="warn">
+                                            <Select defaultValue="warn" disabled={!canUpdate}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="warn">Xəbərdarlıq</SelectItem>
@@ -193,12 +200,12 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>Xəbərdarlıq Həddi (%)</Label>
-                                            <Input type="number" defaultValue="80" />
+                                            <Input type="number" defaultValue="80" disabled={!canUpdate} />
                                             <p className="text-xs text-muted-foreground">Limit bu faizə çatanda bildiriş göndər.</p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Bloklama Həddi (%)</Label>
-                                            <Input type="number" defaultValue="100" />
+                                            <Input type="number" defaultValue="100" disabled={!canUpdate} />
                                         </div>
                                     </div>
                                 </div>
@@ -218,12 +225,12 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Oxu-Rejimi Müddəti (Gün)</Label>
-                                        <Input type="number" defaultValue="7" />
+                                        <Input type="number" defaultValue="7" disabled={!canUpdate} />
                                         <p className="text-xs text-muted-foreground">Ödəniş vaxtı bitdikdən sonra neçə gün sistem açıq qalsın.</p>
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Tam Bloklama (Gün)</Label>
-                                        <Input type="number" defaultValue="14" />
+                                        <Input type="number" defaultValue="14" disabled={!canUpdate} />
                                         <p className="text-xs text-muted-foreground">Bu müddətdən sonra giriş tamamilə bağlanır.</p>
                                     </div>
                                 </div>
@@ -246,7 +253,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Default Valyuta</Label>
-                                        <Select defaultValue="AZN">
+                                        <Select defaultValue="AZN" disabled={!canUpdate}>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="AZN">AZN (₼)</SelectItem>
@@ -260,20 +267,20 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <Label>ƏDV (VAT) Tətbiq Et</Label>
-                                        <Switch defaultChecked />
+                                        <Switch defaultChecked disabled={!canUpdate} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>Vergi Adı</Label>
-                                            <Input defaultValue="ƏDV" />
+                                            <Input defaultValue="ƏDV" disabled={!canUpdate} />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Dərəcə (%)</Label>
-                                            <Input type="number" defaultValue="18" />
+                                            <Input type="number" defaultValue="18" disabled={!canUpdate} />
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <Switch />
+                                        <Switch disabled={!canUpdate} />
                                         <Label>Qiymətə Daxildir (Inclusive)</Label>
                                     </div>
                                 </div>
@@ -295,11 +302,11 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                             <Label>Avtomatik Faktura</Label>
                                             <p className="text-xs text-muted-foreground">Yenilənmə zamanı PDF faktura avtomatik yaradılır.</p>
                                         </div>
-                                        <Switch defaultChecked />
+                                        <Switch defaultChecked disabled={!canUpdate} />
                                     </div>
                                     <div className="space-y-2 pt-2">
                                         <Label>Ödəniş Xatırlatmaları (Gün əvvəl)</Label>
-                                        <Input defaultValue="7, 3, 1" placeholder="e.g. 7, 3, 1" />
+                                        <Input defaultValue="7, 3, 1" placeholder="e.g. 7, 3, 1" disabled={!canUpdate} />
                                     </div>
                                 </div>
                             </CardContent>
@@ -326,7 +333,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                             <Bell className="w-4 h-4 text-muted-foreground" />
                                             <span className="text-sm font-medium">{event.label}</span>
                                         </div>
-                                        <Switch defaultChecked />
+                                        <Switch defaultChecked disabled={!canUpdate} />
                                     </div>
                                 ))}
                             </CardContent>
@@ -347,14 +354,14 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                         <Label>Billing üçün Təsdiqli İstifadəçi</Label>
                                         <p className="text-xs text-muted-foreground">Yalnız email təsdiqi olan istifadəçilər faktura görə bilər.</p>
                                     </div>
-                                    <Switch defaultChecked />
+                                    <Switch defaultChecked disabled={!canUpdate} />
                                 </div>
                                 <div className="flex items-center justify-between border p-3 rounded-lg">
                                     <div className="space-y-0.5">
                                         <Label>Yalnız 'Billing Admin' Rolu</Label>
                                         <p className="text-xs text-muted-foreground">Tenant adminləri daxil olmaqla, yalnız xüsusi rola malik olanlar.</p>
                                     </div>
-                                    <Switch />
+                                    <Switch disabled={!canUpdate} />
                                 </div>
                                 <div className="flex items-center justify-between border p-3 rounded-lg opacity-80">
                                     <div className="space-y-0.5">
@@ -364,7 +371,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                                         </div>
                                         <p className="text-xs text-muted-foreground">Billing əməliyyatları üçün təkrar SSO tələb et.</p>
                                     </div>
-                                    <Switch />
+                                    <Switch disabled={!canUpdate} />
                                 </div>
                                 <div className="p-4 bg-muted rounded flex items-start gap-3 mt-4">
                                     <Lock className="w-5 h-5 text-muted-foreground mt-0.5" />
@@ -381,10 +388,11 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
                 )}
             </Tabs>
 
-            <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => toast.message("Dəyişikliklər ləğv edildi")}>Ləğv et</Button>
-                <Button onClick={() => toast.success("Konfiqurasiya yadda saxlanıldı")}>Yadda Saxla</Button>
-            </div>
+            {canUpdate && (
+                <div className="flex justify-end gap-2">
+                    <Button onClick={() => toast.success("Konfiqurasiya yadda saxlanıldı")}>Yadda Saxla</Button>
+                </div>
+            )}
         </div>
     );
 }

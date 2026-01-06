@@ -163,14 +163,38 @@ const SYSTEM_SLUGS = {
             READ: 'system.settings.system_configurations.read',
             MANAGE: 'system.settings.system_configurations.update',
             BILLING: {
-                PRICING: 'system.settings.system_configurations.billing_configurations.pricing.read',
-                LIMITS: 'system.settings.system_configurations.billing_configurations.limits.read',
-                OVERUSE: 'system.settings.system_configurations.billing_configurations.overuse.read',
-                GRACE: 'system.settings.system_configurations.billing_configurations.grace.read',
-                CURRENCY_TAX: 'system.settings.system_configurations.billing_configurations.currency_tax.read',
-                INVOICE: 'system.settings.system_configurations.billing_configurations.invoice.read',
-                EVENTS: 'system.settings.system_configurations.billing_configurations.events.read',
-                SECURITY: 'system.settings.system_configurations.billing_configurations.security.read'
+                PRICING: {
+                    READ: 'system.settings.system_configurations.billing_configurations.pricing.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.pricing.update'
+                },
+                LIMITS: {
+                    READ: 'system.settings.system_configurations.billing_configurations.limits.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.limits.update'
+                },
+                OVERUSE: {
+                    READ: 'system.settings.system_configurations.billing_configurations.overuse.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.overuse.update'
+                },
+                GRACE: {
+                    READ: 'system.settings.system_configurations.billing_configurations.grace.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.grace.update'
+                },
+                CURRENCY_TAX: {
+                    READ: 'system.settings.system_configurations.billing_configurations.currency_tax.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.currency_tax.update'
+                },
+                INVOICE: {
+                    READ: 'system.settings.system_configurations.billing_configurations.invoice.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.invoice.update'
+                },
+                EVENTS: {
+                    READ: 'system.settings.system_configurations.billing_configurations.events.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.events.update'
+                },
+                SECURITY: {
+                    READ: 'system.settings.system_configurations.billing_configurations.security.read',
+                    UPDATE: 'system.settings.system_configurations.billing_configurations.security.update'
+                }
             },
             DICTIONARIES: {
                 READ: 'system.settings.system_configurations.dictionary.read',
