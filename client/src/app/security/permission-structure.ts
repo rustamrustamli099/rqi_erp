@@ -58,10 +58,10 @@ export const ADMIN_PERMISSION_HIERARCHY = {
         },
         communication: {
             smtp_email: {
-                perms: ['read', 'create', 'update', 'delete', 'test_connection']
+                perms: ['read', 'update', 'send_test', 'change_status']
             },
             smtp_sms: {
-                perms: ['read', 'create', 'update', 'delete', 'test_connection', 'change_status']
+                perms: ['read', 'update', 'send_test', 'change_status']
             },
         },
         security: {

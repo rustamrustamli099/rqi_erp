@@ -184,4 +184,24 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'copy_json', permissionSlug: 'system.settings.general.notification_engine.copy_json' },
         ],
     },
+    {
+        entityKey: 'settings_communication_email',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.communication.smtp_email.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.communication.smtp_email.update' },
+            { actionKey: 'send_test', permissionSlug: 'system.settings.communication.smtp_email.send_test' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.communication.smtp_email.change_status' },
+        ],
+    },
+    {
+        entityKey: 'settings_communication_sms',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.communication.smtp_sms.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.communication.smtp_sms.update' },
+            { actionKey: 'send_test', permissionSlug: 'system.settings.communication.smtp_sms.send_test' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.communication.smtp_sms.change_status' },
+        ],
+    },
 ];

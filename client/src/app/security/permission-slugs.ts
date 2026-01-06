@@ -84,7 +84,19 @@ const SYSTEM_SLUGS = {
         },
         COMMUNICATION: {
             READ: 'system.settings.communication.read',
-            MANAGE: 'system.settings.communication.update',
+            // Detailed Objects
+            SMTP_EMAIL: {
+                READ: 'system.settings.communication.smtp_email.read',
+                UPDATE: 'system.settings.communication.smtp_email.update',
+                SEND_TEST: 'system.settings.communication.smtp_email.send_test',
+                CHANGE_STATUS: 'system.settings.communication.smtp_email.change_status',
+            },
+            SMTP_SMS: {
+                READ: 'system.settings.communication.smtp_sms.read',
+                UPDATE: 'system.settings.communication.smtp_sms.update',
+                SEND_TEST: 'system.settings.communication.smtp_sms.send_test',
+                CHANGE_STATUS: 'system.settings.communication.smtp_sms.change_status',
+            },
         },
         SECURITY: {
             READ: 'system.settings.security.read',
