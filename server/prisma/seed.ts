@@ -228,6 +228,15 @@ const SYSTEM_SLUGS = {
                     EXPORT_TO_EXCEL: 'system.settings.security.security_policy.restrictions.export_to_excel',
                 },
             },
+            SSO_OAUTH: {
+                READ: 'system.settings.security.sso_oauth.read',
+                CREATE: 'system.settings.security.sso_oauth.create',
+                UPDATE: 'system.settings.security.sso_oauth.update',
+                DELETE: 'system.settings.security.sso_oauth.delete',
+                CHANGE_STATUS: 'system.settings.security.sso_oauth.change_status',
+                TEST_CONNECTION: 'system.settings.security.sso_oauth.test_connection',
+                EXPORT_TO_EXCEL: 'system.settings.security.sso_oauth.export_to_excel',
+            },
         },
         COMMUNICATION: {
             READ: 'system.settings.communication.read',

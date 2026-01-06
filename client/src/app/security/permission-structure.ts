@@ -80,8 +80,8 @@ export const ADMIN_PERMISSION_HIERARCHY = {
                     perms: ['read', 'create', 'update', 'delete', 'change_status', 'export_to_excel']
                 },
             },
-            sso_OAuth: {
-                perms: ['read', 'create', 'update', 'delete', 'change_status']
+            sso_oauth: {
+                perms: ['read', 'create', 'update', 'delete', 'change_status', 'test_connection', 'export_to_excel']
             },
             user_rights: {
                 roles: {
@@ -272,7 +272,7 @@ const LABEL_MAP: Record<string, string> = {
     smtp_email: "SMTP Email",
     smtp_sms: "SMTP SMS",
     security_policy: "Təhlükəsizlik Siyasəti",
-    sso_OAuth: "SSO & OAuth",
+    sso_oauth: "SSO & OAuth",
     user_rights: "İstifadəçi Hüquqları",
     roles_permissions: "Rollar və İcazələr",
     compliance: "Uyğunluq (Compliance)",

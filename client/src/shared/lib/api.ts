@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { store } from '@/store'; // Correct path based on directory structure
 import { setCredentials, logout } from '@/domains/auth/state/authSlice';
+import { toast } from 'sonner';
 
 export const api = axios.create({
     baseURL: 'http://localhost:3000/api/v1',
@@ -23,9 +24,24 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Handle 403 Forbidden
+        // Handle 403 Forbidden - Show toast error with user-friendly message
         if (error.response?.status === 403) {
-            window.location.href = '/403';
+            console.warn('[API] 403 Forbidden:', error.response?.data);
+            // User-friendly message - don't show technical details
+            toast.error('Bu əməliyyatı yerinə yetirmək üçün icazəniz yoxdur. Sistem administratoru ilə əlaqə saxlayın.');
+            return Promise.reject(error);
+        }
+
+        // Handle 400 Bad Request - Show toast error
+        if (error.response?.status === 400) {
+            const message = error.response?.data?.message || 'Sorğu xətası';
+            toast.error(`Xəta: ${message}`);
+            return Promise.reject(error);
+        }
+
+        // Handle 500 Server Error
+        if (error.response?.status >= 500) {
+            toast.error('Server xətası baş verdi. Xahiş edirik daha sonra cəhd edin.');
             return Promise.reject(error);
         }
 

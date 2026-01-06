@@ -638,20 +638,22 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         if (!currentRole) return;
         setIsSaving(true);
         try {
-            await systemApi.updateRole(currentRole.id, {
-                // Partial update relying on backend handling or sending existing values
-                name: currentRole.name,
-                description: currentRole.description,
-                scope: currentRole.scope,
-                permissionIds: selectedPermissions
+            // SAP-GRADE: Use dedicated permissions API with optimistic locking
+            await systemApi.updateRolePermissions(currentRole.id, {
+                expectedVersion: currentRole.version || 1,
+                permissionSlugs: selectedPermissions,
+                comment: `İcazələr RolesPage vasitəsilə yeniləndi`
             });
             toast.success("İcazələr yadda saxlanıldı");
             fetchRoles();
-            // Update current role local state to reflect new permissions? 
-            // fetchRoles updates list, but currentRole might need refresh if we stay on it.
-            // For now good enough.
+            // Update current role local state to reflect new permissions
+            setCurrentRole(prev => prev ? { ...prev, version: (prev.version || 1) + 1 } : null);
         } catch (error: any) {
-            toast.error("Xəta baş verdi: " + error.message)
+            if (error?.response?.data?.message?.includes('VERSION_CONFLICT')) {
+                toast.error("Versiya konflikti! Səhifəni yeniləyin və yenidən cəhd edin.");
+            } else {
+                toast.error("Xəta baş verdi: " + (error?.response?.data?.message || error.message));
+            }
         } finally {
             setIsSaving(false);
             setIsDiffOpen(false);

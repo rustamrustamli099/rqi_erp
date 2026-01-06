@@ -204,4 +204,59 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'change_status', permissionSlug: 'system.settings.communication.smtp_sms.change_status' },
         ],
     },
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SECURITY - Security Policy Entities
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        entityKey: 'settings_security_password',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.security_policy.password.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.security_policy.password.update' },
+        ],
+    },
+    {
+        entityKey: 'settings_security_login',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.security_policy.login.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.security_policy.login.update' },
+        ],
+    },
+    {
+        entityKey: 'settings_security_session',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.security_policy.session.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.security_policy.session.update' },
+        ],
+    },
+    {
+        entityKey: 'settings_security_restrictions',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.security_policy.restrictions.read' },
+            { actionKey: 'create', permissionSlug: 'system.settings.security.security_policy.restrictions.create' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.security_policy.restrictions.update' },
+            { actionKey: 'delete', permissionSlug: 'system.settings.security.security_policy.restrictions.delete' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.security.security_policy.restrictions.change_status' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.settings.security.security_policy.restrictions.export_to_excel' },
+        ],
+    },
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SECURITY - SSO & OAuth
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        entityKey: 'settings_security_sso_oauth',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.sso_oauth.read' },
+            { actionKey: 'create', permissionSlug: 'system.settings.security.sso_oauth.create' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.sso_oauth.update' },
+            { actionKey: 'delete', permissionSlug: 'system.settings.security.sso_oauth.delete' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.security.sso_oauth.change_status' },
+            { actionKey: 'test_connection', permissionSlug: 'system.settings.security.sso_oauth.test_connection' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.settings.security.sso_oauth.export_to_excel' },
+        ],
+    },
 ];

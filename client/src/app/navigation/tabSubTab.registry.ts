@@ -214,7 +214,7 @@ const ADMIN_PAGES: PageConfig[] = [
             {
                 key: 'sso',
                 label: 'SSO & OAuth',
-                requiredAnyOf: ['system.settings.security.sso_OAuth.read']
+                requiredAnyOf: ['system.settings.security.sso_oauth.read']
             },
             {
                 key: 'user_rights',
