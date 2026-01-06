@@ -160,4 +160,28 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'view_audit', permissionSlug: 'system.billing.licenses.view_audit' },
         ],
     },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Settings Entities (Phase 15A)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'settings_company_profile',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.general.company_profile.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.general.company_profile.update' },
+        ],
+    },
+    {
+        entityKey: 'settings_notification_engine',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.general.notification_engine.read' },
+            { actionKey: 'create', permissionSlug: 'system.settings.general.notification_engine.create' },
+            { actionKey: 'update', permissionSlug: 'system.settings.general.notification_engine.update' },
+            { actionKey: 'delete', permissionSlug: 'system.settings.general.notification_engine.delete' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.settings.general.notification_engine.export_to_excel' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.general.notification_engine.change_status' },
+            { actionKey: 'copy_json', permissionSlug: 'system.settings.general.notification_engine.copy_json' },
+        ],
+    },
 ];

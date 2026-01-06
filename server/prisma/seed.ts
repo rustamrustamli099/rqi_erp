@@ -183,6 +183,35 @@ const SYSTEM_SLUGS = {
             VIEW_AUDIT: 'system.billing.licenses.view_audit'
         }
     },
+    SETTINGS: {
+        READ: 'system.settings.read',
+        UPDATE: 'system.settings.update',
+        GENERAL: {
+            // Flattened/Shortened structure in seed can be expanded, but we must match the slugs exactly.
+            // Using nested structure for clarity and matching permission-slugs.ts hierarchy
+            COMPANY_PROFILE: {
+                READ: 'system.settings.general.company_profile.read',
+                UPDATE: 'system.settings.general.company_profile.update',
+            },
+            NOTIFICATION_ENGINE: {
+                READ: 'system.settings.general.notification_engine.read',
+                CREATE: 'system.settings.general.notification_engine.create',
+                UPDATE: 'system.settings.general.notification_engine.update',
+                DELETE: 'system.settings.general.notification_engine.delete',
+                EXPORT: 'system.settings.general.notification_engine.export_to_excel',
+                CHANGE_STATUS: 'system.settings.general.notification_engine.change_status',
+                COPY: 'system.settings.general.notification_engine.copy_json',
+            }
+        },
+        SECURITY: {
+            READ: 'system.settings.security.read',
+            MANAGE: 'system.settings.security.update',
+        },
+        COMMUNICATION: {
+            READ: 'system.settings.communication.read',
+            MANAGE: 'system.settings.communication.update',
+        }
+    },
     CONSOLE: {
         READ: 'system.system_console.read',
         DASHBOARD: 'system.system_console.dashboard.read',

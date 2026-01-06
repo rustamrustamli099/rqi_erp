@@ -50,7 +50,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
     settings: {
         general: {
             company_profile: {
-                perms: ['read', 'create', 'update']
+                perms: ['read', 'update']
             },
             notification_engine: {
                 perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'change_status', 'copy_json']

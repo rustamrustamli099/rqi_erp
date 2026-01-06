@@ -43,6 +43,7 @@ import {
     SSOSettingsTab,
     BillingConfigTab,
 } from "./SettingsTabs"
+import { GeneralSettingsForm } from "./_components/settings/GeneralSettingsForm"
 
 const timezones = [
     { value: "Asia/Baku", label: "Asia/Baku (GMT+4)" },
@@ -192,74 +193,7 @@ export default function SettingsPage() {
                     <div className="space-y-6 max-w-5xl">
 
                         {/* 1. GENERAL PROFILE */}
-                        {activeTab === 'general' && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Şirkət Profili (Tenant)</CardTitle>
-                                    <CardDescription>Bu, SİZİN şirkətinizin profilidir. Fakturalarda və sistem başlıqlarında bu məlumatlar əks olunur.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    {/* Logo & Basic Info */}
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        <div className="flex-1 space-y-4">
-                                            <div className="grid gap-2">
-                                                <Label>Sistem Adı (Tenant Name)</Label>
-                                                <Input defaultValue="RQI ERP Enterprise" />
-                                                <span className="text-[0.7rem] text-muted-foreground leading-tight">Sistemin yuxarı sol küncündə görünən ad.</span>
-                                            </div>
-                                            <div className="grid gap-2">
-                                                <Label>Rəsmi Hüquqi Ad</Label>
-                                                <Input defaultValue="RQI Solutions LLC" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="grid gap-2">
-                                            <Label>VÖEN (Tax ID)</Label>
-                                            <Input placeholder="0000000000" />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label>Vebsayt</Label>
-                                            <Input placeholder="https://example.com" />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label>Domain (Subdomain)</Label>
-                                            <div className="flex gap-2">
-                                                <Input defaultValue="rqi" className="flex-1" />
-                                                <span className="flex items-center text-sm text-muted-foreground bg-muted px-3 rounded-md border">.rqi.az</span>
-                                            </div>
-                                            <span className="text-[0.7rem] text-muted-foreground leading-tight">Dəyişiklik 24 saat ərzində aktivləşir.</span>
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label>Saat Qurşağı (Timezone)</Label>
-                                            <Combobox
-                                                options={timezones}
-                                                value={timezone}
-                                                onSelect={setTimezone}
-                                                placeholder="Saat qurşağını seçin..."
-                                                emptyText="Nəticə tapılmadı."
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="grid gap-2">
-                                            <Label>Dəstək Email</Label>
-                                            <Input defaultValue="support@rqi.az" />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label>Əlaqə Telefonu</Label>
-                                            <Input defaultValue="+994 50 123 45 67" />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-end pt-4">
-                                        <Button onClick={() => toast.success("Profil yeniləndi.")}>Yadda Saxla</Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                        {activeTab === 'general' && <GeneralSettingsForm />}
 
 
                         {/* 2. SMTP SETTINGS */}

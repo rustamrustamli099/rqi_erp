@@ -16,7 +16,8 @@ import {
     Copy,
     Mail,
     MessageSquare,
-    Bell
+    Bell,
+    Activity
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -44,6 +45,8 @@ import {
 import { useState } from "react";
 import type { NotificationRule, NotificationSeverity, NotificationChannel } from "@/domains/settings/constants/notification-types";
 import { toast } from "sonner";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { PermissionSlugs } from "@/app/security/permission-slugs";
 
 // Helper for Severity Icon/Color
 const SeverityBadge = ({ severity }: { severity: NotificationSeverity }) => {
@@ -81,6 +84,13 @@ interface NotificationRulesTableProps {
 }
 
 export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd }: NotificationRulesTableProps) => {
+    const { permissions } = usePermissions();
+    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.NOTIFICATION_ENGINE.CREATE);
+    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.NOTIFICATION_ENGINE.UPDATE);
+    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.NOTIFICATION_ENGINE.CHANGE_STATUS);
+    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.NOTIFICATION_ENGINE.DELETE);
+    const canExport = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.NOTIFICATION_ENGINE.EXPORT);
+    const canCopy = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.NOTIFICATION_ENGINE.COPY_JSON);
 
     const columns: ColumnDef<NotificationRule>[] = [
         {
@@ -140,20 +150,31 @@ export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd }
                             <DropdownMenuItem onClick={() => onView(row.original)}>
                                 <Eye className="mr-2 h-4 w-4" /> Bax
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onEdit(row.original)}>
-                                <Edit className="mr-2 h-4 w-4" /> Yenilə
-                            </DropdownMenuItem>
+                            {canChangeStatus && (
+                                <DropdownMenuItem onClick={() => toast.info('Status dəyişdirilir... (Mock)')}>
+                                    <Activity className="mr-2 h-4 w-4" /> Statusu Dəyiş
+                                </DropdownMenuItem>
+                            )}
+                            {canUpdate && (
+                                <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Yenilə
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => onDelete(row.original)}>
-                                <Trash className="mr-2 h-4 w-4" /> Sil
-                            </DropdownMenuItem>
+                            {canDelete && (
+                                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(row.original)}>
+                                    <Trash className="mr-2 h-4 w-4" /> Sil
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => {
-                                navigator.clipboard.writeText(JSON.stringify(row.original, null, 2));
-                                toast.success("JSON kopyalandı");
-                            }}>
-                                <Copy className="mr-2 h-4 w-4" /> JSON Kopyala
-                            </DropdownMenuItem>
+                            {canCopy && (
+                                <DropdownMenuItem onClick={() => {
+                                    navigator.clipboard.writeText(JSON.stringify(row.original, null, 2));
+                                    toast.success("JSON kopyalandı");
+                                }}>
+                                    <Copy className="mr-2 h-4 w-4" /> JSON Kopyala
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )
@@ -170,19 +191,21 @@ export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd }
                 data={data}
                 searchKey="name"
                 filterPlaceholder="Qayda axtar..."
-                onAddClick={onAdd}
+                onAddClick={canCreate ? onAdd : undefined}
                 addLabel="Yeni Qayda"
             >
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8 ml-auto" onClick={() => setExportOpen(true)}>
-                                <Download className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Export to Excel</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                {canExport && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" className="h-8 w-8 ml-auto" onClick={() => setExportOpen(true)}>
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excel-ə İxrac</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
             </DataTable>
 
             <AlertDialog open={exportOpen} onOpenChange={setExportOpen}>

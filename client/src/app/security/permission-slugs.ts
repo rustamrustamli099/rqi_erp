@@ -64,9 +64,21 @@ const SYSTEM_SLUGS = {
         READ: 'system.settings.read',
         UPDATE: 'system.settings.update',
         GENERAL: {
-            READ: 'system.settings.general.read',
-            UPDATE: 'system.settings.general.update',
+            COMPANY_PROFILE: {
+                READ: 'system.settings.general.company_profile.read',
+                UPDATE: 'system.settings.general.company_profile.update',
+            },
+            NOTIFICATION_ENGINE: {
+                READ: 'system.settings.general.notification_engine.read',
+                CREATE: 'system.settings.general.notification_engine.create',
+                UPDATE: 'system.settings.general.notification_engine.update',
+                DELETE: 'system.settings.general.notification_engine.delete',
+                EXPORT: 'system.settings.general.notification_engine.export_to_excel',
+                CHANGE_STATUS: 'system.settings.general.notification_engine.change_status',
+                COPY_JSON: 'system.settings.general.notification_engine.copy_json',
+            },
         },
+        // Legacy/Direct mappings if needed, but structure should be primary
         NOTIFICATIONS: {
             READ: 'system.settings.general.notification_engine.read',
         },
