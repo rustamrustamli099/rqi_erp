@@ -23,7 +23,24 @@ const SYSTEM_SLUGS = {
         VIEW_AUDIT: 'system.tenants.view_audit',
         // MANAGE legacy removal - using granular instead
     },
-    BRANCHES: { READ: 'system.branches.read', CREATE: 'system.branches.create', UPDATE: 'system.branches.update', DELETE: 'system.branches.delete' },
+    // Updated Branches to match permissionsStructure
+    BRANCHES: {
+        READ: 'system.branches.read',
+        CREATE: 'system.branches.create',
+        UPDATE: 'system.branches.update',
+        DELETE: 'system.branches.delete',
+        EXPORT_TO_EXCEL: 'system.branches.export_to_excel',
+        READ_DETAILS: 'system.branches.read_details',
+        CHANGE_STATUS: 'system.branches.change_status'
+    },
+    // Missing APPROVALS section added
+    APPROVALS: {
+        READ: 'system.approvals.read',
+        FORWARD: 'system.approvals.forward',
+        REJECT: 'system.approvals.reject',
+        EXPORT_TO_EXCEL: 'system.approvals.export_to_excel',
+        APPROVE: 'system.approvals.approve',
+    },
     USERS: {
         READ: 'system.users.users.read',
         CREATE: 'system.users.users.create',
@@ -45,9 +62,33 @@ const SYSTEM_SLUGS = {
         UPDATE: 'system.users.curators.update',
         DELETE: 'system.users.curators.delete',
         // Synced with permission-structure.ts
-        EXPORT_TO_EXCEL: 'system.users.curators.export_to_excel',
         CHANGE_STATUS: 'system.users.curators.change_status',
         COPY_ID: 'system.users.curators.copy_id'
+    },
+    FILE_MANAGER: {
+        READ: 'system.file_manager.read',
+        CREATE_FOLDER: 'system.file_manager.create_folder',
+        UPLOAD: 'system.file_manager.upload',
+        DELETE_FILE: 'system.file_manager.delete_file',
+        RENAME_FOLDER: 'system.file_manager.rename_folder',
+        MOVE_FOLDER: 'system.file_manager.move_folder',
+        SHARE_FOLDER: 'system.file_manager.share_folder',
+        PERMISSIONS_CONFIGURATION: 'system.file_manager.permissions_configuration',
+        DELETE_FOLDER: 'system.file_manager.delete_folder',
+        RENAME_FILE: 'system.file_manager.rename_file',
+        MOVE_FILE: 'system.file_manager.move_file',
+        COPY_FILE: 'system.file_manager.copy_file',
+        SHARE_FILE: 'system.file_manager.share_file',
+        VERSION: 'system.file_manager.version'
+    },
+    SYSTEM_GUIDE: {
+        READ: 'system.system_guide.read',
+        CREATE: 'system.system_guide.create',
+        UPDATE: 'system.system_guide.update',
+        DELETE: 'system.system_guide.delete',
+        SHARE: 'system.system_guide.share',
+        EDIT: 'system.system_guide.edit',
+        PUBLISH: 'system.system_guide.publish'
     },
 
     // USER RIGHTS - NEW SEPARATED SUBTABS
@@ -140,10 +181,33 @@ const SYSTEM_SLUGS = {
                     READ_DISTRICT: 'system.settings.system_configurations.dictionary.addresses.read_district'
                 }
             },
-            TEMPLATES: 'system.settings.system_configurations.document_templates.read',
+            TEMPLATES: {
+                READ: 'system.settings.system_configurations.document_templates.read',
+                CONFIGURATE: 'system.settings.system_configurations.document_templates.configurate',
+                UPDATE: 'system.settings.system_configurations.document_templates.update',
+                SET_DEFAULT: 'system.settings.system_configurations.document_templates.set_default',
+                DOWNLOAD: 'system.settings.system_configurations.document_templates.download',
+                DELETE: 'system.settings.system_configurations.document_templates.delete',
+                EXPORT: 'system.settings.system_configurations.document_templates.export_to_excel',
+                CREATE: 'system.settings.system_configurations.document_templates.create'
+            },
             WORKFLOW: {
-                CONFIG: 'system.settings.system_configurations.workflow.configuration.read',
-                CONTROL: 'system.settings.system_configurations.workflow.control.read'
+                CONFIG: {
+                    READ: 'system.settings.system_configurations.workflow.configuration.read',
+                    CREATE: 'system.settings.system_configurations.workflow.configuration.create',
+                    UPDATE: 'system.settings.system_configurations.workflow.configuration.update'
+                },
+                CONTROL: {
+                    READ: 'system.settings.system_configurations.workflow.control.read',
+                    REFRESH: 'system.settings.system_configurations.workflow.control.refresh',
+                    DETAILS: 'system.settings.system_configurations.workflow.control.read_details',
+                    LOGS: 'system.settings.system_configurations.workflow.control.logs',
+                    APPROVE: 'system.settings.system_configurations.workflow.control.approve',
+                    REJECT: 'system.settings.system_configurations.workflow.control.reject',
+                    DELEGATE: 'system.settings.system_configurations.workflow.control.delegate',
+                    ESCALATE: 'system.settings.system_configurations.workflow.control.escalate',
+                    CANCEL: 'system.settings.system_configurations.workflow.control.cancel_process'
+                }
             }
         }
     },
@@ -476,8 +540,11 @@ async function main() {
     }
 
     // [FIX] Explicitly Ensure ROLES Permissions are assigned to Owner
-    console.log('🛡️ Verifying Owner ROLES Permissions...');
-    const rolesPermissionsSlugs = Object.values(SYSTEM_SLUGS.USER_RIGHTS.ROLES);
+    console.log('🛡️ Verifying Owner ROLES & MATRIX Permissions...');
+    const rolesPermissionsSlugs = [
+        ...Object.values(SYSTEM_SLUGS.USER_RIGHTS.ROLES),
+        ...Object.values(SYSTEM_SLUGS.USER_RIGHTS.MATRIX_VIEW)
+    ];
     const rolesPermissions = await prisma.permission.findMany({
         where: { slug: { in: rolesPermissionsSlugs } }
     });

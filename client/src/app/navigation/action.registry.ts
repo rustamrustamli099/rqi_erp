@@ -40,7 +40,7 @@
  * Action Context - WHERE the action appears
  * This is metadata, NOT UI logic
  */
-export type ActionContext = 'toolbar' | 'row' | 'form' | 'bulk';
+export type ActionContext = 'toolbar' | 'row' | 'form' | 'bulk' | 'nav';
 
 /**
  * Single Action Permission Definition
@@ -186,6 +186,28 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
                 permissionSlug: 'system.settings.security.user_rights.roles.view_audit_log',
                 contexts: ['row'],
                 label: 'Tarixçəyə Bax',
+            },
+        ],
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Matrix View Entity
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'matrix_view',
+        scope: 'system',
+        actions: [
+            {
+                actionKey: 'read',
+                permissionSlug: 'system.settings.security.user_rights.matrix_view.read',
+                contexts: ['nav'],
+                label: 'Görüntüləmə',
+            },
+            {
+                actionKey: 'update',
+                permissionSlug: 'system.settings.security.user_rights.matrix_view.update',
+                contexts: ['toolbar'],
+                label: 'Redaktə Et',
             },
         ],
     },

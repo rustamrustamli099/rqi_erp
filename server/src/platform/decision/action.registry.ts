@@ -278,4 +278,13 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'submit', permissionSlug: 'system.settings.security.user_rights.roles.submit' },
         ],
     },
+    // Matrix View
+    {
+        entityKey: 'matrix_view',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.user_rights.matrix_view.read' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.user_rights.matrix_view.update' },
+        ],
+    },
 ];

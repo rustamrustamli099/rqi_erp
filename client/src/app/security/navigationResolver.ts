@@ -348,6 +348,7 @@ export interface ResolvedActions {
         row: ResolvedAction[];
         form: ResolvedAction[];
         bulk: ResolvedAction[];
+        nav: ResolvedAction[];
     };
 }
 
@@ -413,6 +414,7 @@ function resolveActionsInternal(
             row: [],
             form: [],
             bulk: [],
+            nav: [],
         }
     };
 

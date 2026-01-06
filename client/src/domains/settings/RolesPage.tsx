@@ -42,7 +42,7 @@ import { RoleCreationWizard } from "./_components/RoleCreationWizard"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
 import { systemApi, type SystemPermission } from "@/domains/system-console/api/system.contract";
 import { useGetRolesQuery, useCreateRoleMutation, useUpdateRoleMutation, useDeleteRoleMutation, useGetRoleByIdQuery, type Role } from "@/store/api";
-import { PermissionMatrix } from "@/domains/system-console/feature-flags/PermissionMatrix";
+import { PermissionMatrix } from "./_components/PermissionMatrix";
 import { PermissionTreeEditor } from "./_components/PermissionTreeEditor"
 import { permissionsStructure } from "@/app/security/permission-structure"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
@@ -293,6 +293,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     const deleteAction = rowActions.find(a => a.actionKey === 'delete');
     const changeStatusAction = rowActions.find(a => a.actionKey === 'change_status');
     const managePermissionsAction = rowActions.find(a => a.actionKey === 'manage_permissions');
+    const matrixUpdateAction = toolbarActions.find(a => a.actionKey === 'update');
 
     const handleTabChange = (value: string) => {
         console.log('[RolesPage] handleTabChange:', value);
@@ -734,7 +735,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 searchParams={searchParams}
             />
         ),
-        matrix_view: <PermissionMatrix roles={roles} />,
+        matrix_view: <PermissionMatrix roles={roles} onRefresh={fetchRoles} canEdit={matrixUpdateAction?.state === 'enabled'} />,
         compliance: (
             <Card>
                 <CardHeader>
