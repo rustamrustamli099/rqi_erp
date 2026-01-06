@@ -33,6 +33,8 @@ export interface RoleColumnHandlers {
     onApprove: (roleId: string) => void;
     onReject: (roleId: string) => void;
     onHistory: (role: Role) => void;
+    onChangeStatus?: (role: Role) => void;
+    onCopy?: (role: Role) => void;
 }
 
 import type { ResolvedAction } from "@/app/security/navigationResolver";
@@ -85,7 +87,8 @@ export function createRoleColumns(
                 return (
                     <Badge
                         variant="outline"
-                        className={cn("text-[10px]", getStatusColor(status))}
+                        className={cn("text-[10px]", getStatusColor(status), isVisible('change_status') ? "cursor-pointer hover:opacity-80" : "cursor-default")}
+                        onClick={() => isVisible('change_status') && handlers.onChangeStatus?.(row.original)}
                     >
                         {status}
                     </Badge>
@@ -127,31 +130,40 @@ export function createRoleColumns(
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {isVisible('view') && (
-                                <DropdownMenuItem onClick={() => handlers.onView(role)}>
-                                    <Eye className="mr-2 h-4 w-4" /> Bax
-                                </DropdownMenuItem>
-                            )}
-                            {isVisible('history') && (
+                            {/* Always allow viewing if READ permission implies it, but here we explicitly check */}
+                            <DropdownMenuItem onClick={() => handlers.onView(role)}>
+                                <Eye className="mr-2 h-4 w-4" /> Bax
+                            </DropdownMenuItem>
+
+                            {isVisible('view_audit_log') && (
                                 <DropdownMenuItem onClick={() => handlers.onHistory(role)}>
                                     <History className="mr-2 h-4 w-4" /> Tarixçə
                                 </DropdownMenuItem>
                             )}
-                            {isVisible('assign_permissions') && (
+
+                            {isVisible('manage_permissions') && (
                                 <DropdownMenuItem onClick={() => handlers.onSelectPermissions(role)}>
-                                    <Check className="mr-2 h-4 w-4" /> İcazələri Seç
+                                    <Check className="mr-2 h-4 w-4" /> İcazələri İdarə Et
+                                </DropdownMenuItem>
+                            )}
+
+                            {isVisible('copy') && (
+                                <DropdownMenuItem onClick={() => handlers.onCopy?.(role)}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Kopyala
                                 </DropdownMenuItem>
                             )}
 
                             <DropdownMenuSeparator />
 
-                            {/* Workflow Actions - Visibility also depends on status, but MUST be authorized */}
+                            {/* Workflow Actions */}
                             {role.status === "DRAFT" && isVisible('submit') && (
                                 <DropdownMenuItem onClick={() => handlers.onSubmit(role.id)}>
                                     <CheckCircle2 className="mr-2 h-4 w-4 text-blue-600" />
                                     Təsdiqə Göndər
                                 </DropdownMenuItem>
                             )}
+
+                            {/* APPROVE/REJECT: Controlled by Approvals module, but if we wanted to show them here, check keys */}
                             {role.status === "PENDING_APPROVAL" && (
                                 <>
                                     {isVisible('approve') && (
@@ -179,10 +191,26 @@ export function createRoleColumns(
                                     <Edit className="mr-2 h-4 w-4" /> Düzəliş Et
                                 </DropdownMenuItem>
                             )}
-                            {role.type !== "system" && isVisible('delete') && (
+
+                            {/* Change Status Action */}
+                            {isVisible('change_status') && role.type !== "system" && (
+                                <DropdownMenuItem onClick={() => handlers.onChangeStatus?.(role)}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Statusu Dəyiş
+                                </DropdownMenuItem>
+                            )}
+
+                            {/* Delete Action - Show Disabled for System Roles instead of hiding */}
+                            {isVisible('delete') && (
                                 <DropdownMenuItem
-                                    className="text-red-600"
-                                    onClick={() => handlers.onDelete(role)}
+                                    className={cn(role.type === "system" ? "opacity-50 cursor-not-allowed" : "text-red-600")}
+                                    disabled={role.type === "system"}
+                                    onClick={(e) => {
+                                        if (role.type === "system") {
+                                            e.preventDefault();
+                                            return;
+                                        }
+                                        handlers.onDelete(role);
+                                    }}
                                 >
                                     <Trash className="mr-2 h-4 w-4" /> Sil
                                 </DropdownMenuItem>

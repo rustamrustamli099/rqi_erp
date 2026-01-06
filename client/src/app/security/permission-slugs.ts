@@ -46,6 +46,12 @@ const SYSTEM_SLUGS = {
             CREATE: 'system.settings.security.user_rights.roles.create',
             UPDATE: 'system.settings.security.user_rights.roles.update',
             DELETE: 'system.settings.security.user_rights.roles.delete',
+            EXPORT_TO_EXCEL: 'system.settings.security.user_rights.roles.export_to_excel',
+            SELECT_PERMISSIONS: 'system.settings.security.user_rights.roles.select_permissions',
+            CHANGE_STATUS: 'system.settings.security.user_rights.roles.change_status',
+            COPY: 'system.settings.security.user_rights.roles.copy',
+            VIEW_AUDIT_LOG: 'system.settings.security.user_rights.roles.view_audit_log',
+            SUBMIT: 'system.settings.security.user_rights.roles.submit',
         },
         MATRIX_VIEW: {
             READ: 'system.settings.security.user_rights.matrix_view.read',

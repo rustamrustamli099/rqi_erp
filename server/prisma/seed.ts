@@ -57,6 +57,12 @@ const SYSTEM_SLUGS = {
             CREATE: 'system.settings.security.user_rights.roles.create',
             UPDATE: 'system.settings.security.user_rights.roles.update',
             DELETE: 'system.settings.security.user_rights.roles.delete',
+            EXPORT_TO_EXCEL: 'system.settings.security.user_rights.roles.export_to_excel',
+            MANAGE_PERMISSIONS: 'system.settings.security.user_rights.roles.manage_permissions',
+            CHANGE_STATUS: 'system.settings.security.user_rights.roles.change_status',
+            COPY: 'system.settings.security.user_rights.roles.copy',
+            VIEW_AUDIT_LOG: 'system.settings.security.user_rights.roles.view_audit_log',
+            SUBMIT: 'system.settings.security.user_rights.roles.submit',
         },
         MATRIX_VIEW: {
             READ: 'system.settings.security.user_rights.matrix_view.read',
@@ -467,6 +473,26 @@ async function main() {
             skipDuplicates: true
         });
         console.log(`✅ Assigned ${data.length} permissions to Owner Role.`);
+    }
+
+    // [FIX] Explicitly Ensure ROLES Permissions are assigned to Owner
+    console.log('🛡️ Verifying Owner ROLES Permissions...');
+    const rolesPermissionsSlugs = Object.values(SYSTEM_SLUGS.USER_RIGHTS.ROLES);
+    const rolesPermissions = await prisma.permission.findMany({
+        where: { slug: { in: rolesPermissionsSlugs } }
+    });
+
+    const rolesPermData = rolesPermissions.map(p => ({
+        roleId: ownerRole.id,
+        permissionId: p.id
+    }));
+
+    if (rolesPermData.length > 0) {
+        await prisma.rolePermission.createMany({
+            data: rolesPermData,
+            skipDuplicates: true
+        });
+        console.log(`✅ FORCE-ASSIGNED ${rolesPermData.length} User Rights>Roles permissions to Owner.`);
     }
 
     console.log('🍔 Creating Menus & MenuItems...');

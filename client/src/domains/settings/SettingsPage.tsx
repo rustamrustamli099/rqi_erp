@@ -68,7 +68,7 @@ export default function SettingsPage() {
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once
     // SAP-GRADE: Resolve navigation tree
-    const tree = useMemo(() => resolveNavigationTree('admin', permissions), [permissions]);
+    const tree = useMemo(() => resolveNavigationTree('admin', permissions, 'system'), [permissions]);
     const settingsPageNode = tree.find(n => n.pageKey === 'admin.settings');
 
     // DEBUG - SİL SONRA (User Permission Diagnosis)

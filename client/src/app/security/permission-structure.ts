@@ -85,7 +85,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
             },
             user_rights: {
                 roles: {
-                    perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'select_permissions', 'submit', 'approve', 'reject']
+                    perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'manage_permissions', 'change_status', 'copy', 'view_audit_log', 'submit']
                 },
                 matrix_view: {
                     perms: ['read', 'update']
@@ -389,6 +389,11 @@ const ACTION_LABEL_MAP: Record<string, string> = {
     logs: 'Qeydlər',
     // Developer Hub
     send_test_payload: 'Test Göndər',
+    // User Rights Actions
+    manage_permissions: 'İcazələri İdarə Et',
+    copy: 'Kopyala',
+    view_audit_log: 'Audit Qeydləri',
+    submit: 'Təsdiqə Göndər',
 };
 
 const formatAction = (action: string): string => {

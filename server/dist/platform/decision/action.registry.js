@@ -212,5 +212,21 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
             { actionKey: 'export_to_excel', permissionSlug: 'system.settings.security.sso_oauth.export_to_excel' },
         ],
     },
+    {
+        entityKey: 'settings_user_rights_roles',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.user_rights.roles.read' },
+            { actionKey: 'create', permissionSlug: 'system.settings.security.user_rights.roles.create' },
+            { actionKey: 'update', permissionSlug: 'system.settings.security.user_rights.roles.update' },
+            { actionKey: 'delete', permissionSlug: 'system.settings.security.user_rights.roles.delete' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.settings.security.user_rights.roles.export_to_excel' },
+            { actionKey: 'select_permissions', permissionSlug: 'system.settings.security.user_rights.roles.select_permissions' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.security.user_rights.roles.change_status' },
+            { actionKey: 'copy', permissionSlug: 'system.settings.security.user_rights.roles.copy' },
+            { actionKey: 'view_audit_log', permissionSlug: 'system.settings.security.user_rights.roles.view_audit_log' },
+            { actionKey: 'submit', permissionSlug: 'system.settings.security.user_rights.roles.submit' },
+        ],
+    },
 ];
 //# sourceMappingURL=action.registry.js.map

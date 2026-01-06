@@ -287,7 +287,12 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
 
     // SAP LAW: Use Action Objects directly. No boolean compute.
     const createAction = toolbarActions.find(a => a.actionKey === 'create');
-    const exportAction = toolbarActions.find(a => a.actionKey === 'export');
+    const exportAction = toolbarActions.find(a => a.actionKey === 'export_to_excel');
+
+    // Explicitly resolve row actions for usage in handlers
+    const deleteAction = rowActions.find(a => a.actionKey === 'delete');
+    const changeStatusAction = rowActions.find(a => a.actionKey === 'change_status');
+    const managePermissionsAction = rowActions.find(a => a.actionKey === 'manage_permissions');
 
     const handleTabChange = (value: string) => {
         console.log('[RolesPage] handleTabChange:', value);
@@ -463,12 +468,14 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
             setCurrentRole(role);
             setIsDeleteOpen(true);
         },
-        onSelectPermissions: (role) => setSelectedRole(role.name),
+        onSelectPermissions: (role) => handleRoleSelect(role),
         onSubmit: workflow.handleSubmit,
         onApprove: workflow.handleApprove,
         onReject: workflow.handleReject,
         onHistory: () => toast.info("Audit tarixçəsi tezliklə hazır olacaq"),
-    }, rowActions), [workflow.handleSubmit, workflow.handleApprove, workflow.handleReject, rowActions]);
+        onChangeStatus: (role) => toast.info(`Status dəyişikliyi: ${role.name}`),
+        onCopy: (role) => toast.info(`Rol kopyalanır: ${role.name}`),
+    }, rowActions), [workflow.handleSubmit, workflow.handleApprove, workflow.handleReject, rowActions, handleRoleSelect]);
 
     // Fetch Logic
     // ... imports
@@ -603,6 +610,13 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     // Use systemApi in confirmDeleteRole
     const confirmDeleteRole = async () => {
         if (!currentRole) return;
+
+        // Security Check
+        if (deleteAction?.state !== 'enabled') {
+            toast.error("Bu əməliyyat üçün icazəniz yoxdur.");
+            return;
+        }
+
         try {
             await systemApi.deleteRole(currentRole.id);
             toast.success("Rol silindi");
@@ -683,7 +697,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 setRowSelection={setRowSelection}
                 setColumnFilters={setColumnFilters}
                 onRowClick={handleRoleSelect}
-                onAddClick={createAction?.state !== 'hidden' ? () => setWizardOpen(true) : undefined}
+                onAddClick={createAction?.state === 'enabled' ? () => setWizardOpen(true) : undefined}
                 isLoading={loading}
                 searchTerm={searchTerm}
                 setSearch={setSearch}
@@ -693,7 +707,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 query={query}
                 setFilter={setFilter}
                 reset={reset}
-                onExportClick={exportAction?.state !== 'hidden' ? () => {
+                onExportClick={exportAction?.state === 'enabled' ? () => {
                     const headers = ['Ad', 'Təsvir', 'Növ', 'Scope', 'İstifadəçi Sayı', 'İcazə Sayı', 'Status'];
                     const csvRows = [
                         headers.join(','),
@@ -775,6 +789,8 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 variant="default"
             />
 
+
+
             {/* Permission Editor Section (Visible ONLY in roles view) */}
             {currentTab === 'roles' && (
                 <div className="space-y-4 pt-4 border-t">
@@ -808,6 +824,9 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                                     <div className="p-6 bg-card min-h-[500px]">
                                         {(() => {
                                             const roleScope = currentRole?.scope || "TENANT";
+                                            // Check if user has permission to EDIT permissions
+                                            // SAP-GRADE: Strict check of manage_permissions action
+                                            const canManagePermissions = managePermissionsAction?.state === 'enabled';
 
                                             // SAP FILTERING RULE: 
                                             // System Role -> Only System/Common permissions
@@ -827,6 +846,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                                                     permissions={filteredTree}
                                                     selectedSlugs={selectedPermissions}
                                                     onChange={handlePermissionChange}
+                                                    readOnly={!canManagePermissions}
                                                 />
                                             );
                                         })()}
@@ -840,9 +860,13 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                                             <Button variant="outline" onClick={() => setIsPreviewOpen(true)} className="gap-2">
                                                 <Play className="w-4 h-4" /> Simulyasiya
                                             </Button>
-                                            <Button onClick={() => setIsDiffOpen(true)} disabled={isSaving}>
-                                                {isSaving ? "Yadda saxlanılır..." : "Yadda Saxla"}
-                                            </Button>
+
+                                            {/* Only show Save button if allowed to manage permissions */}
+                                            {managePermissionsAction?.state === 'enabled' && (
+                                                <Button onClick={() => setIsDiffOpen(true)} disabled={isSaving}>
+                                                    {isSaving ? "Yadda saxlanılır..." : "Yadda Saxla"}
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </AccordionContent>

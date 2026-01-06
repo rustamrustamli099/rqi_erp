@@ -25,6 +25,7 @@ interface PermissionTreeEditorProps {
     selectedSlugs: string[]
     onChange: (slugs: string[]) => void
     className?: string
+    readOnly?: boolean
 }
 
 
@@ -33,13 +34,15 @@ function PermissionRow({
     selectedSlugs,
     onChange,
     level = 0,
-    searchTerm = ""
+    searchTerm = "",
+    readOnly = false
 }: {
     node: PermissionNode
     selectedSlugs: string[]
     onChange: (slugs: string[]) => void
     level?: number
     searchTerm?: string
+    readOnly?: boolean
 }) {
     // Determine if we should be open by default
     // SAP-GRADE: All accordions CLOSED by default for better UX
@@ -58,16 +61,25 @@ function PermissionRow({
 
     // Handlers
     const handleFullAccess = (e: React.MouseEvent) => {
+        if (readOnly) return;
         e.stopPropagation()
         const newSlugs = new Set([...selectedSlugs, ...leafSlugs])
         onChange(Array.from(newSlugs))
     }
 
     const handleHidden = (e: React.MouseEvent) => {
+        if (readOnly) return;
         e.stopPropagation()
-        // Just clear the selection for this node's leaves, DON'T disable
         const newSlugs = selectedSlugs.filter(s => !leafSlugs.includes(s))
         onChange(newSlugs)
+    }
+
+    // This function now expects the final list of selected slugs for the current cluster
+    // after all smart logic (like __ALL__, __NONE__, auto-read) has been applied.
+    const handleSmartChange = (newLocalSelected: string[]) => {
+        if (readOnly) return;
+        const otherSlugs = selectedSlugs.filter(s => !leafSlugs.includes(s))
+        onChange([...otherSlugs, ...newLocalSelected])
     }
 
     // Search Logic
@@ -161,6 +173,7 @@ function PermissionRow({
                         placeholder={isFullAccess ? "Bütün icazələr seçilib" : isHidden ? "İcazələri seçin..." : `${clusterSelection.length} icazə seçilib`}
                         className="bg-background shadow-sm h-9"
                         maxCount={3}
+                        disabled={readOnly}
                     />
                 </div>
             </div>
@@ -204,6 +217,7 @@ function PermissionRow({
                             )}
                             onClick={handleFullAccess}
                             title="Bütün qrupu seç"
+                            disabled={readOnly}
                         >
                             <Check className="w-3.5 h-3.5 mr-1" />
                             Tam İcazə
@@ -217,6 +231,7 @@ function PermissionRow({
                             )}
                             onClick={handleHidden}
                             title="Bütün qrupu sıfırla"
+                            disabled={readOnly}
                         >
                             <EyeOff className="w-3.5 h-3.5 mr-1" />
                             Gizlət
@@ -238,6 +253,7 @@ function PermissionRow({
                             onChange={onChange}
                             level={level + 1}
                             searchTerm={searchTerm}
+                            readOnly={readOnly}
                         />
                     ))}
                 </div>
@@ -246,7 +262,8 @@ function PermissionRow({
     )
 }
 
-export function PermissionTreeEditor({ permissions = [], selectedSlugs = [], onChange, className }: PermissionTreeEditorProps) {
+export function PermissionTreeEditor(props: PermissionTreeEditorProps) {
+    const { permissions = [], selectedSlugs = [], onChange, className } = props;
     const [searchTerm, setSearchTerm] = useState("")
 
     return (
@@ -271,6 +288,7 @@ export function PermissionTreeEditor({ permissions = [], selectedSlugs = [], onC
                             selectedSlugs={selectedSlugs}
                             onChange={onChange}
                             searchTerm={searchTerm}
+                            readOnly={props.readOnly}
                         />
                     ))
                 ) : (

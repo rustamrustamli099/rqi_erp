@@ -20,6 +20,7 @@ interface MultiSelectProps {
     placeholder?: string
     className?: string
     maxCount?: number
+    disabled?: boolean
 }
 
 export function MultiSelect({
@@ -29,11 +30,13 @@ export function MultiSelect({
     placeholder = "Select options...",
     className,
     maxCount = 3,
+    disabled = false,
 }: MultiSelectProps) {
     const [open, setOpen] = React.useState(false)
     const [searchTerm, setSearchTerm] = React.useState("")
 
     const handleUnselect = (value: string) => {
+        if (disabled) return
         onChange(selected.filter((s) => s !== value))
     }
 
@@ -43,6 +46,7 @@ export function MultiSelect({
     )
 
     const toggleSelection = (value: string) => {
+        if (disabled) return
         console.log("[MultiSelect] Toggle:", value, "Current Selection:", selected)
         if (selected.includes(value)) {
             handleUnselect(value)
@@ -53,16 +57,19 @@ export function MultiSelect({
     }
 
     return (
-        <Popover open={open} onOpenChange={(val) => {
+        <Popover open={open && !disabled} onOpenChange={(val) => {
+            if (disabled) return
             setOpen(val)
             if (!val) setSearchTerm("")
         }}>
             <PopoverTrigger asChild>
                 <div
                     className={cn(
-                        "flex min-h-[36px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                        "flex min-h-[36px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        disabled ? "cursor-not-allowed opacity-50 bg-muted" : "cursor-pointer",
                         className
                     )}
+                    aria-disabled={disabled}
                 >
                     <div className="flex gap-1 flex-wrap items-center">
                         {selected.length > 0 ? (
@@ -76,7 +83,7 @@ export function MultiSelect({
                                         <Badge key={val} variant="secondary" className="mr-1 mb-0.5 max-w-[150px] truncate">
                                             {label}
                                             <div
-                                                className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer inline-flex"
+                                                className={cn("ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 inline-flex", disabled ? "cursor-not-allowed hidden" : "cursor-pointer")}
                                                 onKeyDown={(e) => {
                                                     if (e.key === "Enter") {
                                                         handleUnselect(val)
@@ -91,7 +98,7 @@ export function MultiSelect({
                                                     handleUnselect(val)
                                                 }}
                                             >
-                                                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                                {!disabled && <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
                                             </div>
                                         </Badge>
                                     )
