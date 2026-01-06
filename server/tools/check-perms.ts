@@ -10,7 +10,13 @@ async function check() {
         'system.approvals.reject',
         'system.approvals.export_to_excel',
         'system.file_manager.read',
-        'system.system_guide.read'
+        'system.system_guide.read',
+        // Compliance
+        'system.settings.security.user_rights.compliance.read',
+        'system.settings.security.user_rights.compliance.download_report',
+        'system.settings.security.user_rights.compliance.generate_evidence',
+        'system.settings.security.user_rights.compliance.download_json_soc2',
+        'system.settings.security.user_rights.compliance.download_json_iso'
     ];
 
     const found = await prisma.permission.findMany({

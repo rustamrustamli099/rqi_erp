@@ -236,5 +236,16 @@ exports.ACTION_PERMISSIONS_REGISTRY = [
             { actionKey: 'update', permissionSlug: 'system.settings.security.user_rights.matrix_view.update' },
         ],
     },
+    {
+        entityKey: 'compliance',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.security.user_rights.compliance.read' },
+            { actionKey: 'download_report', permissionSlug: 'system.settings.security.user_rights.compliance.download_report' },
+            { actionKey: 'generate_evidence', permissionSlug: 'system.settings.security.user_rights.compliance.generate_evidence' },
+            { actionKey: 'download_json_soc2', permissionSlug: 'system.settings.security.user_rights.compliance.download_json_soc2' },
+            { actionKey: 'download_json_iso', permissionSlug: 'system.settings.security.user_rights.compliance.download_json_iso' },
+        ],
+    },
 ];
 //# sourceMappingURL=action.registry.js.map

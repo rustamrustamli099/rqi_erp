@@ -174,8 +174,25 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             {
                 id: 'rights',
                 label: 'İstifadəçi Hüquqları',
-                path: '/admin/settings?tab=roles',
-                permission: 'system.settings.security.user_rights.role.read'
+                permission: 'system.settings.security.user_rights.role.read',
+                children: [{
+                    id: 'roles',
+                    label: 'Rollar',
+                    path: '/admin/settings?tab=roles',
+                    permission: 'system.settings.security.user_rights.roles.read'
+                },
+                {
+                    id: 'matrix_view',
+                    label: 'Matris',
+                    path: '/admin/settings?tab=roles&subTab=matrix_view',
+                    permission: 'system.settings.security.user_rights.matrix_view.read'
+                },
+                {
+                    id: 'compliance',
+                    label: 'Compliance',
+                    path: '/admin/settings?tab=roles&subTab=compliance',
+                    permission: 'system.settings.security.user_rights.compliance.read'
+                }]
             },
             ]
         },

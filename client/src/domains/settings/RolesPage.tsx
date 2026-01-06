@@ -294,6 +294,20 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     const changeStatusAction = rowActions.find(a => a.actionKey === 'change_status');
     const managePermissionsAction = rowActions.find(a => a.actionKey === 'manage_permissions');
     const matrixUpdateAction = toolbarActions.find(a => a.actionKey === 'update');
+    // Compliance Actions
+    const soc2Action = toolbarActions.find(a => a.actionKey === 'download_json_soc2');
+    const isoAction = toolbarActions.find(a => a.actionKey === 'download_json_iso');
+    const generateAction = toolbarActions.find(a => a.actionKey === 'generate_evidence');
+    const reportAction = toolbarActions.find(a => a.actionKey === 'download_report');
+
+    console.log('[RolesPage DEBUG]', {
+        currentTab,
+        activeNodeId: activeNode?.id,
+        actionsFound: !!actions,
+        toolbarActionsKeys: toolbarActions.map(a => a.actionKey),
+        soc2ActionState: soc2Action?.state,
+        isoActionState: isoAction?.state
+    });
 
     const handleTabChange = (value: string) => {
         console.log('[RolesPage] handleTabChange:', value);
@@ -739,8 +753,21 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
         compliance: (
             <Card>
                 <CardHeader>
-                    <CardTitle>Uyğunluq və Audit Sənədləri (Compliance & Audit)</CardTitle>
-                    <CardDescription>Sistem auditə tam hazırdır. Aşağıdakı düymələr vasitəsilə lazımi sübutları yükləyə bilərsiniz.</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Uyğunluq və Audit Sənədləri (Compliance & Audit)</CardTitle>
+                            <CardDescription>Sistem auditə tam hazırdır. Aşağıdakı düymələr vasitəsilə lazımi sübutları yükləyə bilərsiniz.</CardDescription>
+                        </div>
+                        {generateAction && generateAction.state !== 'hidden' && (
+                            <Button
+                                variant="default"
+                                disabled={generateAction.state === 'disabled'}
+                                onClick={() => toast.success("Sübut generasiya sorğusu göndərildi", { description: "Nəticə emailinizə göndəriləcək" })}
+                            >
+                                <Shield className="mr-2 h-4 w-4" /> {generateAction.label || 'Sübut Generasiya Et'}
+                            </Button>
+                        )}
+                    </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4">
@@ -748,18 +775,49 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                             <h3 className="font-semibold text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-blue-600" /> SOC2 Type II Evidence</h3>
                             <p className="text-sm text-muted-foreground mt-1">Avtomatik log analizi, rol təsdiqləmə tarixçəsi və sistem konfiqurasiyası.</p>
                         </div>
-                        <Button className="w-full" variant="outline" onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/soc2', '_blank')}>
-                            <Download className="mr-2 h-4 w-4" /> Yüklə (JSON)
-                        </Button>
+                        {soc2Action && soc2Action.state !== 'hidden' && (
+                            <Button
+                                className="w-full"
+                                variant="outline"
+                                disabled={soc2Action.state === 'disabled'}
+                                onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/soc2', '_blank')}
+                            >
+                                <Download className="mr-2 h-4 w-4" /> {soc2Action.label || 'Yüklə (JSON)'}
+                            </Button>
+                        )}
                     </div>
                     <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4">
                         <div>
                             <h3 className="font-semibold text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-green-600" /> ISO 27001 SoA</h3>
                             <p className="text-sm text-muted-foreground mt-1">Tətbiq Bəyanatı (SoA) - RBAC və Təhlükəsizlik kontrollarının statusu.</p>
                         </div>
-                        <Button className="w-full" variant="outline" onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/iso27001', '_blank')}>
-                            <Download className="mr-2 h-4 w-4" /> Yüklə (JSON)
-                        </Button>
+                        {isoAction && isoAction.state !== 'hidden' && (
+                            <Button
+                                className="w-full"
+                                variant="outline"
+                                disabled={isoAction.state === 'disabled'}
+                                onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/iso27001', '_blank')}
+                            >
+                                <Download className="mr-2 h-4 w-4" /> {isoAction.label || 'Yüklə (JSON)'}
+                            </Button>
+                        )}
+                    </div>
+                    {/* Full Report Card */}
+                    <div className="border p-4 rounded-lg bg-muted/20 flex flex-col justify-between space-y-4 md:col-span-2">
+                        <div>
+                            <h3 className="font-semibold text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-purple-600" /> Full Compliance Report (PDF)</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Bütün sistem siyasətlərinin və kontrollarının icmal hesabatı.</p>
+                        </div>
+                        {reportAction && reportAction.state !== 'hidden' && (
+                            <Button
+                                className="w-full"
+                                variant="outline"
+                                disabled={reportAction.state === 'disabled'}
+                                onClick={() => window.open('http://localhost:3000/api/v1/compliance/export/full-report', '_blank')}
+                            >
+                                <Download className="mr-2 h-4 w-4" /> {reportAction.label || 'Hesabatı Yüklə'}
+                            </Button>
+                        )}
                     </div>
                 </CardContent>
             </Card>

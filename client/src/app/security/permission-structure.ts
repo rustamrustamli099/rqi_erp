@@ -394,6 +394,11 @@ const ACTION_LABEL_MAP: Record<string, string> = {
     copy: 'Kopyala',
     view_audit_log: 'Audit Qeydləri',
     submit: 'Təsdiqə Göndər',
+    // Compliance
+    download_report: 'Hesabatı Yüklə',
+    generate_evidence: 'Sübut Generasiya Et',
+    download_json_soc2: 'SOC2 JSON Yüklə',
+    download_json_iso: 'ISO JSON Yüklə',
 };
 
 const formatAction = (action: string): string => {

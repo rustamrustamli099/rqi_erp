@@ -211,6 +211,45 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             },
         ],
     },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Compliance Entity
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'compliance',
+        scope: 'system',
+        actions: [
+            {
+                actionKey: 'read',
+                permissionSlug: 'system.settings.security.user_rights.compliance.read',
+                contexts: ['nav'],
+                label: 'Görüntüləmə',
+            },
+            {
+                actionKey: 'download_report',
+                permissionSlug: 'system.settings.security.user_rights.compliance.download_report',
+                contexts: ['toolbar'],
+                label: 'Hesabatı Yüklə',
+            },
+            {
+                actionKey: 'generate_evidence',
+                permissionSlug: 'system.settings.security.user_rights.compliance.generate_evidence',
+                contexts: ['toolbar'],
+                label: 'Sübut Generasiya Et',
+            },
+            {
+                actionKey: 'download_json_soc2',
+                permissionSlug: 'system.settings.security.user_rights.compliance.download_json_soc2',
+                contexts: ['toolbar'],
+                label: 'SOC2 JSON Yüklə',
+            },
+            {
+                actionKey: 'download_json_iso',
+                permissionSlug: 'system.settings.security.user_rights.compliance.download_json_iso',
+                contexts: ['toolbar'],
+                label: 'ISO JSON Yüklə',
+            },
+        ],
+    },
 
     // ─────────────────────────────────────────────────────────────────────────
     // Users Entity

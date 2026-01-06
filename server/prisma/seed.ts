@@ -112,6 +112,9 @@ const SYSTEM_SLUGS = {
         COMPLIANCE: {
             READ: 'system.settings.security.user_rights.compliance.read',
             DOWNLOAD_REPORT: 'system.settings.security.user_rights.compliance.download_report',
+            GENERATE_EVIDENCE: 'system.settings.security.user_rights.compliance.generate_evidence',
+            DOWNLOAD_JSON_SOC2: 'system.settings.security.user_rights.compliance.download_json_soc2',
+            DOWNLOAD_JSON_ISO: 'system.settings.security.user_rights.compliance.download_json_iso'
         }
     },
 
@@ -543,7 +546,8 @@ async function main() {
     console.log('🛡️ Verifying Owner ROLES & MATRIX Permissions...');
     const rolesPermissionsSlugs = [
         ...Object.values(SYSTEM_SLUGS.USER_RIGHTS.ROLES),
-        ...Object.values(SYSTEM_SLUGS.USER_RIGHTS.MATRIX_VIEW)
+        ...Object.values(SYSTEM_SLUGS.USER_RIGHTS.MATRIX_VIEW),
+        ...Object.values(SYSTEM_SLUGS.USER_RIGHTS.COMPLIANCE)
     ];
     const rolesPermissions = await prisma.permission.findMany({
         where: { slug: { in: rolesPermissionsSlugs } }
