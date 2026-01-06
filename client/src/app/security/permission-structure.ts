@@ -77,7 +77,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
                     perms: ['read', 'update']
                 },
                 restrictions: {
-                    perms: ['read', 'create', 'update', 'delete']
+                    perms: ['read', 'create', 'update', 'delete', 'change_status', 'export_to_excel']
                 },
             },
             sso_OAuth: {

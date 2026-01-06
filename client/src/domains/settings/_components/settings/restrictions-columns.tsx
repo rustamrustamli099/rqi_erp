@@ -2,7 +2,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ArrowUpDown, ToggleRight, Eye } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,10 +22,17 @@ export interface RestrictionPolicy {
     ip: string;
 }
 
+interface PermissionProps {
+    canUpdate: boolean;
+    canDelete: boolean;
+    canChangeStatus: boolean;
+}
+
 export const restrictionColumns = (
     onToggleStatus: (id: number) => void,
     onDelete: (id: number) => void,
-    onEdit: (policy: RestrictionPolicy) => void
+    onEdit: (policy: RestrictionPolicy) => void,
+    permissions: PermissionProps = { canUpdate: false, canDelete: false, canChangeStatus: false }
 ): ColumnDef<RestrictionPolicy>[] => [
         {
             accessorKey: "name",
@@ -81,8 +88,8 @@ export const restrictionColumns = (
                 return (
                     <Badge
                         variant={status === "active" ? "default" : "secondary"}
-                        className={`cursor-pointer ${status === "active" ? "bg-green-100 text-green-700 hover:bg-green-100" : ""}`}
-                        onClick={() => onToggleStatus(row.original.id)}
+                        className={`${status === "active" ? "bg-green-100 text-green-700 hover:bg-green-100" : ""} ${permissions.canChangeStatus ? "cursor-pointer" : "cursor-not-allowed opacity-70"}`}
+                        onClick={() => permissions.canChangeStatus && onToggleStatus(row.original.id)}
                     >
                         {status === "active" ? "Aktiv" : "Deaktiv"}
                     </Badge>
@@ -94,6 +101,8 @@ export const restrictionColumns = (
             header: "Əməliyyatlar",
             cell: ({ row }) => {
                 const policy = row.original;
+
+                // In SAP ERP, View Details is ALWAYS available if user can read
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -103,13 +112,27 @@ export const restrictionColumns = (
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            {/* View Details - Always available for READ permission */}
                             <DropdownMenuItem onClick={() => onEdit(policy)}>
-                                <Pencil className="mr-2 h-4 w-4" /> Düzəliş Et
+                                <Eye className="mr-2 h-4 w-4" /> Detallı Baxış
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onDelete(policy.id)} className="text-red-600">
-                                <Trash2 className="mr-2 h-4 w-4" /> Sil
-                            </DropdownMenuItem>
+
+                            {permissions.canUpdate && (
+                                <DropdownMenuItem onClick={() => onEdit(policy)}>
+                                    <Pencil className="mr-2 h-4 w-4" /> Düzəliş Et
+                                </DropdownMenuItem>
+                            )}
+                            {permissions.canChangeStatus && (
+                                <DropdownMenuItem onClick={() => onToggleStatus(policy.id)}>
+                                    <ToggleRight className="mr-2 h-4 w-4" /> Statusu Dəyiş
+                                </DropdownMenuItem>
+                            )}
+                            {(permissions.canUpdate || permissions.canChangeStatus) && permissions.canDelete && <DropdownMenuSeparator />}
+                            {permissions.canDelete && (
+                                <DropdownMenuItem onClick={() => onDelete(policy.id)} className="text-red-600">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Sil
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );

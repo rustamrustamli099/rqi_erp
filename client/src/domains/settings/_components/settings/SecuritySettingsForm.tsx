@@ -6,9 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Shield, Lock, Clock, Fingerprint, Loader2, Globe, Calendar, Ban, Pencil, Trash2, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Shield, Lock, Clock, Fingerprint, Loader2, Globe, Info, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,12 +20,14 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 
 // SAP-GRADE imports
 import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 import { ScrollableSubTabsFromResolver } from "@/shared/components/ui/ScrollableSubTabs";
+import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { PermissionSlugs } from "@/app/security/permission-slugs";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 interface SecurityConfig {
     password: {
@@ -45,22 +46,6 @@ interface SecurityConfig {
         idleTimeout: number;
         concurrentSessions: boolean;
         maxConcurrentSessions: number;
-    };
-    restrictions: {
-        scope: "all" | "tenant" | "system";
-        schedule: {
-            enabled: boolean;
-            days: number[];
-            startTime: string;
-            endTime: string;
-        };
-        ipRestriction: {
-            enabled: boolean;
-            allowedIps: string;
-        }
-    };
-    network: {
-        allowedIps: string;
     };
 }
 
@@ -81,40 +66,21 @@ const DEFAULT_CONFIG: SecurityConfig = {
         idleTimeout: 15,
         concurrentSessions: true,
         maxConcurrentSessions: 3
-    },
-    restrictions: {
-        scope: "all",
-        schedule: {
-            enabled: false,
-            days: [1, 2, 3, 4, 5],
-            startTime: "09:00",
-            endTime: "18:00"
-        },
-        ipRestriction: {
-            enabled: false,
-            allowedIps: ""
-        }
-    },
-    network: {
-        allowedIps: ""
     }
 };
-
-const DAYS_OF_WEEK = [
-    { id: 1, label: "Bazar Ertəsi" },
-    { id: 2, label: "Çərşənbə Axşamı" },
-    { id: 3, label: "Çərşənbə" },
-    { id: 4, label: "Cümə Axşamı" },
-    { id: 5, label: "Cümə" },
-    { id: 6, label: "Şənbə" },
-    { id: 0, label: "Bazar" },
-];
 
 interface SecuritySettingsFormProps {
     tabNode?: ResolvedNavNode;
 }
 
 export function SecuritySettingsForm({ tabNode }: SecuritySettingsFormProps) {
+    const { permissions } = usePermissions();
+
+    // Permission checks for each section
+    const canUpdatePassword = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.PASSWORD.UPDATE);
+    const canUpdateLogin = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.LOGIN.UPDATE);
+    const canUpdateSession = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.SESSION.UPDATE);
+
     const [config, setConfig] = useState<SecurityConfig>(DEFAULT_CONFIG);
     const [isSaving, setIsSaving] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -133,14 +99,17 @@ export function SecuritySettingsForm({ tabNode }: SecuritySettingsFormProps) {
     };
 
     const handlePasswordChange = (key: keyof SecurityConfig['password'], value: any) => {
+        if (!canUpdatePassword) return;
         setConfig(prev => ({ ...prev, password: { ...prev.password, [key]: value } }));
     };
 
     const handleLoginChange = (key: keyof SecurityConfig['login'], value: any) => {
+        if (!canUpdateLogin) return;
         setConfig(prev => ({ ...prev, login: { ...prev.login, [key]: value } }));
     };
 
     const handleSessionChange = (key: keyof SecurityConfig['session'], value: any) => {
+        if (!canUpdateSession) return;
         setConfig(prev => ({ ...prev, session: { ...prev.session, [key]: value } }));
     };
 
@@ -153,9 +122,9 @@ export function SecuritySettingsForm({ tabNode }: SecuritySettingsFormProps) {
 
     // CONTENT MAP for each subTab
     const contentMap: Record<string, React.ReactNode> = {
-        password: <PasswordPolicyTab config={config} handlePasswordChange={handlePasswordChange} handleSaveSection={handleSaveSection} />,
-        login: <LoginControlTab config={config} handleLoginChange={handleLoginChange} handleSaveSection={handleSaveSection} />,
-        session: <SessionManagementTab config={config} handleSessionChange={handleSessionChange} handleSaveSection={handleSaveSection} />,
+        password: <PasswordPolicyTab config={config} handlePasswordChange={handlePasswordChange} handleSaveSection={handleSaveSection} canUpdate={canUpdatePassword} isSaving={isSaving} />,
+        login: <LoginControlTab config={config} handleLoginChange={handleLoginChange} handleSaveSection={handleSaveSection} canUpdate={canUpdateLogin} isSaving={isSaving} />,
+        session: <SessionManagementTab config={config} handleSessionChange={handleSessionChange} handleSaveSection={handleSaveSection} canUpdate={canUpdateSession} isSaving={isSaving} />,
         restrictions: <GlobalRestrictionsList />
     };
 
@@ -192,9 +161,29 @@ export function SecuritySettingsForm({ tabNode }: SecuritySettingsFormProps) {
 // ═══════════════════════════════════════════════════════════════════════════
 // PASSWORD POLICY TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function PasswordPolicyTab({ config, handlePasswordChange, handleSaveSection }: any) {
+interface TabProps {
+    config: SecurityConfig;
+    handlePasswordChange?: (key: keyof SecurityConfig['password'], value: any) => void;
+    handleLoginChange?: (key: keyof SecurityConfig['login'], value: any) => void;
+    handleSessionChange?: (key: keyof SecurityConfig['session'], value: any) => void;
+    handleSaveSection: (section: string) => void;
+    canUpdate: boolean;
+    isSaving: boolean;
+}
+
+function PasswordPolicyTab({ config, handlePasswordChange, handleSaveSection, canUpdate, isSaving }: TabProps) {
     return (
-        <div className="space-y-6 pt-4">
+        <div className="space-y-6 pt-4 relative">
+            {/* Read Mode Badge */}
+            {!canUpdate && (
+                <div className="absolute top-0 right-0">
+                    <div className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-200 flex items-center shadow-sm">
+                        <Info className="w-3 h-3 mr-1" />
+                        Oxu Rejimi
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
@@ -202,21 +191,37 @@ function PasswordPolicyTab({ config, handlePasswordChange, handleSaveSection }: 
                         <Slider
                             min={6} max={32} step={1}
                             value={[config.password.minLength]}
-                            onValueChange={(v) => handlePasswordChange('minLength', v[0])}
+                            onValueChange={(v) => handlePasswordChange?.('minLength', v[0])}
                             className="w-[150px]"
+                            disabled={!canUpdate}
                         />
                     </div>
                     <div className="flex justify-between items-center bg-muted/30 p-2 rounded">
                         <Label className="cursor-pointer" htmlFor="req-upper">Böyük hərflər (A-Z)</Label>
-                        <Switch id="req-upper" checked={config.password.requireUppercase} onCheckedChange={c => handlePasswordChange('requireUppercase', c)} />
+                        <Switch
+                            id="req-upper"
+                            checked={config.password.requireUppercase}
+                            onCheckedChange={c => handlePasswordChange?.('requireUppercase', c)}
+                            disabled={!canUpdate}
+                        />
                     </div>
                     <div className="flex justify-between items-center bg-muted/30 p-2 rounded">
                         <Label className="cursor-pointer" htmlFor="req-num">Rəqəmlər (0-9)</Label>
-                        <Switch id="req-num" checked={config.password.requireNumbers} onCheckedChange={c => handlePasswordChange('requireNumbers', c)} />
+                        <Switch
+                            id="req-num"
+                            checked={config.password.requireNumbers}
+                            onCheckedChange={c => handlePasswordChange?.('requireNumbers', c)}
+                            disabled={!canUpdate}
+                        />
                     </div>
                     <div className="flex justify-between items-center bg-muted/30 p-2 rounded">
                         <Label className="cursor-pointer" htmlFor="req-sym">Simvollar (!@#)</Label>
-                        <Switch id="req-sym" checked={config.password.requireSymbols} onCheckedChange={c => handlePasswordChange('requireSymbols', c)} />
+                        <Switch
+                            id="req-sym"
+                            checked={config.password.requireSymbols}
+                            onCheckedChange={c => handlePasswordChange?.('requireSymbols', c)}
+                            disabled={!canUpdate}
+                        />
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -224,16 +229,21 @@ function PasswordPolicyTab({ config, handlePasswordChange, handleSaveSection }: 
                     <Input
                         type="number"
                         value={config.password.expiryDays}
-                        onChange={e => handlePasswordChange('expiryDays', parseInt(e.target.value))}
+                        onChange={e => handlePasswordChange?.('expiryDays', parseInt(e.target.value))}
+                        disabled={!canUpdate}
                     />
                     <p className="text-[10px] text-muted-foreground">0 = Müddətsiz. Tövsiyə olunan: 90 gün.</p>
                 </div>
             </div>
-            <div className="flex justify-end pt-4 mt-4 border-t">
-                <Button size="sm" onClick={() => handleSaveSection("Şifrə siyasəti")}>
-                    Yadda Saxla
-                </Button>
-            </div>
+
+            {canUpdate && (
+                <div className="flex justify-end pt-4 mt-4 border-t">
+                    <Button size="sm" onClick={() => handleSaveSection("Şifrə siyasəti")} disabled={isSaving}>
+                        {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Yadda Saxla
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
@@ -241,56 +251,114 @@ function PasswordPolicyTab({ config, handlePasswordChange, handleSaveSection }: 
 // ═══════════════════════════════════════════════════════════════════════════
 // LOGIN CONTROL TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function LoginControlTab({ config, handleLoginChange, handleSaveSection }: any) {
+function LoginControlTab({ config, handleLoginChange, handleSaveSection, canUpdate, isSaving }: TabProps) {
+    const [show2FAConfirm, setShow2FAConfirm] = useState(false);
+    const [pending2FA, setPending2FA] = useState(false);
+
+    const handle2FAToggle = (enabled: boolean) => {
+        setPending2FA(enabled);
+        setShow2FAConfirm(true);
+    };
+
+    const confirm2FAChange = () => {
+        handleLoginChange?.('twoFactorEnforced', pending2FA);
+        toast.success(`Məcburi 2FA ${pending2FA ? 'aktivləşdirildi' : 'deaktiv edildi'}.`);
+        setShow2FAConfirm(false);
+    };
+
     return (
-        <div className="space-y-6 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label>Uğursuz Cəhdlər Limiti</Label>
-                    <Input
-                        type="number"
-                        value={config.login.maxAttempts}
-                        onChange={e => handleLoginChange('maxAttempts', parseInt(e.target.value))}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Bloklanma Müddəti (Dəqiqə)</Label>
-                    <Input
-                        type="number"
-                        value={config.login.lockoutDuration}
-                        onChange={e => handleLoginChange('lockoutDuration', parseInt(e.target.value))}
-                    />
-                </div>
-                <div className="col-span-1 md:col-span-2 flex justify-between items-center bg-orange-50 border border-orange-100 p-4 rounded-lg">
-                    <div className="space-y-0.5">
-                        <Label className="text-base font-semibold text-orange-900">Məcburi 2FA (Bütün İstifadəçilər)</Label>
-                        <p className="text-xs text-orange-700">Aktiv edildikdə, bütün istifadəçilərdən giriş zamanı OTP tələb olunacaq.</p>
+        <>
+            <div className="space-y-6 pt-4 relative">
+                {/* Read Mode Badge */}
+                {!canUpdate && (
+                    <div className="absolute top-0 right-0">
+                        <div className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-200 flex items-center shadow-sm">
+                            <Info className="w-3 h-3 mr-1" />
+                            Oxu Rejimi
+                        </div>
                     </div>
-                    <Switch checked={config.login.twoFactorEnforced} onCheckedChange={c => handleLoginChange('twoFactorEnforced', c)} />
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label>Uğursuz Cəhdlər Limiti</Label>
+                        <Input
+                            type="number"
+                            value={config.login.maxAttempts}
+                            onChange={e => handleLoginChange?.('maxAttempts', parseInt(e.target.value))}
+                            disabled={!canUpdate}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Bloklanma Müddəti (Dəqiqə)</Label>
+                        <Input
+                            type="number"
+                            value={config.login.lockoutDuration}
+                            onChange={e => handleLoginChange?.('lockoutDuration', parseInt(e.target.value))}
+                            disabled={!canUpdate}
+                        />
+                    </div>
+                    <div className="col-span-1 md:col-span-2 flex justify-between items-center bg-orange-50 border border-orange-100 p-4 rounded-lg">
+                        <div className="space-y-0.5">
+                            <Label className="text-base font-semibold text-orange-900">Məcburi 2FA (Bütün İstifadəçilər)</Label>
+                            <p className="text-xs text-orange-700">Aktiv edildikdə, bütün istifadəçilərdən giriş zamanı OTP tələb olunacaq.</p>
+                        </div>
+                        <Switch
+                            checked={config.login.twoFactorEnforced}
+                            onCheckedChange={handle2FAToggle}
+                            disabled={!canUpdate}
+                        />
+                    </div>
                 </div>
+
+                {canUpdate && (
+                    <div className="flex justify-end pt-4 mt-4 border-t">
+                        <Button size="sm" onClick={() => handleSaveSection("Giriş nəzarəti")} disabled={isSaving}>
+                            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Yadda Saxla
+                        </Button>
+                    </div>
+                )}
             </div>
-            <div className="flex justify-end pt-4 mt-4 border-t">
-                <Button size="sm" onClick={() => handleSaveSection("Giriş nəzarəti")}>
-                    Yadda Saxla
-                </Button>
-            </div>
-        </div>
+
+            <ConfirmationDialog
+                open={show2FAConfirm}
+                onOpenChange={setShow2FAConfirm}
+                title="Məcburi 2FA Dəyişikliyi"
+                description={`Bütün istifadəçilər üçün 2FA-nı ${pending2FA ? 'aktivləşdirmək' : 'deaktiv etmək'} istədiyinizə əminsiniz? Bu dəyişiklik dərhal qüvvəyə minəcək.`}
+                confirmText="Təsdiqlə"
+                cancelText="İmtina"
+                onConfirm={confirm2FAChange}
+                variant={pending2FA ? "default" : "destructive"}
+            />
+        </>
     );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SESSION MANAGEMENT TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function SessionManagementTab({ config, handleSessionChange, handleSaveSection }: any) {
+function SessionManagementTab({ config, handleSessionChange, handleSaveSection, canUpdate, isSaving }: TabProps) {
     return (
-        <div className="space-y-6 pt-4">
+        <div className="space-y-6 pt-4 relative">
+            {/* Read Mode Badge */}
+            {!canUpdate && (
+                <div className="absolute top-0 right-0">
+                    <div className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-200 flex items-center shadow-sm">
+                        <Info className="w-3 h-3 mr-1" />
+                        Oxu Rejimi
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <Label>Sessiya Vaxtı (Timeout - Dəqiqə)</Label>
                     <Input
                         type="number"
                         value={config.session.idleTimeout}
-                        onChange={e => handleSessionChange('idleTimeout', parseInt(e.target.value))}
+                        onChange={e => handleSessionChange?.('idleTimeout', parseInt(e.target.value))}
+                        disabled={!canUpdate}
                     />
                 </div>
                 <div className="flex items-start justify-between space-x-2 pt-2 border p-4 rounded-lg bg-slate-50">
@@ -300,7 +368,8 @@ function SessionManagementTab({ config, handleSessionChange, handleSaveSection }
                             <Switch
                                 id="concurrent"
                                 checked={config.session.concurrentSessions}
-                                onCheckedChange={c => handleSessionChange('concurrentSessions', c)}
+                                onCheckedChange={c => handleSessionChange?.('concurrentSessions', c)}
+                                disabled={!canUpdate}
                             />
                         </div>
                         {config.session.concurrentSessions && (
@@ -313,7 +382,8 @@ function SessionManagementTab({ config, handleSessionChange, handleSaveSection }
                                         max={10}
                                         className="w-24 bg-white"
                                         value={config.session.maxConcurrentSessions}
-                                        onChange={e => handleSessionChange('maxConcurrentSessions', parseInt(e.target.value))}
+                                        onChange={e => handleSessionChange?.('maxConcurrentSessions', parseInt(e.target.value))}
+                                        disabled={!canUpdate}
                                     />
                                     <span className="text-sm text-muted-foreground">cihazdan girişə icazə verilir.</span>
                                 </div>
@@ -322,11 +392,15 @@ function SessionManagementTab({ config, handleSessionChange, handleSaveSection }
                     </div>
                 </div>
             </div>
-            <div className="flex justify-end pt-4 mt-4 border-t">
-                <Button size="sm" onClick={() => handleSaveSection("Sessiya parametrləri")}>
-                    Yadda Saxla
-                </Button>
-            </div>
+
+            {canUpdate && (
+                <div className="flex justify-end pt-4 mt-4 border-t">
+                    <Button size="sm" onClick={() => handleSaveSection("Sessiya parametrləri")} disabled={isSaving}>
+                        {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Yadda Saxla
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
@@ -336,8 +410,18 @@ function SessionManagementTab({ config, handleSessionChange, handleSaveSection }
 // ═══════════════════════════════════════════════════════════════════════════
 import { restrictionColumns, type RestrictionPolicy } from "./restrictions-columns";
 import { DataTable } from "@/shared/components/ui/data-table";
-import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
+import { ExportModal } from "@/shared/components/ui/export-modal";
 import { MultiSelect } from "@/shared/components/ui/multi-select";
+
+const DAYS_OF_WEEK = [
+    { id: 1, label: "Bazar Ertəsi" },
+    { id: 2, label: "Çərşənbə Axşamı" },
+    { id: 3, label: "Çərşənbə" },
+    { id: 4, label: "Cümə Axşamı" },
+    { id: 5, label: "Cümə" },
+    { id: 6, label: "Şənbə" },
+    { id: 0, label: "Bazar" },
+];
 
 const SCOPE_OPTIONS = [
     { label: "Bütün Tenantlar", value: "all_tenants" },
@@ -347,6 +431,15 @@ const SCOPE_OPTIONS = [
 ];
 
 function GlobalRestrictionsList() {
+    const { permissions } = usePermissions();
+    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.CREATE);
+    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.UPDATE);
+    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.DELETE);
+    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.CHANGE_STATUS);
+    const canExport = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.EXPORT_TO_EXCEL);
+
+    const [isExportOpen, setIsExportOpen] = useState(false);
+
     const [policies, setPolicies] = useState<RestrictionPolicy[]>([
         { id: 1, name: "Ofis Daxili Giriş", scope: ["Ofis İşçiləri"], status: "active", schedule: "B.E-C (09:00-18:00)", ip: "10.0.0.0/24" },
         { id: 2, name: "Remote Admin", scope: ["Sistem İstifadəçiləri"], status: "active", schedule: "Hər gün", ip: "VPN Only" }
@@ -428,6 +521,10 @@ function GlobalRestrictionsList() {
     };
 
     const toggleStatus = (id: number) => {
+        if (!canChangeStatus) {
+            toast.error("Status dəyişmək üçün icazəniz yoxdur.");
+            return;
+        }
         const policy = policies.find(p => p.id === id);
         if (!policy) return;
 
@@ -450,6 +547,10 @@ function GlobalRestrictionsList() {
     };
 
     const deletePolicy = (id: number) => {
+        if (!canDelete) {
+            toast.error("Bu əməliyyat üçün icazəniz yoxdur.");
+            return;
+        }
         setConfirmState({
             isOpen: true,
             title: "Siyasəti Sil",
@@ -464,6 +565,10 @@ function GlobalRestrictionsList() {
     };
 
     const handleEditPolicy = (policy: RestrictionPolicy) => {
+        if (!canUpdate) {
+            toast.error("Bu əməliyyat üçün icazəniz yoxdur.");
+            return;
+        }
         setEditingConfig(policy);
         setNewPolicyName(policy.name);
         setPolicyScope(Array.isArray(policy.scope) ? policy.scope : [policy.scope]);
@@ -473,7 +578,12 @@ function GlobalRestrictionsList() {
         setIsInternalModalOpen(true);
     };
 
-    const columns = restrictionColumns(toggleStatus, deletePolicy, handleEditPolicy);
+    const columns = restrictionColumns(toggleStatus, deletePolicy, handleEditPolicy, { canUpdate, canDelete, canChangeStatus });
+
+    const handleExport = (format: string) => {
+        toast.success(`Məhdudiyyət siyahısı ${format.toUpperCase()} formatında ixrac edilir...`);
+        setIsExportOpen(false);
+    };
 
     return (
         <div className="space-y-4 pt-4">
@@ -559,7 +669,7 @@ function GlobalRestrictionsList() {
                         <TabsContent value="ip" className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <Label>İcazə Verilən IP Ünvanları (CIDR)</Label>
-                                <Textarea placeholder="192.168.1.0/24&#10;10.0.0.1" rows={5} />
+                                <Textarea placeholder={"192.168.1.0/24\n10.0.0.1"} rows={5} />
                                 <p className="text-xs text-muted-foreground">Hər sətirdə bir IP və ya CIDR qeyd edin.</p>
                             </div>
                         </TabsContent>
@@ -581,13 +691,22 @@ function GlobalRestrictionsList() {
                 variant={confirmState.variant}
             />
 
+            <ExportModal
+                open={isExportOpen}
+                onClose={() => setIsExportOpen(false)}
+                onExport={handleExport}
+                isExporting={false}
+                entityName="məhdudiyyət"
+            />
+
             <div className="border rounded-md">
                 <DataTable
                     columns={columns}
                     data={policies}
                     searchKey="name"
-                    onAddClick={() => setIsInternalModalOpen(true)}
+                    onAddClick={canCreate ? () => setIsInternalModalOpen(true) : undefined}
                     addLabel="Yeni Məhdudiyyət"
+                    onExportClick={canExport ? () => setIsExportOpen(true) : undefined}
                 />
             </div>
         </div>
