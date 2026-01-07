@@ -3,6 +3,13 @@
  * SAP-Grade Navigation Resolver (SINGLE DECISION POINT)
  * ═══════════════════════════════════════════════════════════════════════════
  * 
+ * ⚠️ PHASE 14H ARCHITECTURAL NOTE ⚠️
+ * This file provides ROUTING decisions only (redirect, allow, deny).
+ * UI AUTHORIZATION decisions must come from usePageState() via backend.
+ * 
+ * ALLOWED: Route evaluation, sidebar rendering, default path selection.
+ * BANNED: Action visibility decisions in UI components.
+ * 
  * RULES:
  * 1. EXACT permission match ONLY
  * 2. NO startsWith, NO includes, NO prefix matching
@@ -16,6 +23,7 @@
  * This is the SINGLE SOURCE for navigation authorization decisions.
  * ═══════════════════════════════════════════════════════════════════════════
  */
+
 
 import { TAB_SUBTAB_REGISTRY, type PageConfig, type TabConfig, type SubTabConfig } from '@/app/navigation/tabSubTab.registry';
 import {

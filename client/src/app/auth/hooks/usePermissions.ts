@@ -3,6 +3,10 @@
  * SAP-Grade Permission Hook — EXACT MATCH ONLY
  * ═══════════════════════════════════════════════════════════════════════════
  * 
+ * ⚠️ PHASE 14H DEPRECATION WARNING ⚠️
+ * This hook is DEPRECATED for UI authorization decisions.
+ * Use usePageState() instead to get backend-resolved actions.
+ * 
  * RULES:
  * 1. EXACT permission match via includes() — NO verb stripping
  * 2. ALL decisions delegate to navigationResolver
@@ -19,15 +23,26 @@ import {
     getFirstAllowedTarget
 } from '@/app/security/navigationResolver';
 
+// PHASE 14H: Deprecation warning helper
+const warnDeprecated = (fnName: string) => {
+    if (import.meta.env?.DEV) {
+        console.warn(
+            `[PHASE 14H DEPRECATION] ${fnName}() is BANNED in domain UI components. ` +
+            `Use usePageState() hook instead. See GEMINI.md FRONTEND CONSTITUTION.`
+        );
+    }
+};
+
 export const usePermissions = () => {
     const { permissions, user, isImpersonating, isLoading, activeTenantType } = useAuth();
     const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
     /**
      * SAP-GRADE: Check if user has EXACT permission
-     * NO verb stripping, NO base matching, NO regex
+     * ⚠️ DEPRECATED: Use usePageState() actions instead
      */
     const can = useCallback((requiredPermission: string): boolean => {
+        warnDeprecated('can');
         if (!requiredPermission) return false;
         // EXACT MATCH ONLY
         return permissions.includes(requiredPermission);
@@ -35,19 +50,24 @@ export const usePermissions = () => {
 
     /**
      * SAP-GRADE: Check if user can access ANY of the permissions
+     * ⚠️ DEPRECATED: Use usePageState() actions instead
      */
     const canAny = useCallback((slugs: string[]): boolean => {
+        warnDeprecated('canAny');
         if (!slugs || slugs.length === 0) return true;
         return slugs.some(slug => permissions.includes(slug));
     }, [permissions]);
 
     /**
      * SAP-GRADE: Check if user can access ALL of the permissions
+     * ⚠️ DEPRECATED: Use usePageState() actions instead
      */
     const canAll = useCallback((slugs: string[]): boolean => {
+        warnDeprecated('canAll');
         if (!slugs || slugs.length === 0) return true;
         return slugs.every(slug => permissions.includes(slug));
     }, [permissions]);
+
 
     /**
      * SAP-GRADE: Check if user can access a specific page/tab/subTab

@@ -119,11 +119,15 @@ export default tseslint.config(
               "message": "Domain internals are private. Import only from the public index.ts."
             }
           ],
-          // SAP-GRADE: Ban RequirePermission (deleted component)
+          // SAP-GRADE: Ban RequirePermission (deleted component) and usePermissions in domains
           "paths": [
             {
               "name": "@/shared/components/auth/RequirePermission",
               "message": "RequirePermission is BANNED. Use resolved actions from Decision Center instead. See GEMINI.md § 4."
+            },
+            {
+              "name": "@/app/auth/hooks/usePermissions",
+              "message": "PHASE 14H VIOLATION: usePermissions is BANNED in domain UI. Use usePageState() hook instead. See GEMINI.md FRONTEND CONSTITUTION."
             }
           ]
         }
@@ -166,6 +170,11 @@ export default tseslint.config(
         {
           "selector": "CallExpression[callee.property.name='hasAll']",
           "message": "GEMINI § 4 VIOLATION: UI components MUST NOT call hasAll(). Use resolved actions from Decision Center."
+        },
+        // PHASE 14H: Ban permissions.includes() pattern
+        {
+          "selector": "CallExpression[callee.object.name='permissions'][callee.property.name='includes']",
+          "message": "PHASE 14H VIOLATION: permissions.includes() is BANNED. Use usePageState() and action flags from Decision Center. See GEMINI.md FRONTEND CONSTITUTION."
         }
       ]
     },

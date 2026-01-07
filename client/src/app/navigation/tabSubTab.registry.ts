@@ -3,6 +3,14 @@
  * TAB/SUBTAB FROZEN REGISTRY — Single Source of Truth
  * ═══════════════════════════════════════════════════════════════════════════
  * 
+ * ⚠️ PHASE 14H DEPRECATION NOTICE ⚠️
+ * This registry is being migrated to backend control.
+ * UI components should use usePageState() for action authorization.
+ * This registry remains ONLY for:
+ * - Sidebar structure rendering
+ * - ProtectedRoute path evaluation
+ * - Default route selection
+ * 
  * SAP-Grade navigation registry. Drives:
  * - Sidebar visibility
  * - Default redirects (getFirstAllowedRoute)
@@ -12,6 +20,7 @@
  * FROZEN: Changes require architecture approval!
  * ═══════════════════════════════════════════════════════════════════════════
  */
+
 
 // =============================================================================
 // TYPES
