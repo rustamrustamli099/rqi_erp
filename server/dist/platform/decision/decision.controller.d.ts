@@ -5,8 +5,13 @@ export declare class DecisionController {
     getPageState(pageKey: string, req: any): Promise<{
         authorized: boolean;
         pageKey: string;
-        sections: {};
+        sections: Record<string, boolean>;
         actions: Record<string, boolean>;
+    } | {
+        authorized: boolean;
+        pageKey: string;
+        sections: {};
+        actions: {};
+        error: string;
     }>;
-    private mapPageKeyToEntity;
 }

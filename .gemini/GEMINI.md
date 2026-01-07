@@ -275,4 +275,46 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
 
 ## PHASE 10 — CLOSED ✅
 
+---
+
+## FRONTEND CONSTITUTION — ABSOLUTE RULES
+
+The Frontend is NOT a security layer.
+The Frontend is NOT a decision engine.
+The Frontend is NOT allowed to behave like a backend.
+
+### STRICT PROHIBITIONS
+The Frontend MUST NOT:
+- check permissions
+- infer access
+- infer roles or scopes
+- decide visibility or routing
+- perform authorization logic
+- act as a fallback for backend failures
+
+Forbidden patterns (ANY usage is a violation):
+- can(), hasPermission(), hasAny(), hasAll()
+- permissions.includes(...)
+- role or scope checks in UI
+- client-side guards based on permissions
+- navigationResolver logic
+
+### ALLOWED FRONTEND BEHAVIOR
+The Frontend MAY ONLY:
+- render backend-resolved navigation
+- render backend-resolved pageState
+- display empty states or redirects based on backend flags
+- send user intent (clicks, forms) to backend
+
+### BACKEND SUPREMACY
+Authorization is decided ONLY by:
+- EffectivePermissionsService
+- DecisionCenterService
+- DecisionOrchestrator
+
+This rule is ARCHITECTURALLY LOCKED.
+Violations MUST fail CI and be rejected in review.
+
+This system follows SAP PFCG semantics
+and enforces a Single Decision Center without exception.
 

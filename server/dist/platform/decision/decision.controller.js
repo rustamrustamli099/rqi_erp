@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const decision_orchestrator_1 = require("./decision.orchestrator");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const action_registry_1 = require("./action.registry");
+const page_objects_registry_1 = require("./page-objects.registry");
 let DecisionController = class DecisionController {
     decisionOrchestrator;
     constructor(decisionOrchestrator) {
@@ -26,32 +27,40 @@ let DecisionController = class DecisionController {
         const sessionState = await this.decisionOrchestrator.getSessionState(req.user);
         const userActions = sessionState.actions;
         const actionSet = new Set(userActions);
-        const entityKey = this.mapPageKeyToEntity(pageKey);
-        const entityConfig = action_registry_1.ACTION_PERMISSIONS_REGISTRY.find(e => e.entityKey === entityKey);
+        const pageObject = (0, page_objects_registry_1.getPageObject)(pageKey);
+        if (!pageObject) {
+            console.warn(`[PAGE-STATE] HARD DENY: Page ${pageKey} not registered in PAGE_OBJECTS_REGISTRY`);
+            return {
+                authorized: false,
+                pageKey,
+                sections: {},
+                actions: {},
+                error: 'PAGE_NOT_REGISTERED'
+            };
+        }
+        const authorized = actionSet.has(pageObject.readPermission);
+        const sections = {};
+        if (pageObject.sections) {
+            for (const section of pageObject.sections) {
+                sections[section.key] = section.requiredPermissions.every(perm => actionSet.has(perm));
+            }
+        }
+        const entityConfig = action_registry_1.ACTION_PERMISSIONS_REGISTRY.find(e => e.entityKey === pageObject.entityKey);
         const actions = {};
         if (entityConfig) {
             for (const action of entityConfig.actions) {
-                const semanticKey = `GS_${entityKey.toUpperCase()}_${action.actionKey.toUpperCase()}`;
+                const semanticKey = `GS_${pageObject.entityKey.toUpperCase()}_${action.actionKey.toUpperCase()}`;
                 actions[semanticKey] = actionSet.has(action.permissionSlug);
             }
         }
         const result = {
-            authorized: true,
+            authorized,
             pageKey,
-            sections: {},
+            sections,
             actions
         };
         console.log('[PAGE-STATE] Response for', pageKey, ':', JSON.stringify(result, null, 2));
         return result;
-    }
-    mapPageKeyToEntity(pageKey) {
-        const mapping = {
-            'Z_USERS': 'users',
-            'Z_ROLES': 'roles',
-            'Z_CURATORS': 'curators',
-            'Z_TENANTS': 'tenants',
-        };
-        return mapping[pageKey] || pageKey.toLowerCase().replace('z_', '');
     }
 };
 exports.DecisionController = DecisionController;

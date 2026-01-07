@@ -10,8 +10,8 @@ import { Download, Eye, FileText, Mail, MoreHorizontal, RefreshCw, Ban, CreditCa
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/shared/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+import { usePageState } from "@/app/security/usePageState";
 
 interface Invoice {
     id: string;
@@ -39,14 +39,14 @@ export function InvoicesView() {
     const [confirmVoid, setConfirmVoid] = useState<string | null>(null);
     const [confirmPay, setConfirmPay] = useState<string | null>(null);
 
-    // Permission Check
-    const { permissions } = usePermissions();
-    const canRead = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.READ);
-    const canDownload = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.DOWNLOAD);
-    const canResend = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.RESEND);
-    const canVoid = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.VOID);
-    const canPay = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.PAY);
-    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.INVOICES.EXPORT_TO_EXCEL);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_INVOICES');
+    const canRead = actions?.GS_INVOICES_READ ?? false;
+    const canDownload = actions?.GS_INVOICES_DOWNLOAD ?? false;
+    const canResend = actions?.GS_INVOICES_RESEND ?? false;
+    const canVoid = actions?.GS_INVOICES_VOID ?? false;
+    const canPay = actions?.GS_INVOICES_PAY ?? false;
+    const canExport = actions?.GS_INVOICES_EXPORT_TO_EXCEL ?? false;
 
     const handleDownload = (id: string) => {
         toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+import { usePageState } from "@/app/security/usePageState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,8 +29,9 @@ const CURRENCIES = [
 ];
 
 export function GeneralSettingsForm() {
-    const { permissions } = usePermissions();
-    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.GENERAL.COMPANY_PROFILE.UPDATE);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_SETTINGS_COMPANY_PROFILE');
+    const canUpdate = actions?.GS_SETTINGS_COMPANY_PROFILE_UPDATE ?? false;
 
     const [isLoading, setIsLoading] = useState(false);
 

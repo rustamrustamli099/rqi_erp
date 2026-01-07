@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/shared/lib/api';
-import type { ActionsMap } from '@/app/navigation/action-keys';
 
 /**
- * PHASE 14G: usePageState Hook
+ * PHASE 14H: usePageState Hook
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * SAP-GRADE page state hook.
@@ -17,12 +16,19 @@ import type { ActionsMap } from '@/app/navigation/action-keys';
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
+/**
+ * Dynamic actions map - backend returns GS_* semantic keys
+ * Each key is a boolean indicating whether the action is allowed
+ */
+export type ActionsMap = Record<string, boolean>;
+
 export interface PageState {
     authorized: boolean;
     pageKey: string;
     sections: Record<string, boolean>;
     actions: ActionsMap;
 }
+
 
 interface UsePageStateOptions {
     enabled?: boolean;

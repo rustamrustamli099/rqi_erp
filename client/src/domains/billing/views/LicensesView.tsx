@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+import { usePageState } from "@/app/security/usePageState";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
 
 const PLANS = [
@@ -35,12 +35,12 @@ export function LicensesView() {
     const [selectedPlan, setSelectedPlan] = useState<string>("p3"); // Mock selection
     const [seatCount, setSeatCount] = useState(5); // Additional seats
 
-    // Permission Check
-    const { permissions } = usePermissions();
-    const canChangePlan = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.CHANGE_PLAN);
-    const canManageSeats = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.MANAGE_SEATS);
-    const canCancel = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.CANCEL);
-    const canViewAudit = permissions.includes(PermissionSlugs.SYSTEM.BILLING.LICENSES.VIEW_AUDIT);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_LICENSES');
+    const canChangePlan = actions?.GS_LICENSES_CHANGE_PLAN ?? false;
+    const canManageSeats = actions?.GS_LICENSES_MANAGE_SEATS ?? false;
+    const canCancel = actions?.GS_LICENSES_CANCEL ?? false;
+    const canViewAudit = actions?.GS_LICENSES_VIEW_AUDIT ?? false;
 
     const handleChangePlan = () => {
         setIsPlanModalOpen(false);

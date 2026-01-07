@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { Check, Edit, Eye, Info, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+import { usePageState } from "@/app/security/usePageState";
 import { ExportModal } from "@/shared/components/ui/export-modal";
 import { DataTable } from "@/shared/components/ui/data-table";
 import { ssoProviderColumns, type SSOProvider } from "./_components/sso-columns";
@@ -21,15 +21,16 @@ const INITIAL_PROVIDERS: SSOProvider[] = [
 ];
 
 export default function SSOPage() {
-    const { permissions } = usePermissions();
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_SETTINGS_SSO_OAUTH');
 
-    // Permission checks
-    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SSO_OAUTH.CREATE);
-    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SSO_OAUTH.UPDATE);
-    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SSO_OAUTH.DELETE);
-    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SSO_OAUTH.CHANGE_STATUS);
-    const canTestConnection = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SSO_OAUTH.TEST_CONNECTION);
-    const canExport = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SSO_OAUTH.EXPORT_TO_EXCEL);
+    // Actions from backend Decision Center (GS_* semantic keys)
+    const canCreate = actions?.GS_SETTINGS_SECURITY_SSO_OAUTH_CREATE ?? false;
+    const canUpdate = actions?.GS_SETTINGS_SECURITY_SSO_OAUTH_UPDATE ?? false;
+    const canDelete = actions?.GS_SETTINGS_SECURITY_SSO_OAUTH_DELETE ?? false;
+    const canChangeStatus = actions?.GS_SETTINGS_SECURITY_SSO_OAUTH_CHANGE_STATUS ?? false;
+    const canTestConnection = actions?.GS_SETTINGS_SECURITY_SSO_OAUTH_TEST_CONNECTION ?? false;
+    const canExport = actions?.GS_SETTINGS_SECURITY_SSO_OAUTH_EXPORT_TO_EXCEL ?? false;
 
     const [providers, setProviders] = useState<SSOProvider[]>(INITIAL_PROVIDERS);
     const [isConfigOpen, setIsConfigOpen] = useState(false);
