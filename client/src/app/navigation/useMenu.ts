@@ -1,11 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * SAP-Grade Menu Hook (SINGLE DECISION CENTER)
+ * 🛑 DEPRECATED — PHASE 14H.3 🛑
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * Uses resolveNavigationTree from navigationResolver as ONLY decision source.
- * NO backend menu fetch as decision source.
- * NO custom filtering logic.
+ * THIS FILE IS SCHEDULED FOR REMOVAL IN PHASE 15.
+ * 
+ * CURRENT ROLE: Sidebar menu rendering using navigationResolver.
+ * 
+ * MIGRATION PATH:
+ * - Menu should be fetched from /session/bootstrap API
+ * - Backend returns pre-resolved navigation tree
+ * - No client-side permission filtering
+ * 
+ * ⚠️ DO NOT ADD NEW FEATURES TO THIS FILE ⚠️
  * ═══════════════════════════════════════════════════════════════════════════
  */
 

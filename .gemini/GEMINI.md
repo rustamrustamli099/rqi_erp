@@ -13,6 +13,48 @@ This project is an **ERP-grade system**. Authorization is security-critical.
 
 ---
 
+## CRITICAL: FRONTEND MUST NOT ACT AS A BRAIN (ABSOLUTE BAN)
+
+Frontend is NOT a security layer.
+Frontend is NOT an authorization engine.
+Frontend must NEVER behave like the backend.
+
+### Forbidden (Build-Blocking)
+Any occurrence in `client/src/**` is a violation and must fail CI:
+
+- `can()`, `hasPermission()`, `hasAny()`, `hasAll()` — anywhere in domain/shared UI
+- `permissions.includes(...)` used to control visibility or access
+- permission-based `ProtectedRoute` or route gating
+- any client-side navigation resolver that computes menu/tab visibility
+- any permission inference (e.g., auto-add `.read` / `.view`)
+- any fallback access when backend mapping is missing
+
+### Allowed (Frontend Role)
+Frontend may ONLY:
+- fetch backend-resolved outputs:
+  - ResolvedNavigationTree
+  - ResolvedPageState `{ authorized, sections, actions }`
+- render UI using only these flags
+- show empty-state or redirect based on `authorized=false`
+- send user intent (clicks/forms) to backend
+
+### Backend Supremacy (Single Decision Center)
+All authorization decisions MUST be computed ONLY by:
+```
+EffectivePermissionsService → DecisionCenterService → DecisionOrchestrator → API
+```
+
+### CI Guard Requirement
+CI must enforce:
+- 0 matches for forbidden patterns in `client/src/**`
+- restricted imports: `usePermissions`, `navigationResolver`, registry-based auth
+- restricted syntax: `permissions.includes`, `can(`, `hasPermission(`, etc.
+
+**This is ARCHITECTURALLY LOCKED.**
+**Reintroducing any frontend decision logic is a security regression.**
+
+---
+
 ## 1) Single Decision Center (SDC) — ABSOLUTE LAW
 
 There is **EXACTLY ONE** authorization decision center, on the backend.

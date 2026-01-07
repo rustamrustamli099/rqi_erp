@@ -1,26 +1,30 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * SAP-Grade Navigation Resolver (SINGLE DECISION POINT)
+ * 🛑 DEPRECATED — PHASE 14H.3 🛑
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * ⚠️ PHASE 14H ARCHITECTURAL NOTE ⚠️
- * This file provides ROUTING decisions only (redirect, allow, deny).
- * UI AUTHORIZATION decisions must come from usePageState() via backend.
+ * THIS FILE IS SCHEDULED FOR REMOVAL IN PHASE 15.
  * 
- * ALLOWED: Route evaluation, sidebar rendering, default path selection.
- * BANNED: Action visibility decisions in UI components.
+ * WHAT THIS FILE DOES:
+ * - Routing decisions for ProtectedRoute (redirect, allow, deny)
+ * - Sidebar rendering helper
  * 
- * RULES:
- * 1. EXACT permission match ONLY
- * 2. NO startsWith, NO includes, NO prefix matching
- * 3. NO action-verb stripping (no .read inference from .create/.update)
- * 4. NO synthetic permissions
+ * WHAT THIS FILE MUST NOT DO:
+ * - UI authorization decisions (use usePageState() instead)
+ * - Action visibility (use pageState.actions instead)
+ * - Permission inference (exact match ONLY)
  * 
- * SAP LAW (VISIBILITY vs DEFAULT ROUTING):
- * - VISIBILITY: Order-independent. Parent visible if ANY child allowed.
- * - DEFAULT ROUTING: May use first-allowed ONLY when URL missing/invalid.
+ * MIGRATION PATH:
+ * 1. Menu/navigation → consume from /session/bootstrap API
+ * 2. Page authorization → usePageState(Z_* key)
+ * 3. Action visibility → pageState.actions[GS_*]
  * 
- * This is the SINGLE SOURCE for navigation authorization decisions.
+ * SAP LAW STILL APPLIES:
+ * - EXACT permission match ONLY
+ * - NO inference, NO normalization
+ * - Parent visible if ANY child allowed
+ * 
+ * ⚠️ DO NOT ADD NEW FEATURES TO THIS FILE ⚠️
  * ═══════════════════════════════════════════════════════════════════════════
  */
 

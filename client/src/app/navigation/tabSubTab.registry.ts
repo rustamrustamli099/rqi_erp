@@ -1,23 +1,24 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * TAB/SUBTAB FROZEN REGISTRY — Single Source of Truth
+ * 🛑 DEPRECATED — PHASE 14H.3 🛑
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * ⚠️ PHASE 14H DEPRECATION NOTICE ⚠️
- * This registry is being migrated to backend control.
- * UI components should use usePageState() for action authorization.
- * This registry remains ONLY for:
- * - Sidebar structure rendering
+ * THIS FILE IS SCHEDULED FOR REMOVAL IN PHASE 15.
+ * 
+ * CURRENT ROLE (Temporary):
+ * - Sidebar structure definition
  * - ProtectedRoute path evaluation
  * - Default route selection
  * 
- * SAP-Grade navigation registry. Drives:
- * - Sidebar visibility
- * - Default redirects (getFirstAllowedRoute)
- * - ProtectedRoute checks
- * - Preview Engine ("user nə görəcək?")
+ * MIGRATION PATH:
+ * - Tab/SubTab structure → backend PAGE_OBJECTS_REGISTRY
+ * - Permission checks → usePageState(Z_* key)
+ * - Action visibility → pageState.actions[GS_*]
  * 
- * FROZEN: Changes require architecture approval!
+ * FROZEN: No new tabs or permissions may be added here.
+ * All changes must go to server/src/platform/decision/page-objects.registry.ts
+ * 
+ * ⚠️ DO NOT ADD NEW FEATURES TO THIS FILE ⚠️
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
