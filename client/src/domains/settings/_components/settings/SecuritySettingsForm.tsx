@@ -25,8 +25,8 @@ import {
 // SAP-GRADE imports
 import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 import { ScrollableSubTabsFromResolver } from "@/shared/components/ui/ScrollableSubTabs";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
-import { PermissionSlugs } from "@/app/security/permission-slugs";
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+import { usePageState } from "@/app/security/usePageState";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 interface SecurityConfig {
@@ -74,12 +74,16 @@ interface SecuritySettingsFormProps {
 }
 
 export function SecuritySettingsForm({ tabNode }: SecuritySettingsFormProps) {
-    const { permissions } = usePermissions();
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    // Password policy page
+    const { actions: passwordActions } = usePageState('Z_SETTINGS_SECURITY_PASSWORD');
+    const { actions: loginActions } = usePageState('Z_SETTINGS_SECURITY_LOGIN');
+    const { actions: sessionActions } = usePageState('Z_SETTINGS_SECURITY_SESSION');
 
     // Permission checks for each section
-    const canUpdatePassword = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.PASSWORD.UPDATE);
-    const canUpdateLogin = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.LOGIN.UPDATE);
-    const canUpdateSession = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.SESSION.UPDATE);
+    const canUpdatePassword = passwordActions?.GS_SETTINGS_SECURITY_PASSWORD_UPDATE ?? false;
+    const canUpdateLogin = loginActions?.GS_SETTINGS_SECURITY_LOGIN_UPDATE ?? false;
+    const canUpdateSession = sessionActions?.GS_SETTINGS_SECURITY_SESSION_UPDATE ?? false;
 
     const [config, setConfig] = useState<SecurityConfig>(DEFAULT_CONFIG);
     const [isSaving, setIsSaving] = useState(false);
@@ -431,12 +435,13 @@ const SCOPE_OPTIONS = [
 ];
 
 function GlobalRestrictionsList() {
-    const { permissions } = usePermissions();
-    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.CREATE);
-    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.UPDATE);
-    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.DELETE);
-    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.CHANGE_STATUS);
-    const canExport = permissions.includes(PermissionSlugs.SYSTEM.SETTINGS.SECURITY.SECURITY_POLICY.RESTRICTIONS.EXPORT_TO_EXCEL);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_SETTINGS_SECURITY_RESTRICTIONS');
+    const canCreate = actions?.GS_SETTINGS_SECURITY_RESTRICTIONS_CREATE ?? false;
+    const canUpdate = actions?.GS_SETTINGS_SECURITY_RESTRICTIONS_UPDATE ?? false;
+    const canDelete = actions?.GS_SETTINGS_SECURITY_RESTRICTIONS_DELETE ?? false;
+    const canChangeStatus = actions?.GS_SETTINGS_SECURITY_RESTRICTIONS_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_SETTINGS_SECURITY_RESTRICTIONS_EXPORT_TO_EXCEL ?? false;
 
     const [isExportOpen, setIsExportOpen] = useState(false);
 

@@ -42,6 +42,8 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LicensesView } from "./LicensesView";
 import { InvoicesView } from "./InvoicesView";
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+import { usePageState } from "@/app/security/usePageState";
 
 // --- MOCK DATA FOR PLANS ---
 const PLANS_MOCK = [
@@ -97,13 +99,13 @@ function SubscriptionsView() {
     const [formData, setFormData] = useState<any>({});
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, description: string, variant: "default" | "destructive", action: () => void }>({ isOpen: false, title: "", description: "", variant: "default", action: () => { } });
 
-    // Permission State
-    const { permissions } = usePermissions();
-    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.CREATE);
-    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.UPDATE);
-    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.DELETE);
-    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.CHANGE_STATUS);
-    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PLANS.EXPORT);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_BILLING_PLANS');
+    const canCreate = actions?.GS_BILLING_PLANS_CREATE ?? false;
+    const canUpdate = actions?.GS_BILLING_PLANS_UPDATE ?? false;
+    const canDelete = actions?.GS_BILLING_PLANS_DELETE ?? false;
+    const canChangeStatus = actions?.GS_BILLING_PLANS_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_BILLING_PLANS_EXPORT ?? false;
 
     const handleSavePlan = (data: any) => {
         if (editingPlan) {
@@ -539,13 +541,13 @@ function MarketplaceView() {
     // Data State
     const [products, setProducts] = useState<Product[]>(MARKETPLACE_FEATURES);
 
-    // Permission State
-    const { permissions } = usePermissions();
-    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.CREATE);
-    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.UPDATE);
-    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.DELETE);
-    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.CHANGE_STATUS);
-    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.MARKETPLACE.EXPORT);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_BILLING_MARKETPLACE');
+    const canCreate = actions?.GS_BILLING_MARKETPLACE_CREATE ?? false;
+    const canUpdate = actions?.GS_BILLING_MARKETPLACE_UPDATE ?? false;
+    const canDelete = actions?.GS_BILLING_MARKETPLACE_DELETE ?? false;
+    const canChangeStatus = actions?.GS_BILLING_MARKETPLACE_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_BILLING_MARKETPLACE_EXPORT ?? false;
 
     // UI State
     const [searchTerm, setSearchTerm] = useState("");
@@ -1112,13 +1114,13 @@ function PackagesView() {
     const [editingPackage, setEditingPackage] = useState<any | null>(null);
     const [viewingPackage, setViewingPackage] = useState<any | null>(null);
 
-    // Permission State
-    const { permissions } = usePermissions();
-    const canCreate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.CREATE);
-    const canUpdate = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.UPDATE);
-    const canDelete = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.DELETE);
-    const canChangeStatus = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.CHANGE_STATUS);
-    const canExport = permissions.includes(PermissionSlugs.SYSTEM.BILLING.PACKAGES.EXPORT);
+    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
+    const { actions } = usePageState('Z_BILLING_PACKAGES');
+    const canCreate = actions?.GS_BILLING_PACKAGES_CREATE ?? false;
+    const canUpdate = actions?.GS_BILLING_PACKAGES_UPDATE ?? false;
+    const canDelete = actions?.GS_BILLING_PACKAGES_DELETE ?? false;
+    const canChangeStatus = actions?.GS_BILLING_PACKAGES_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_BILLING_PACKAGES_EXPORT ?? false;
 
     // Confirmation State
     const [confirmState, setConfirmState] = useState<{
