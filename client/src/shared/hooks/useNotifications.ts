@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react"
+/**
+ * PHASE 14H: Notifications Hook
+ * Uses resolved navigation tree for visibility - NO direct can() calls
+ */
+import { useState, useEffect, useMemo } from "react"
 import type { NotificationItem } from "@/domains/settings/constants/notifications"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { useAuth } from "@/domains/auth/context/AuthContext"
+import { resolveNavigationTree } from "@/app/security/navigationResolver"
 
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     {
@@ -36,14 +41,25 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 
 export function useNotifications() {
     const [notifications, setNotifications] = useState<NotificationItem[]>([])
-    const { can } = usePermissions()
+    const { permissions, activeTenantType } = useAuth()
+
+    // PHASE 14H: Get visibility from resolved navigation tree
+    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant'
+    const navTree = useMemo(
+        () => resolveNavigationTree(context, permissions, 'system'),
+        [context, permissions]
+    )
+
+    // Helper to check if page is visible in nav tree
+    const isPageVisible = (pageKey: string) =>
+        navTree.some(node => node.pageKey === pageKey)
 
     useEffect(() => {
-        // Filter initial notifications based on permissions
+        // PHASE 14H: Filter notifications based on nav tree visibility (NOT can())
         const filtered = INITIAL_NOTIFICATIONS.filter(n => {
-            if (n.category === 'TENANT_SYSTEM') return can('tenants.view');
-            if (n.category === 'APPROVALS') return can('approvals.view');
-            if (n.category === 'SECURITY') return can('system.security.view');
+            if (n.category === 'TENANT_SYSTEM') return isPageVisible('admin.tenants');
+            if (n.category === 'APPROVALS') return isPageVisible('admin.approvals');
+            if (n.category === 'SECURITY') return isPageVisible('admin.console');
             return true;
         });
         setNotifications(filtered)
@@ -65,7 +81,7 @@ export function useNotifications() {
         }, 15000); // Check every 15 seconds
 
         return () => clearInterval(interval);
-    }, []) // Empty dependency array to run only once on mount
+    }, [navTree]) // Depend on navTree instead of empty array
 
     const unreadCount = notifications.filter(n => !n.read).length
 
@@ -84,3 +100,4 @@ export function useNotifications() {
         markAllAsRead
     }
 }
+

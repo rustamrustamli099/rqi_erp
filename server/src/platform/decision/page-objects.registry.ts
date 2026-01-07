@@ -24,18 +24,18 @@ export interface PageAuthorizationObject {
      * Z_* Page Key - must match frontend usePageState(pageKey) call
      */
     pageKey: string;
-    
+
     /**
      * Entity key in ACTION_PERMISSIONS_REGISTRY for action mapping
      */
     entityKey: string;
-    
+
     /**
      * READ permission required to ACCESS this page
      * If user lacks this permission, authorized = false
      */
     readPermission: string;
-    
+
     /**
      * Optional sections with visibility rules
      */
@@ -62,7 +62,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'curators',
         readPermission: 'system.users.curators.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // TENANTS DOMAIN
     // ═══════════════════════════════════════════════════════════════════════
@@ -71,7 +71,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'tenants',
         readPermission: 'system.tenants.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS - GENERAL
     // ═══════════════════════════════════════════════════════════════════════
@@ -85,7 +85,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'settings_notification_engine',
         readPermission: 'system.settings.general.notification_engine.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS - COMMUNICATION
     // ═══════════════════════════════════════════════════════════════════════
@@ -99,7 +99,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'settings_communication_sms',
         readPermission: 'system.settings.communication.smtp_sms.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS - SECURITY
     // ═══════════════════════════════════════════════════════════════════════
@@ -128,7 +128,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'settings_security_sso_oauth',
         readPermission: 'system.settings.security.sso_oauth.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS - USER RIGHTS
     // ═══════════════════════════════════════════════════════════════════════
@@ -152,7 +152,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'compliance',
         readPermission: 'system.settings.security.user_rights.compliance.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // BILLING DOMAIN
     // ═══════════════════════════════════════════════════════════════════════
@@ -181,7 +181,7 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'licenses',
         readPermission: 'system.billing.licenses.read',
     },
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // BILLING CONFIGURATIONS
     // ═══════════════════════════════════════════════════════════════════════
@@ -225,7 +225,150 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'security',
         readPermission: 'system.settings.system_configurations.billing_configurations.security.read',
     },
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 14H TASK 1.4: Missing Z_* Objects
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Dashboard
+    {
+        pageKey: 'Z_DASHBOARD',
+        entityKey: 'dashboard',
+        readPermission: 'system.dashboard.read',
+    },
+
+    // Branches
+    {
+        pageKey: 'Z_BRANCHES',
+        entityKey: 'branches',
+        readPermission: 'system.branches.read',
+    },
+
+    // Approvals
+    {
+        pageKey: 'Z_APPROVALS',
+        entityKey: 'approvals',
+        readPermission: 'system.approvals.read',
+    },
+    {
+        pageKey: 'Z_APPROVALS_INBOX',
+        entityKey: 'approvals_inbox',
+        readPermission: 'system.approvals.inbox.view',
+    },
+
+    // Files
+    {
+        pageKey: 'Z_FILES',
+        entityKey: 'files',
+        readPermission: 'system.file_manager.read',
+    },
+
+    // System Guide
+    {
+        pageKey: 'Z_GUIDE',
+        entityKey: 'guide',
+        readPermission: 'system.system_guide.read',
+    },
+
+    // System Console
+    {
+        pageKey: 'Z_CONSOLE',
+        entityKey: 'console',
+        readPermission: 'system.system_console.dashboard.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_MONITORING',
+        entityKey: 'console_monitoring',
+        readPermission: 'system.system_console.monitoring.dashboard.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_AUDIT',
+        entityKey: 'console_audit',
+        readPermission: 'system.system_console.audit_compliance.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_JOBS',
+        entityKey: 'console_jobs',
+        readPermission: 'system.system_console.job_scheduler.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_RETENTION',
+        entityKey: 'console_retention',
+        readPermission: 'system.system_console.data_retention.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_FEATURES',
+        entityKey: 'console_features',
+        readPermission: 'system.system_console.feature_flags.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_POLICY',
+        entityKey: 'console_policy',
+        readPermission: 'system.system_console.policy_security.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_FEEDBACK',
+        entityKey: 'console_feedback',
+        readPermission: 'system.system_console.feedback.read',
+    },
+    {
+        pageKey: 'Z_CONSOLE_TOOLS',
+        entityKey: 'console_tools',
+        readPermission: 'system.system_console.tools.read',
+    },
+
+    // Developer Hub
+    {
+        pageKey: 'Z_DEVELOPER',
+        entityKey: 'developer',
+        readPermission: 'system.developer_hub.api_reference.read',
+    },
+    {
+        pageKey: 'Z_DEVELOPER_API',
+        entityKey: 'developer_api',
+        readPermission: 'system.developer_hub.api_reference.read',
+    },
+    {
+        pageKey: 'Z_DEVELOPER_SDKS',
+        entityKey: 'developer_sdks',
+        readPermission: 'system.developer_hub.sdk.read',
+    },
+    {
+        pageKey: 'Z_DEVELOPER_WEBHOOKS',
+        entityKey: 'developer_webhooks',
+        readPermission: 'system.developer_hub.webhooks.read',
+    },
+    {
+        pageKey: 'Z_DEVELOPER_PERMISSIONS',
+        entityKey: 'developer_permissions',
+        readPermission: 'system.developer_hub.permission_map.read',
+    },
+
+    // Profile (always accessible if authenticated)
+    {
+        pageKey: 'Z_PROFILE',
+        entityKey: 'profile',
+        readPermission: 'system.users.users.read',
+    },
+
+    // Billing Tab Views (canonical keys for frontend)
+    {
+        pageKey: 'Z_BILLING_PLANS',
+        entityKey: 'billing_plans',
+        readPermission: 'system.billing.plans.read',
+    },
+    {
+        pageKey: 'Z_BILLING_MARKETPLACE',
+        entityKey: 'billing_marketplace',
+        readPermission: 'system.billing.market_place.read',
+    },
+    {
+        pageKey: 'Z_BILLING_PACKAGES',
+        entityKey: 'billing_packages',
+        readPermission: 'system.billing.compact_packages.read',
+    },
 ];
+
 
 /**
  * Get Page Authorization Object by pageKey
