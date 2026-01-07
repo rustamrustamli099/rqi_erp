@@ -415,7 +415,7 @@ const getBadgeIcon = (type: ProductType) => {
 import { PageHeader } from "@/shared/components/ui/page-header";
 
 import { useSearchParams } from "react-router-dom";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { useAuth } from "@/domains/auth/context/AuthContext";
 import { resolveNavigationTree } from "@/app/security/navigationResolver";
 
 // Tab configuration for filtering

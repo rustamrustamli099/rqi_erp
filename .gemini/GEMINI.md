@@ -1,32 +1,168 @@
-# GEMINI SYSTEM CONSTITUTION - SAP-GRADE ARCHITECTURE
+# RQI ERP — GEMINI CONSTITUTION (GLOBAL STRUCTURE, A–Z)
 
-> **WARNING: THIS FILE IS THE SUPREME LAW OF THE SYSTEM.**
-> Violations of these rules, no matter how small, are rejected immediately.
-> There are NO exceptions, NO temporary workarounds, and NO "features" that bypass these laws.
-
-## 1. CORE PRINCIPLE: SINGLE DECISION CENTER
-
-**LAW:** There is EXACTLY ONE Decision Center for the entire application.
-
-It is implemented EXCLUSIVELY in:
-- `resolveNavigationTree()` (Navigation Logic)
-- `evaluateRoute()` (Routing Logic)
-
-**THE DECISION CENTER ALONE DECIDES:**
-- Navigation visibility (Menu Hierarchy)
-- Tab / SubTab access
-- Action visibility (CRUD, Workflow, Custom, Bulk)
-- Default routing paths
-- URL canonicalization
-
-**VIOLATION:**
-- The UI MUST NEVER decide visibility or access.
-- The UI MUST NEVER filter menus or actions based on its own logic.
-- Splitting decision logic into "hooks" or "utils" is FORBIDDEN.
+> **Status:** ARCHITECTURALLY LOCKED  
+> **Audience:** All contributors (Backend + Frontend + DevOps)
 
 ---
 
-## 2. SAP VISIBILITY LAW
+## 0) Prime Directive
+
+This project is an **ERP-grade system**. Authorization is security-critical.
+
+**Correctness > Convenience.**
+
+---
+
+## 1) Single Decision Center (SDC) — ABSOLUTE LAW
+
+There is **EXACTLY ONE** authorization decision center, on the backend.
+
+All of the following MUST be decided ONLY by the backend Decision Center flow:
+- navigation visibility (menus/tabs/subTabs)
+- menu hierarchy
+- page access (authorized/denied)
+- section visibility
+- action availability (CRUD, Export, Impersonate, Workflow actions)
+- default routing / canonicalization
+
+**Canonical backend flow:**
+```
+EffectivePermissionsService
+  → DecisionCenterService (pure)
+  → DecisionOrchestrator (glue + caching)
+  → API response contracts
+```
+
+**Frontend is NEVER an authority.**
+
+---
+
+## 2) Frontend is a Dumb Renderer (NO BRAIN)
+
+Frontend MUST NOT behave like a backend, guard, or decision engine.
+
+### Forbidden in frontend (ANY occurrence is a violation)
+- permission checks: `can()`, `hasPermission()`, `hasAny()`, `hasAll()`
+- `permissions.includes(...)`
+- role checks, scope checks, isOwner bypass logic
+- "ProtectedRoute" decisions based on permissions
+- client-side navigation resolver that computes visibility
+- inferring permissions (auto-add read/view) or fallbacks
+
+### Allowed frontend behavior
+- Fetch resolved outputs from backend (navigation tree, pageState)
+- Render UI conditionally using backend-provided flags:
+  - `pageState.authorized`
+  - `pageState.sections`
+  - `pageState.actions` (boolean map)
+- Redirect / empty state based on backend flags ONLY
+
+**Frontend may never "deny" or "allow" by computing permissions.**
+
+---
+
+## 3) SAP PFCG Authorization Model — Exact Match Only
+
+- Permission match is **EXACT string match** only.
+- No inference, no implicit read/view, no "write implies read".
+- Containers never have permissions.
+- Parent visible if ANY child visible.
+- Order-dependent logic is forbidden.
+
+---
+
+## 4) Z_* Page Authorization Objects (Mandatory)
+
+Every routable page MUST have a **Z_* Page Authorization Object** entry.
+Missing Z_* object => `authorized=false` (hard deny).
+No string-derived fallback for page keys.
+
+Z_* objects define:
+- page access rule (ACTVT=DISPLAY/READ)
+- section requirements
+- action semantic keys (GS_*), bound to technical permission slugs via registry
+
+---
+
+## 5) Transaction Codes (T-Code equivalence)
+
+Each routable page and its primary operations are equivalent to SAP T-Codes:
+- Deterministic access
+- Backend enforced
+- Auditable in one place
+
+No UI-side "soft T-code".
+
+---
+
+## 6) Canonical Registries (Single Source of Truth)
+
+**Backend is canonical for authorization registries:**
+- action registry (semantic → technical slugs)
+- page objects registry (Z_* coverage)
+- decision center rules
+
+**Frontend may have ONLY:**
+- action key constants (semantic GS_* identifiers)
+- typing contracts (ResolvedPageState)
+
+But **not** decision logic.
+
+---
+
+## 7) Caching Boundaries (Read-only correctness preserved)
+
+Cache is allowed ONLY as transparent wrappers:
+- Effective permissions cache (Phase 10.2)
+- Decision results cache (Phase 10.3)
+- Invalidation hooks (Phase 10.4)
+
+`DecisionCenterService` remains cache-unaware (pure).
+Caches must be scope-explicit and never leak across tenants.
+
+---
+
+## 8) Observability is Read-only
+
+Logging/audit/metrics MUST NOT change authorization behavior.
+Never log secrets (JWT/cookies/passwords). Redact aggressively.
+
+---
+
+## 9) Folder Responsibilities (Canonical Map)
+
+### Backend (NestJS)
+| Path | Responsibility |
+|------|----------------|
+| `server/src/modules/**` | Domain modules (IAM, Tenants, Users, etc.) |
+| `server/src/platform/decision/**` | DecisionCenterService, page-objects.registry, action.registry |
+| `server/src/platform/cache/**` | Cache abstractions + invalidation services |
+| `server/src/system/audit/**` | Audit logging module |
+| `server/src/platform/observability/**` | Metrics/logging glue |
+
+### Frontend (React)
+| Path | Responsibility |
+|------|----------------|
+| `client/src/domains/**` | UI + API calls ONLY (renderer) |
+| `client/src/shared/**` | UI primitives ONLY (no auth logic) |
+| `client/src/app/security/**` | Contracts + hooks that FETCH resolved state (no computations) |
+| `client/src/app/navigation/**` | Constants (action keys), no permission decisions |
+
+---
+
+## 10) Enforcement (CI/ESLint)
+
+CI MUST fail if forbidden patterns reappear in frontend.
+Approved exceptions are ONLY in backend decision infrastructure.
+
+**This constitution is LOCKED.**
+**Any violation is a build blocker.**
+
+---
+
+# LEGACY SECTIONS (Preserved for Reference)
+
+## SAP VISIBILITY LAW
 
 **LAW:** Visibility logic is structural and permissions-driven ONLY.
 
@@ -42,11 +178,9 @@ It is implemented EXCLUSIVELY in:
    - `children[0]` logic is FORBIDDEN for determines visibility or defaults during resolution time.
    - `firstAllowed` logic is managed ONLY by the router for redirection, never for data structure generation.
 
-**WHY:** Order-dependence creates "phantom access" bugs where moving a menu item changes security posture. This is unacceptable in ERP systems.
-
 ---
 
-## 3. ACTION AUTHORIZATION LAW
+## ACTION AUTHORIZATION LAW
 
 **LAW:** Actions are treated as SAP Transaction Codes.
 
@@ -59,74 +193,12 @@ It is implemented EXCLUSIVELY in:
    - No fallback permissions ("if not create, try update").
 
 3. **Resolution Location.**
-   - Actions are resolved ONLY inside the Decision Center (`resolveNavigationTree`).
+   - Actions are resolved ONLY inside the Decision Center.
    - The UI receives a `ResolvedAction[]` list with `state: 'enabled' | 'disabled' | 'hidden'`.
 
-**VIOLATION:**
-- UI checking `can('create')` is FORBIDDEN.
-- UI deriving "if I can see the page, I can read" is FORBIDDEN.
-
 ---
 
-## 4. UI ROLE: DUMB RENDERER
-
-**LAW:** The UI is a projection surface, not a brain.
-
-**UI MAY:**
-- Render the `resolvedNavigationTree` provided by the hook.
-- Read `node.actions.byContext`.
-- Render a button if `action.state !== 'hidden'`.
-- Disable a button if `action.state === 'disabled'`.
-
-**UI MUST NOT:**
-- Check permissions (e.g., `usePermissions()`, `Set.has()`).
-- Derive context (Current Page, Current Tab) from URL manually for decision purposes.
-- Infer defaults (e.g., "If no actions, show read-only").
-- Use hooks that "decide" visibility (e.g., `useVisibleActions`).
-- Re-filter actions (e.g., `actions.filter(a => user.has(a.perm))`).
-- Interpret route meaning (e.g., "admin/users implies System Scope").
-
-**SPECIFIC BAN:**
-- Adapters like `useCurrentRouteActions` that interpret routing to provide a "convenience" layer are FORBIDDEN. The UI must traverse the resolved tree or use router primitives to find its node.
-
----
-
-## 5. ROUTING LAW
-
-**LAW:** Routing is a centralized state machine.
-
-1. **Centralized Decisions:**
-   - `evaluateRoute` is the ONLY place that determines if a URL is valid.
-
-2. **Invalid URLs:**
-   - Fixed by the Router (Redirect / 404), NEVER by the UI.
-   - The UI should never render a broken state; it should be redirected away before rendering.
-
-3. **Default Routing:**
-   - Automatic selection of the "First Allowed Child" happens ONLY when a specific child is not requested (e.g., visiting `/settings`).
-   - Visibility of a parent must NEVER depend on which child is "default".
-
----
-
-## 6. CONTEXT & SCOPE LAW
-
-**LAW:** The Decision Center is Context-Agnostic but Scope-Aware.
-
-1. **No Interpretation:**
-   - The Decision Center does NOT guess context.
-   - Arguments like `context: 'admin'` MUST be passed explicitly.
-   - Arguments like `actionScope: 'system'` MUST be passed explicitly.
-
-2. **No Inference:**
-   - `admin` context DOES NOT imply `system` scope. (e.g., Tenant Admin).
-   - `tenant` context DOES NOT imply `tenant` scope.
-   - The Resolver trusts its inputs and does not transform them.
-
-**WHY:** Inference creates coupling. In SAP systems, "Context" (Where I am) and "Scope" (What data I see) are modifying, orthogonal dimensions.
-
----
-
-## 7. FORBIDDEN PATTERNS (BLACKLIST)
+## FORBIDDEN PATTERNS (BLACKLIST)
 
 **THE FOLLOWING ARE BANNED FOREVER:**
 
@@ -140,58 +212,29 @@ It is implemented EXCLUSIVELY in:
 
 ---
 
-## 8. CODE HYGIENE (ENFORCED)
-
-**LAW:** Code must be compilable, explicit, and free of placeholder logic.
-
-1. **No Literal Placeholders:**
-   - Literal placeholders such as `...` are **FORBIDDEN** in committed code.
-   - Any placeholder must be replaced with valid executable logic before merge.
-   - CI SHOULD fail builds containing invalid syntax placeholders.
-
-2. **Rationale:**
-   - Prevent silent compile-breakers in critical authorization paths.
-
----
-
-## 9. WHY THIS EXISTS
-
-This system is built to **SAP/Bank-Grade ERP Standards**.
-
-- **Scale:** Small "convenience" violations scale into unmaintainable security holes.
-- **Audit:** An auditor must look at **ONE** file to verify security. Distributed logic makes audit impossible.
-- **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
-
-**If behavior diverges from these laws, IT IS A BUG.**
-
----
-
-## 10. CACHING STRATEGY (PHASE 10 — IN PROGRESS)
+## CACHING STRATEGY (PHASE 10 — COMPLETED ✅)
 
 **LAW:** Caching must NEVER change authorization behavior.
 
 ### Cacheable Layers (Read-Only):
 
 1. **Effective Permissions** (`flat string[]`)
-   - Cache Key: `user:{id}:scope:{type}:{id}`
-   - TTL: 5-15 minutes
+   - Cache Key: `effPerm:user:{userId}:scope:{scopeType}:{scopeId|SYSTEM}`
+   - TTL: 5 minutes
 
 2. **Decision Output**
-   - Resolved navigation tree
-   - Resolved actions
-   - Canonical route
-   - Cache Key: `user:{id}:context:{ctx}`
+   - Cache Key: `decision:user:{userId}:scope:{scopeType}:{scopeId|SYSTEM}:route:{routeHash}`
+   - TTL: 5 minutes
 
 3. **Static Registries** (App Lifetime)
    - `ACTION_PERMISSIONS_REGISTRY`
    - `TAB_SUBTAB_REGISTRY`
-   - `SOD_RULES`
+   - `PAGE_OBJECTS_REGISTRY`
 
 ### Hard Rules:
 
 1. **Correctness-First Invalidation:**
    - Any role mutation → Invalidate affected caches
-   - Any composite role mutation → Invalidate affected caches
    - Any user-role assignment mutation → Invalidate user cache
 
 2. **NOT Cacheable (FORBIDDEN):**
@@ -199,122 +242,24 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
    - Session Context Switching
    - Real-time Impersonation State
 
-3. **No Implicit Inference:**
-   - Cached permissions are EXACT strings only
-   - No `.read` inference from `.create`
-   - Cache must mirror backend computation exactly
+---
 
-**VIOLATION:**
-- Caching logic that alters authorization outcome is FORBIDDEN.
-- Stale cache must fail-safe (deny access, not grant).
+## CODE HYGIENE (ENFORCED)
+
+**LAW:** Code must be compilable, explicit, and free of placeholder logic.
+
+1. **No Literal Placeholders:**
+   - Literal placeholders such as `...` are **FORBIDDEN** in committed code.
+   - CI SHOULD fail builds containing invalid syntax placeholders.
 
 ---
 
-### PHASE 10.2 — Effective Permissions Cache (LOCKED)
+## WHY THIS EXISTS
 
-**STATUS:** ✅ IMPLEMENTED
+This system is built to **SAP/Bank-Grade ERP Standards**.
 
-**CONSTRAINTS (IMMUTABLE):**
+- **Scale:** Small "convenience" violations scale into unmaintainable security holes.
+- **Audit:** An auditor must look at **ONE** file to verify security.
+- **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
 
-1. Cache ONLY wraps `EffectivePermissionsService.computeEffectivePermissions()` output.
-2. NO authorization behavior change is allowed.
-3. Cache keys are scope-explicit and deterministic:
-   ```
-   effPerm:user:{userId}:scope:{scopeType}:{scopeId|SYSTEM}
-   ```
-4. `DecisionCenterService` remains cache-UNAWARE.
-5. TTL: 5 minutes (300 seconds).
-6. Invalidation Methods:
-   - `invalidateUser(userId)` — Clears all scopes for user
-   - `invalidateScope(scopeType, scopeId)` — Clears all users in scope
-
-**ANY DEVIATION INVALIDATES THE PHASE.**
-
----
-
-### PHASE 10.3 — Decision Result Cache (LOCKED)
-
-**STATUS:** ✅ IMPLEMENTED
-
-**CONSTRAINTS (IMMUTABLE):**
-
-1. Cache ONLY wraps DecisionOrchestrator decision output.
-2. Cached data: navigation, actions, canonicalPath.
-3. Cache key includes route hash:
-   ```
-   decision:user:{userId}:scope:{scopeType}:{scopeId|SYSTEM}:route:{routeHash}
-   ```
-4. `DecisionCenterService` remains cache-UNAWARE.
-5. TTL: 5 minutes (300 seconds).
-
-**ANY DEVIATION INVALIDATES THE PHASE.**
-
----
-
-### PHASE 10.4 — Cache Invalidation Hooks (LOCKED)
-
-**STATUS:** ✅ IMPLEMENTED
-
-**CONSTRAINTS (IMMUTABLE):**
-
-1. ALL authorization-affecting changes trigger invalidation.
-2. BOTH caches (effective permissions + decision) are invalidated.
-3. `CacheInvalidationService` depends ONLY on cache services:
-   - `CachedEffectivePermissionsService`
-   - `DecisionCacheService`
-4. IAM services compute affected users explicitly.
-5. Invalidation is synchronous (before response).
-
-**INVALIDATION EVENTS:**
-- Role assigned/revoked → invalidateUser(userId)
-- Role updated/deleted → invalidateUsers(affectedUsers)
-
-**ANY DEVIATION INVALIDATES THE PHASE.**
-
----
-
-## PHASE 10 — CLOSED ✅
-
----
-
-## FRONTEND CONSTITUTION — ABSOLUTE RULES
-
-The Frontend is NOT a security layer.
-The Frontend is NOT a decision engine.
-The Frontend is NOT allowed to behave like a backend.
-
-### STRICT PROHIBITIONS
-The Frontend MUST NOT:
-- check permissions
-- infer access
-- infer roles or scopes
-- decide visibility or routing
-- perform authorization logic
-- act as a fallback for backend failures
-
-Forbidden patterns (ANY usage is a violation):
-- can(), hasPermission(), hasAny(), hasAll()
-- permissions.includes(...)
-- role or scope checks in UI
-- client-side guards based on permissions
-- navigationResolver logic
-
-### ALLOWED FRONTEND BEHAVIOR
-The Frontend MAY ONLY:
-- render backend-resolved navigation
-- render backend-resolved pageState
-- display empty states or redirects based on backend flags
-- send user intent (clicks, forms) to backend
-
-### BACKEND SUPREMACY
-Authorization is decided ONLY by:
-- EffectivePermissionsService
-- DecisionCenterService
-- DecisionOrchestrator
-
-This rule is ARCHITECTURALLY LOCKED.
-Violations MUST fail CI and be rejected in review.
-
-This system follows SAP PFCG semantics
-and enforces a Single Decision Center without exception.
-
+**If behavior diverges from these laws, IT IS A BUG.**

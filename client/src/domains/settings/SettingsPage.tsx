@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { cn } from "@/lib/utils"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { useAuth } from "@/domains/auth/context/AuthContext"
 import { Inline403 } from "@/shared/components/security/Inline403"
 // ...
 import { WorkflowConfigTab } from "@/shared/components/ui/WorkflowConfigTab"
@@ -63,7 +63,7 @@ const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI();
 
 export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
-    const { isLoading, permissions } = usePermissions()
+    const { isLoading, permissions } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once

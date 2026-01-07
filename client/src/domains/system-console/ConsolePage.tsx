@@ -9,7 +9,7 @@ import { SystemHealthWidget, CacheManager, MaintenanceControls } from "./compone
 
 // SAP-GRADE: Import resolver and ResolvedNavNode type
 import { resolveNavigationTree, type ResolvedNavNode } from "@/app/security/navigationResolver";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { useAuth } from "@/domains/auth/context/AuthContext";
 
 // Lazy load components
 const MonitoringPage = lazy(() => import("@/domains/system-console/monitoring/views/MonitoringPage"));
@@ -37,7 +37,7 @@ const TAB_ICONS: Record<string, React.ComponentType<any>> = {
 export default function SystemCorePage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { setPageKey } = useHelp();
-    const { permissions } = usePermissions();
+    const { permissions } = useAuth();
 
     React.useEffect(() => {
         setPageKey("sys-admin");
@@ -45,7 +45,7 @@ export default function SystemCorePage() {
 
     // SAP-GRADE: Build tree ONCE using resolveNavigationTree
     const tree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions);
+        return resolveNavigationTree('admin', permissions, 'system');
     }, [permissions]);
 
     // SAP-GRADE: Find console page node from tree

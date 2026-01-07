@@ -38,7 +38,6 @@ import {
     Download
 } from "lucide-react";
 import { toast } from "sonner";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
 import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
 import { cn } from "@/lib/utils";

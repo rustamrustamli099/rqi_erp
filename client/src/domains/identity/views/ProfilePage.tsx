@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { PageHeader } from "@/components/ui/page-header"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { useAuth } from "@/domains/auth/context/AuthContext"
 import { User, Lock, Bell, History, Camera, LogIn, PlusCircle, Trash } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
@@ -33,7 +33,7 @@ const passwordSchema = z.object({
 })
 
 export default function ProfilePage() {
-    const { user } = usePermissions()
+    const { user } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
 
     // Forms

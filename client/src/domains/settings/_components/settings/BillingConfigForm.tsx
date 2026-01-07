@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Info, AlertTriangle, Shield, CreditCard, Bell, Lock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { useAuth } from "@/domains/auth/context/AuthContext";
 import { type ResolvedNavNode } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
 
@@ -29,7 +29,7 @@ interface BillingConfigFormProps {
 
 export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { isLoading } = usePermissions();
+    const { isLoading } = useAuth();
 
     // SAP-GRADE: Get subTabs from tabNode.children (NOT from helper call)
     const resolvedSubTabs = useMemo(() => tabNode?.children ?? [], [tabNode]);

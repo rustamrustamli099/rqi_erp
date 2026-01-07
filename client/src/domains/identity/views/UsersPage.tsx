@@ -4,7 +4,7 @@ import { Users, ShieldAlert } from "lucide-react";
 import { UsersListTab } from "./UsersListTab";
 import { CuratorsListTab } from "./CuratorsListTab";
 import { useSearchParams } from "react-router-dom";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { useAuth } from "@/domains/auth/context/AuthContext";
 import { resolveNavigationTree } from "@/app/security/navigationResolver";
 import { useHelp } from "@/app/context/HelpContext";
 import { useEffect, useMemo } from "react";
@@ -20,7 +20,7 @@ const TAB_ICONS: Record<string, React.ComponentType<any>> = {
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { setPageKey } = useHelp();
-    const { permissions } = usePermissions();
+    const { permissions } = useAuth();
 
     // PHASE 14G: Get page state from Decision Center
     // This is the ONLY source for action visibility
@@ -29,7 +29,7 @@ export default function UsersPage() {
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once
     const navTree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions);
+        return resolveNavigationTree('admin', permissions, 'system');
     }, [permissions]);
 
     // Get users page node and tabs from children

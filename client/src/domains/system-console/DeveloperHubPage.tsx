@@ -10,7 +10,7 @@ import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { useSearchParams } from "react-router-dom";
-import { usePermissions } from "@/app/auth/hooks/usePermissions";
+import { useAuth } from "@/domains/auth/context/AuthContext";
 import { resolveNavigationTree } from "@/app/security/navigationResolver";
 import { Inline403 } from "@/shared/components/security/Inline403";
 
@@ -147,12 +147,12 @@ function PermissionsDataTable() {
 
 export default function DeveloperHubPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { permissions, isLoading } = usePermissions();
+    const { permissions, isLoading } = useAuth();
     const [webhookUrl, setWebhookUrl] = useState("https://your-api.com/webhook");
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once
     const navTree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions);
+        return resolveNavigationTree('admin', permissions, 'system');
     }, [permissions]);
 
     // Get developer page node and tabs from children
