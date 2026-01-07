@@ -1,0 +1,4 @@
+{
+  "stack": "ReferenceError: superAdminUser is not defined\n    at main (C:\\Users\\Dell\\Desktop\\antigravity_erp\\server\\prisma\\seed.ts:714:28)",
+  "message": "superAdminUser is not defined"
+}
