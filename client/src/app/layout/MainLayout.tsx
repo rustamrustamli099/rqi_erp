@@ -1,6 +1,6 @@
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
-import { usePermissions } from "@/app/auth/hooks/usePermissions"
+import { useAuth } from "@/domains/auth/context/AuthContext"
 
 interface MainLayoutProps {
     children: React.ReactNode
@@ -15,7 +15,7 @@ import { FloatingHelpButton } from "@/shared/components/FloatingHelpButton";
 export function MainLayout({ children }: MainLayoutProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { user: _user } = usePermissions();
+    const { user: _user } = useAuth();
     const location = useLocation();
 
     // eslint-disable-next-line no-console

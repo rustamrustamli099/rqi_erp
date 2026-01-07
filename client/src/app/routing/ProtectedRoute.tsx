@@ -13,7 +13,6 @@
 
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/context/AuthContext';
-import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { evaluateRoute } from '@/app/security/navigationResolver';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
@@ -23,8 +22,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-    const { isAuthenticated, isLoading, authState, activeTenantType } = useAuth();
-    const { permissions } = usePermissions();
+    const { isAuthenticated, isLoading, authState, activeTenantType, permissions } = useAuth();
     const location = useLocation();
     const [searchParams] = useSearchParams();
 

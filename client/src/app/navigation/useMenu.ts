@@ -11,7 +11,6 @@
 
 import { useMemo } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
-import { usePermissions } from '@/app/auth/hooks/usePermissions';
 import { resolveNavigationTree, type ResolvedNavNode } from '@/app/security/navigationResolver';
 
 /**
@@ -21,8 +20,7 @@ import { resolveNavigationTree, type ResolvedNavNode } from '@/app/security/navi
  * This is the SINGLE canonical menu source for Sidebar.
  */
 export const useMenu = () => {
-    const { activeTenantType, isLoading, authState } = useAuth();
-    const { permissions } = usePermissions();
+    const { activeTenantType, isLoading, authState, permissions } = useAuth();
 
     const isStable = authState === 'STABLE';
     const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';

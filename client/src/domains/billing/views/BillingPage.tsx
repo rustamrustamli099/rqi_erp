@@ -429,11 +429,11 @@ const BILLING_TABS = [
 
 export default function BillingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { permissions } = usePermissions();
+    const { permissions } = useAuth();
 
     // SAP-GRADE: Single Decision Center - resolveNavigationTree once
     const navTree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions);
+        return resolveNavigationTree('admin', permissions, 'system');
     }, [permissions]);
 
     // Get billing page node and tabs from children
