@@ -232,37 +232,22 @@ export class PermissionsService implements OnModuleInit {
     }
 
     /**
-     * SAP-Grade Permission Normalization (Server-Side)
+     * SAP-Grade Permission Normalization (PHASE 14H.4)
      * 
-     * Qaydalar:
-     * 1. Non-read action varsa → həmin module üçün .read avtomatik əlavə olunur
-     * 2. Child permission varsa → parent module .read avtomatik əlavə olunur
-     * 3. Bütün səviyyələrdə .access permission-lar yaradılır (navigation üçün)
+     * RULE: EXACT MATCH ONLY
+     * - NO inference
+     * - NO derived permissions
+     * - NO auto-add .read/.access
+     * 
+     * Returns permissions exactly as stored in DB.
      */
     private normalizePermissions(rawPermissions: string[]): string[] {
+        // PHASE 14H.4: NO INFERENCE - deduplicate and sort only
         const normalized = new Set<string>();
 
         rawPermissions.forEach(perm => {
             if (!perm || typeof perm !== 'string') return;
-
-            normalized.add(perm); // Always add original
-
-            const parts = perm.split('.');
-            if (parts.length < 2) return;
-
-            const action = parts[parts.length - 1];
-            const scope = parts[0]; // 'system' or 'tenant'
-
-            // Rule 1: Non-read action implies read
-            if (PermissionsService.NON_READ_ACTIONS.includes(action)) {
-                const readPerm = [...parts.slice(0, -1), 'read'].join('.');
-                normalized.add(readPerm);
-            }
-
-            // SAP-GRADE: Rule 2 & Rule 3 REMOVED
-            // - NO parent read inference
-            // - NO .access synthesis
-            // Only Rule 1 kept: write action implies read for same resource
+            normalized.add(perm); // Add original only - NO inference
         });
 
         return Array.from(normalized).sort();

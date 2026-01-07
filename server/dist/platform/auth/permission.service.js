@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var PermissionsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermissionsService = exports.admin_panel_permissions = void 0;
 const common_1 = require("@nestjs/common");
@@ -219,7 +218,6 @@ exports.admin_panel_permissions = {
     },
 };
 let PermissionsService = class PermissionsService {
-    static { PermissionsService_1 = this; }
     menuService;
     roleRepository;
     constructor(menuService, roleRepository) {
@@ -241,15 +239,6 @@ let PermissionsService = class PermissionsService {
             if (!perm || typeof perm !== 'string')
                 return;
             normalized.add(perm);
-            const parts = perm.split('.');
-            if (parts.length < 2)
-                return;
-            const action = parts[parts.length - 1];
-            const scope = parts[0];
-            if (PermissionsService_1.NON_READ_ACTIONS.includes(action)) {
-                const readPerm = [...parts.slice(0, -1), 'read'].join('.');
-                normalized.add(readPerm);
-            }
         });
         return Array.from(normalized).sort();
     }
@@ -351,7 +340,7 @@ let PermissionsService = class PermissionsService {
     }
 };
 exports.PermissionsService = PermissionsService;
-exports.PermissionsService = PermissionsService = PermissionsService_1 = __decorate([
+exports.PermissionsService = PermissionsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(menu_service_1.MenuService)),
     __param(1, (0, common_1.Inject)(role_repository_interface_1.IRoleRepository)),

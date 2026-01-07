@@ -1,19 +1,28 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * SAP-Grade Protected Route (USES NAVIGATION RESOLVER)
+ * PHASE 14H.4: Auth-Only Protected Route
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * RULES:
- * 1. Calls evaluateRoute() ONCE
- * 2. ALLOW → render children
- * 3. REDIRECT → Navigate directly (NO /access-denied)
- * 4. DENY → terminal AccessDenied (no auto-redirect)
+ * RULE: This component checks ONLY authentication status.
+ * It does NOT make any authorization decisions.
+ * 
+ * ALLOWED:
+ * - if no token/session → redirect to /login
+ * - else → render children/Outlet
+ * 
+ * FORBIDDEN:
+ * - permission checks
+ * - evaluateRoute() calls
+ * - ALLOW/REDIRECT/DENY decisions based on permissions
+ * 
+ * Authorization is handled by:
+ * - Backend DecisionCenterService
+ * - PageGate component (consumes pageState.authorized)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/context/AuthContext';
-import { evaluateRoute } from '@/app/security/navigationResolver';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 
@@ -22,9 +31,8 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-    const { isAuthenticated, isLoading, authState, activeTenantType, permissions } = useAuth();
+    const { isAuthenticated, isLoading, authState } = useAuth();
     const location = useLocation();
-    const [searchParams] = useSearchParams();
 
     // 1. Loading state - show skeleton
     if (isLoading || authState === 'BOOTSTRAPPING') {
@@ -40,49 +48,9 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // 3. Determine context
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
-
-    // 4. SINGLE DECISION POINT: evaluateRoute
-    const decision = evaluateRoute(
-        location.pathname,
-        searchParams,
-        permissions,
-        context
-    );
-
-    // DEBUG - SİL SONRA
-    if (import.meta.env?.DEV) {
-        console.log('[ProtectedRoute] Decision:', {
-            path: location.pathname,
-            params: searchParams.toString(),
-            decision: decision.decision,
-            normalized: decision.decision === 'REDIRECT' ? decision.normalizedUrl : undefined,
-            reason: decision.decision === 'DENY' ? decision.reason : undefined
-        });
-    }
-
-    // 5. Handle decision
-    switch (decision.decision) {
-        case 'ALLOW':
-            return children ? <>{children}</> : <Outlet />;
-
-        case 'REDIRECT':
-            // Direct redirect - NO /access-denied intermediate
-            console.log('[ProtectedRoute] REDIRECT to:', decision.normalizedUrl);
-            return <Navigate to={decision.normalizedUrl} replace />;
-
-        case 'DENY':
-            // Terminal AccessDenied - no navigation
-            console.log('[ProtectedRoute] DENY:', decision.reason);
-            return <Navigate to="/access-denied" state={{
-                error: 'no_access',
-                reason: decision.reason
-            }} replace />;
-
-        default:
-            return children ? <>{children}</> : <Outlet />;
-    }
+    // 3. Authenticated - render children
+    // Authorization decisions are made by PageGate at page level
+    return children ? <>{children}</> : <Outlet />;
 };
 
 export default ProtectedRoute;
