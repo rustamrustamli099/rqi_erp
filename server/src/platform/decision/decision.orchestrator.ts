@@ -74,12 +74,17 @@ export class DecisionOrchestrator {
         // Build deterministic cache key
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId, routeHash);
 
+        // CACHE TEMPORARILY DISABLED FOR TESTING
+        // TODO: Re-enable after permission testing is complete
+        /*
         // 1. Check cache
         const cached = await this.cache.get<DecisionResult>(cacheKey);
         if (cached !== null) {
             this.logger.debug(`Decision Cache HIT: ${cacheKey}`);
             return cached;
         }
+        */
+        this.logger.debug(`Decision Cache DISABLED - computing fresh: ${cacheKey}`);
 
         // 2. Cache MISS - compute decision
         this.logger.debug(`Decision Cache MISS: ${cacheKey} - computing...`);

@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
-import { EffectivePermissionsService } from './effective-permissions.service';
+import { CachedEffectivePermissionsService } from './cached-effective-permissions.service';
 import { AuditService } from '../../system/audit/audit.service';
 import { PermissionDryRunEngine } from '../../common/utils/dry-run.engine';
 
@@ -10,7 +10,7 @@ export class PermissionsGuard implements CanActivate {
     constructor(
         private reflector: Reflector,
         private prisma: PrismaService,
-        private effectivePermissionsService: EffectivePermissionsService,
+        private effectivePermissionsService: CachedEffectivePermissionsService,
         private auditService: AuditService
     ) { }
 

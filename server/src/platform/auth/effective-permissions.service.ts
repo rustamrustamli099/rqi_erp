@@ -35,6 +35,9 @@ export class EffectivePermissionsService {
         // ---------------------------------------------------------
         // 0. CHECK SUPERUSER / OWNER STATUS (SAP-Grade "Firefighter")
         // ---------------------------------------------------------
+        // TEMPORARILY DISABLED FOR TESTING PERMISSION-BASED UI RENDERING
+        // Uncomment after testing is complete
+        /*
         const user = await (this.prisma as any).user.findUnique({
             where: { id: userId },
             select: { isOwner: true }
@@ -47,6 +50,7 @@ export class EffectivePermissionsService {
             });
             return allPermissions.map((p: any) => p.slug);
         }
+        */
 
         // ---------------------------------------------------------
         // 1. LOAD ASSIGNMENTS (The ONLY Entry Point)

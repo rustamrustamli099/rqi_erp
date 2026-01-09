@@ -13,7 +13,7 @@ exports.RequirePermissions = exports.PermissionsGuard = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const prisma_service_1 = require("../../prisma.service");
-const effective_permissions_service_1 = require("./effective-permissions.service");
+const cached_effective_permissions_service_1 = require("./cached-effective-permissions.service");
 const audit_service_1 = require("../../system/audit/audit.service");
 const dry_run_engine_1 = require("../../common/utils/dry-run.engine");
 let PermissionsGuard = class PermissionsGuard {
@@ -78,7 +78,7 @@ exports.PermissionsGuard = PermissionsGuard = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [core_1.Reflector,
         prisma_service_1.PrismaService,
-        effective_permissions_service_1.EffectivePermissionsService,
+        cached_effective_permissions_service_1.CachedEffectivePermissionsService,
         audit_service_1.AuditService])
 ], PermissionsGuard);
 const RequirePermissions = (...permissions) => {

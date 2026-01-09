@@ -38,11 +38,7 @@ let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
     }
     async resolveDecisionCached(userId, scopeType, scopeId, routeHash) {
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId, routeHash);
-        const cached = await this.cache.get(cacheKey);
-        if (cached !== null) {
-            this.logger.debug(`Decision Cache HIT: ${cacheKey}`);
-            return cached;
-        }
+        this.logger.debug(`Decision Cache DISABLED - computing fresh: ${cacheKey}`);
         this.logger.debug(`Decision Cache MISS: ${cacheKey} - computing...`);
         const permissions = await this.effectivePermissionsService.computeEffectivePermissions({
             userId,

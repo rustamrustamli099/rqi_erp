@@ -43,16 +43,19 @@ let DecisionCenterService = class DecisionCenterService {
     }
     resolveActionsForNode(nodeId, permissionSet) {
         const config = action_registry_1.ACTION_PERMISSIONS_REGISTRY.find(c => c.entityKey === nodeId);
+        console.log(`[DecisionCenter] resolveActionsForNode: nodeId=${nodeId}, configFound=${!!config}`);
         if (!config)
             return undefined;
         const resolvedActions = config.actions.map(a => ({
             actionKey: a.actionKey,
-            state: permissionSet.has(a.permissionSlug) ? 'enabled' : 'hidden'
+            state: permissionSet.has(a.permissionSlug) ? 'enabled' : 'hidden',
+            label: a.actionKey
         })).filter(a => a.state !== 'hidden');
+        console.log(`[DecisionCenter] nodeId=${nodeId}: resolved ${resolvedActions.length} actions:`, resolvedActions.map(a => a.actionKey));
         if (resolvedActions.length === 0)
             return undefined;
-        const toolbarKeys = ['create', 'export_to_excel', 'submit', 'approve', 'reject', 'import', 'manage_seats'];
-        const rowKeys = ['update', 'delete', 'read', 'change_status', 'impersonate', 'view_audit', 'cancel'];
+        const toolbarKeys = ['create', 'export_to_excel', 'submit', 'approve', 'reject', 'import', 'manage_seats', 'download_json_soc2', 'download_json_iso', 'generate_evidence', 'download_report'];
+        const rowKeys = ['update', 'delete', 'read', 'change_status', 'impersonate', 'view_audit', 'cancel', 'select_permissions', 'copy', 'view_audit_log'];
         return {
             actions: resolvedActions,
             byContext: {

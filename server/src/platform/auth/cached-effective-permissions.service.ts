@@ -43,18 +43,21 @@ export class CachedEffectivePermissionsService {
         // Build deterministic cache key
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId);
 
+        // CACHE DISABLED FOR TESTING
+        /*
         // 1. Check cache
         const cached = await this.cache.get<string[]>(cacheKey);
         if (cached !== null) {
             this.logger.debug(`Cache HIT for ${cacheKey}`);
             return cached;
         }
+        */
 
         // 2. Cache MISS - compute from base service
-        this.logger.debug(`Cache MISS for ${cacheKey} - computing...`);
+        this.logger.debug(`Cache DISABLED - computing fresh for ${cacheKey}`);
         const result = await this.baseService.computeEffectivePermissions(params);
 
-        // 3. Store in cache
+        // 3. Store in cache (still store for when we re-enable)
         await this.cache.set(cacheKey, result, CACHE_TTL_SECONDS);
 
         return result;

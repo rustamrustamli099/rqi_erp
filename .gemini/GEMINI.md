@@ -305,3 +305,102 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
 - **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
 
 **If behavior diverges from these laws, IT IS A BUG.**
+
+# RQI ERP — SAP PFCG Canonical Architecture Constitution
+
+## 1. Core Philosophy
+This system follows SAP PFCG-grade authorization.
+Authorization is only real if UI obeys backend decisions.
+Backend decides.
+Frontend renders.
+
+## 2. Single Decision Center (SDC)
+There MUST be exactly ONE decision center:
+- Backend
+- DecisionCenterService
+- DecisionOrchestrator
+- PAGE_OBJECTS_REGISTRY (Z_*)
+- ACTION_REGISTRY (GS_*)
+
+Frontend is NOT a decision layer.
+
+## 3. Frontend Brain Ban (CRITICAL)
+Frontend MUST NEVER:
+- check permissions
+- compute visibility
+- infer authorization
+- decide routing
+- compute menus or tabs
+
+Forbidden in frontend runtime:
+- permissions.includes
+- resolveNavigationTree
+- can / canAny / canAll
+- startsWith permission logic
+- local visibility booleans
+
+Violations = SECURITY BUG.
+
+## 4. Page Authorization Rule
+Every routable page MUST:
+- have a Z_* page object
+- be enforced by PageGate or usePageState.authorized
+
+If a page renders without authorization check → INVALID.
+
+## 5. Page Content Authorization Rule
+UI elements:
+- buttons
+- tabs
+- row actions
+- sections
+- toolbars
+
+MUST:
+- be hidden by default
+- render ONLY if backend pageState.actions[key] === true
+
+Read-only users MUST NOT see write UI.
+
+## 6. Exact-Match Authorization Only
+Authorization rules:
+- EXACT string match only
+
+Forbidden:
+- prefix matching
+- wildcard matching
+- inference
+- auto-added permissions
+
+Analytics may use prefix logic,
+Authorization may NOT.
+
+## 7. Menu & Navigation
+Menus, tabs, default routes MUST:
+- be resolved in backend
+- be delivered as data
+- NEVER filtered in frontend
+
+Frontend renders backend-provided structure ONLY.
+
+## 8. No Temporary Bypasses
+Temporary frontend logic is NOT allowed.
+If backend is broken:
+- FIX BACKEND
+- NEVER bypass with frontend logic
+
+## 9. CI & Guardrails
+CI MUST block:
+- frontend permission logic
+- missing PageGate
+- missing Z_* coverage
+- multiple decision centers
+
+## 10. Audit Truth
+If:
+- Read-only user sees write UI
+- Frontend decides anything
+- Page renders without authorization
+
+Then:
+System is NOT SAP PFCG compliant.

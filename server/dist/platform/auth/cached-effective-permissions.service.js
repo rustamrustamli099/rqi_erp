@@ -27,12 +27,7 @@ let CachedEffectivePermissionsService = CachedEffectivePermissionsService_1 = cl
     async computeEffectivePermissions(params) {
         const { userId, scopeType, scopeId } = params;
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId);
-        const cached = await this.cache.get(cacheKey);
-        if (cached !== null) {
-            this.logger.debug(`Cache HIT for ${cacheKey}`);
-            return cached;
-        }
-        this.logger.debug(`Cache MISS for ${cacheKey} - computing...`);
+        this.logger.debug(`Cache DISABLED - computing fresh for ${cacheKey}`);
         const result = await this.baseService.computeEffectivePermissions(params);
         await this.cache.set(cacheKey, result, CACHE_TTL_SECONDS);
         return result;
