@@ -211,7 +211,7 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             icon: 'Database', // or Settings2
             children: [{
                 id: 'billing_config',
-                label: 'Bilinq Ayarları',
+                label: 'Bilinq parametrləri',
                 // SAP-GRADE: Container is PERMISSIONLESS. Visibility from ANY child.
                 icon: 'DollarSign',
                 children: [{

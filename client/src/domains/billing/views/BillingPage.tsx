@@ -457,24 +457,9 @@ export default function BillingPage() {
     // Search by ID 'billing' or key 'admin.billing'
     const pageNode = useMemo(() => findNode(menu, 'billing') || findNode(menu, 'admin.billing'), [menu]);
 
-    // Owner Shim: Fabricate node if missing
-    const effectivePageNode = useMemo(() => {
-        if (pageNode) return pageNode;
-        if (isOwner) {
-            return {
-                id: 'billing',
-                label: 'Bilinq',
-                children: [
-                    { id: 'market_place', label: 'Marketplace', tabKey: 'market_place' },
-                    { id: 'compact_packages', label: 'Kompakt Paketlər', tabKey: 'compact_packages' },
-                    { id: 'plans', label: 'Planlar', tabKey: 'plans' },
-                    { id: 'invoices', label: 'Fakturalar', tabKey: 'invoices' },
-                    { id: 'licenses', label: 'Lisenziyalar', tabKey: 'licenses' }
-                ]
-            } as unknown as ResolvedNavNode;
-        }
-        return undefined;
-    }, [pageNode, isOwner]);
+    // Owner Shim: REMOVED (Backend Driven)
+    // const effectivePageNode = pageNode; // Simplified aliasing if needed, or just use pageNode directly
+    const effectivePageNode = pageNode;
 
     const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
@@ -486,15 +471,15 @@ export default function BillingPage() {
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     const currentParam = searchParams.get("tab");
-    // Allow access if Owner OR key is in allowed list
-    const activeTab = currentParam && ((isOwner && ['market_place', 'compact_packages', 'plans', 'invoices', 'licenses'].includes(currentParam)) || allowedKeys.includes(currentParam))
+    // Allow access only if key is in allowed list
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : '';
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (val: string) => {
-        // Owner can access all
-        if (!isOwner && !allowedKeys.includes(val)) return;
+        // Strict allow list check
+        if (!allowedKeys.includes(val)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -503,7 +488,7 @@ export default function BillingPage() {
         });
     };
 
-    if (!isOwner && allowedKeys.length === 0) {
+    if (allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <p className="text-sm text-muted-foreground">You do not have permission to view Billing.</p>

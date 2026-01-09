@@ -11,10 +11,11 @@ const FORBIDDEN_PATTERNS = [
 
 const SCAN_DIR = path.resolve(__dirname, '../client/src');
 const EXCLUDE_FILES = [
-    'tabSubTab.registry.ts', // Deprecated file, ignored for now
     'verify-pfcg.js',
     'ux-visibility-policy.md', // Documentation
-    'permission-inheritance-matrix.md' // Documentation
+    'permission-inheritance-matrix.md', // Documentation
+    'TAB_SUBTAB_FROZEN_SPEC.md', // Documentation
+    'RBAC_NAVIGATION_STANDARD.md' // Documentation
 ];
 
 let hasError = false;

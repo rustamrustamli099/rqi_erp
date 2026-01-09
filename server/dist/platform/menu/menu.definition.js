@@ -189,7 +189,7 @@ exports.ADMIN_MENU_TREE = [
                 icon: 'Database',
                 children: [{
                         id: 'billing_config',
-                        label: 'Bilinq Ayarları',
+                        label: 'Bilinq parametrləri',
                         icon: 'DollarSign',
                         children: [{
                                 id: 'pricing',

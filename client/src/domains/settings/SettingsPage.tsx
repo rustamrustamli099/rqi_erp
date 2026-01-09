@@ -54,12 +54,10 @@ const timezones = [
     { value: "Asia/Dubai", label: "Asia/Dubai (GMT+4)" },
 ]
 
-import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
-import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
-
 // --- Sidebar Navigation Items ---
-// Single Source of Truth from TAB_SUBTAB_REGISTRY
-const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI();
+// PHASE 15: Derived purely from Backend Menu (settingsPageNode)
+import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
+// const ALL_SIDEBAR_ITEMS = getSettingsTabsForUI(); // DEPRECATED
 
 export default function SettingsPage() {
     const [timezone, setTimezone] = useState("Asia/Baku")
@@ -106,12 +104,46 @@ export default function SettingsPage() {
     }, [allowedTabs]);
 
     // Filter sidebar - Show only allowed items
+    // PHASE 15: Generate sidebar structure directly from backend node
     const visibleSidebarGroups = useMemo(() => {
-        return ALL_SIDEBAR_ITEMS.map(group => ({
-            ...group,
-            items: group.items.filter(item => allowedKeys.includes(item.id))
-        })).filter(group => group.items.length > 0);
-    }, [allowedKeys]);
+        if (!settingsPageNode?.children) return [];
+
+        // Backend Structure: Settings -> [Group1, Group2, Item3]
+        // UI Structure: [{ groupLabel: "Group1", items: [...] }, { groupLabel: "Group2", items: [...] }]
+
+        const groups: { groupLabel: string, items: any[] }[] = [];
+        const looseItems: any[] = [];
+
+        settingsPageNode.children.forEach(child => {
+            if (child.children && child.children.length > 0) {
+                // It's a group
+                groups.push({
+                    groupLabel: child.label || child.title || 'Group',
+                    items: child.children.map(subItem => ({
+                        id: subItem.id || subItem.key || 'unknown',
+                        label: subItem.label || subItem.title || subItem.id,
+                        path: subItem.path
+                    }))
+                });
+            } else {
+                // It's a loose item
+                looseItems.push({
+                    id: child.id || child.key || 'unknown',
+                    label: child.label || child.title || child.id,
+                    path: child.path
+                });
+            }
+        });
+
+        if (looseItems.length > 0) {
+            groups.unshift({
+                groupLabel: "Ümumi",
+                items: looseItems
+            });
+        }
+
+        return groups;
+    }, [settingsPageNode]);
 
     // Get current tabNode for passing to children
     // SAP-GRADE: Must find the CONTAINER node for complex tabs (billing_config, user_rights)
@@ -212,11 +244,9 @@ export default function SettingsPage() {
                                             activeTab === item.id ? "bg-secondary font-medium text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                         )}
                                         onClick={() => {
-                                            // SAP-GRADE: Use canonical path from resolver (includes default subTab)
-                                            // BUT only extract navigation params (tab, subTab) - NOT pagination
-                                            const resolvedNode = allowedTabs.find(t => (t.tabKey || t.id) === item.id);
-                                            if (resolvedNode?.path) {
-                                                const url = new URL(resolvedNode.path, window.location.origin);
+                                            // SAP-GRADE: Use path directly from the item (derived from backend node)
+                                            if (item.path) {
+                                                const url = new URL(item.path, window.location.origin);
                                                 const newParams = new URLSearchParams();
                                                 // Only copy navigation params
                                                 const tab = url.searchParams.get('tab');

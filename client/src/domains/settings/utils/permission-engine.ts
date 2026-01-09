@@ -1,5 +1,6 @@
 
-import { PLATFORM_MENU } from "@/app/navigation/menu.definitions";
+// import { PLATFORM_MENU } from "@/app/navigation/menu.definitions";
+const PLATFORM_MENU: any[] = []; // Deprecated Stub
 
 // --- LOCAL INTERFACE DEFINITION TO PREVENT IMPORT ERRORS ---
 // (Mirroring menu.definitions.ts structure to avoid 'does not provide an export' runtime errors)

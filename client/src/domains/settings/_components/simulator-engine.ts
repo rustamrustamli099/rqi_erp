@@ -15,7 +15,13 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { type MenuItem, PLATFORM_MENU, TENANT_MENU } from "@/app/navigation/menu.definitions"
+// DEPRECATED ENGINE
+// import { type MenuItem, PLATFORM_MENU, TENANT_MENU } from "@/app/navigation/menu.definitions"
+
+interface MenuItem {
+    id: string;
+    // ... basic stub
+}
 
 export interface SimulationResult {
     visibleMenuIds: string[]
