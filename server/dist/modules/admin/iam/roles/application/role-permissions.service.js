@@ -8,17 +8,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolePermissionsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../../../../prisma.service");
 const audit_service_1 = require("../../../../../system/audit/audit.service");
+const cached_effective_permissions_service_1 = require("../../../../../platform/auth/cached-effective-permissions.service");
+const decision_orchestrator_1 = require("../../../../../platform/decision/decision.orchestrator");
 let RolePermissionsService = class RolePermissionsService {
     prisma;
     auditService;
-    constructor(prisma, auditService) {
+    cachedPermissionsService;
+    decisionOrchestrator;
+    constructor(prisma, auditService, cachedPermissionsService, decisionOrchestrator) {
         this.prisma = prisma;
         this.auditService = auditService;
+        this.cachedPermissionsService = cachedPermissionsService;
+        this.decisionOrchestrator = decisionOrchestrator;
     }
     async updateRolePermissions(actorId, roleId, payload) {
         try {
@@ -65,7 +74,7 @@ let RolePermissionsService = class RolePermissionsService {
             const toAdd = [...newPermIds].filter(id => !currentPermIds.has(id));
             const currentSlugs = role.permissions.map(rp => rp.permission.slug).sort();
             const newSlugs = requestedPerms.map(p => p.slug).sort();
-            return this.prisma.$transaction(async (tx) => {
+            const result = await this.prisma.$transaction(async (tx) => {
                 if (toRemove.length > 0) {
                     await tx.rolePermission.deleteMany({
                         where: {
@@ -117,6 +126,10 @@ let RolePermissionsService = class RolePermissionsService {
                     removedCount: toRemove.length
                 };
             });
+            if (result.addedCount > 0 || result.removedCount > 0) {
+                await this.invalidateCacheForUsersWithRole(roleId);
+            }
+            return result;
         }
         catch (error) {
             console.error('[FATAL-SERVICE] updateRolePermissions FAILED:', error);
@@ -124,11 +137,26 @@ let RolePermissionsService = class RolePermissionsService {
             throw error;
         }
     }
+    async invalidateCacheForUsersWithRole(roleId) {
+        const userRoles = await this.prisma.userRole.findMany({
+            where: { roleId },
+            select: { userId: true }
+        });
+        const userIds = [...new Set(userRoles.map(ur => ur.userId))];
+        console.log(`[CACHE-INVALIDATION] Invalidating cache for ${userIds.length} users with role ${roleId}`);
+        for (const userId of userIds) {
+            await this.cachedPermissionsService.invalidateUser(userId);
+            await this.decisionOrchestrator.invalidateUser(userId);
+        }
+    }
 };
 exports.RolePermissionsService = RolePermissionsService;
 exports.RolePermissionsService = RolePermissionsService = __decorate([
     (0, common_1.Injectable)(),
+    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => decision_orchestrator_1.DecisionOrchestrator))),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        cached_effective_permissions_service_1.CachedEffectivePermissionsService,
+        decision_orchestrator_1.DecisionOrchestrator])
 ], RolePermissionsService);
 //# sourceMappingURL=role-permissions.service.js.map

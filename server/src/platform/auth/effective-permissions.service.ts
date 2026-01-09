@@ -33,24 +33,11 @@ export class EffectivePermissionsService {
         this.logger.debug(`Computing permissions for User: ${userId}, Scope: ${scopeType}:${scopeId}`);
 
         // ---------------------------------------------------------
-        // 0. CHECK SUPERUSER / OWNER STATUS (SAP-Grade "Firefighter")
+        // SAP-GRADE: NO OWNER BYPASS
         // ---------------------------------------------------------
-        // TEMPORARILY DISABLED FOR TESTING PERMISSION-BASED UI RENDERING
-        // Uncomment after testing is complete
-        /*
-        const user = await (this.prisma as any).user.findUnique({
-            where: { id: userId },
-            select: { isOwner: true }
-        });
-
-        if (user?.isOwner) {
-            this.logger.debug(`User ${userId} is OWNER. Granting ALL permissions.`);
-            const allPermissions = await (this.prisma as any).permission.findMany({
-                select: { slug: true }
-            });
-            return allPermissions.map((p: any) => p.slug);
-        }
-        */
+        // ALL users (including owners) must have explicit role-based permissions.
+        // There is NO "superuser bypass" - this is a security requirement.
+        // If an owner needs full access, assign them the "Owner" role with all permissions.
 
         // ---------------------------------------------------------
         // 1. LOAD ASSIGNMENTS (The ONLY Entry Point)

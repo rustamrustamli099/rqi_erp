@@ -39,15 +39,20 @@ export default function LoginPage() {
             navigate("/")
         } catch (err: any) {
             toast.dismiss();
-            
+
             const status = err?.status;
             const data = err?.data;
 
             if (status === 403) {
+                // Extract description from backend response
+                const description = data?.description ||
+                    data?.message?.description ||
+                    "Hesabınız aktivdir, lakin sizə heç bir səlahiyyət təyin edilməyib. Zəhmət olmasa administratorla əlaqə saxlayın.";
+
                 toast.error("Giriş Məhdudlaşdırılıb", {
                     id: "auth-forbidden",
-                    description: "Hesabınız aktivdir, lakin sizə heç bir səlahiyyət təyin edilməyib. Zəhmət olmasa administratorla əlaqə saxlayın.",
-                    duration: 5000,
+                    description: description,
+                    duration: 8000,
                 });
             } else {
                 const msg = typeof data?.message === 'string' ? data.message : "Giriş mümkün olmadı";

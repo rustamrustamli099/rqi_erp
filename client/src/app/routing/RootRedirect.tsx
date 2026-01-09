@@ -1,7 +1,9 @@
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { useAuth } from "@/domains/auth/context/AuthContext"
 import { useMenu } from "@/app/navigation/useMenu"
 import { PageLoader } from "@/shared/components/PageLoader"
+import { useEffect } from "react"
+import { toast } from "sonner"
 
 /**
  * RootRedirect
@@ -10,8 +12,9 @@ import { PageLoader } from "@/shared/components/PageLoader"
  * NO PermissionPreviewEngine - resolver is single source.
  */
 export function RootRedirect() {
-    const { isAuthenticated, isLoading: authLoading, authState } = useAuth();
-    const { getFirstAllowedRoute, loading: menuLoading, error: menuError } = useMenu();
+    const { isAuthenticated, isLoading: authLoading, authState, logout } = useAuth();
+    const { getFirstAllowedRoute, loading: menuLoading, error: menuError, menu } = useMenu();
+    const navigate = useNavigate();
 
     // Auth loading state
     if (authLoading || authState === 'BOOTSTRAPPING' || authState === 'UNINITIALIZED') {
@@ -31,10 +34,20 @@ export function RootRedirect() {
     // Get first allowed route from resolver
     const targetRoute = getFirstAllowedRoute();
 
-    // Zero permissions or menu error - terminal
-    if (!targetRoute || targetRoute === '/access-denied') {
-        console.warn("[RootRedirect] Access Denied: User has no valid routes.", menuError ? `Error: ${menuError}` : '');
-        return <Navigate to="/access-denied" state={{ error: 'no_permissions' }} replace />;
+    // [SAP-GRADE] Zero permissions - logout and redirect to login with toast
+    if (!targetRoute || targetRoute === '/access-denied' || (menu && menu.length === 0)) {
+        console.warn("[RootRedirect] Zero permissions: Forcing logout", menuError ? `Error: ${menuError}` : '');
+
+        // Show toast and logout
+        toast.error("Giriş Məhdudlaşdırılıb", {
+            id: "no-permissions-logout",
+            description: "Bu hesabın sistemə giriş üçün icazəsi yoxdur. Zəhmət olmasa administratorla əlaqə saxlayın.",
+            duration: 8000,
+        });
+
+        // Clear all auth state and redirect to login
+        logout();
+        return <Navigate to="/login" replace />;
     }
 
     // Redirect to allowed route

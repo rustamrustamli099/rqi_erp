@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../../prisma.service';
 import { AuditService } from '../../../../../system/audit/audit.service';
 import { UpdateRolePermissionsDto } from '../api/dto/update-role-permissions.dto';
 import { RoleScope, Permission } from '@prisma/client';
+import { CachedEffectivePermissionsService } from '../../../../../platform/auth/cached-effective-permissions.service';
+import { DecisionOrchestrator } from '../../../../../platform/decision/decision.orchestrator';
 
 @Injectable()
 export class RolePermissionsService {
     constructor(
         private prisma: PrismaService,
-        private auditService: AuditService
+        private auditService: AuditService,
+        private cachedPermissionsService: CachedEffectivePermissionsService,
+        @Inject(forwardRef(() => DecisionOrchestrator))
+        private decisionOrchestrator: DecisionOrchestrator
     ) { }
 
     /**
@@ -87,7 +92,7 @@ export class RolePermissionsService {
             const newSlugs = requestedPerms.map(p => p.slug).sort();
 
             // 6. Transactional Execution
-            return this.prisma.$transaction(async (tx) => {
+            const result = await this.prisma.$transaction(async (tx) => {
                 // Apply Removals
                 if (toRemove.length > 0) {
                     await tx.rolePermission.deleteMany({
@@ -154,10 +159,40 @@ export class RolePermissionsService {
                     removedCount: toRemove.length
                 };
             });
+
+            // [SAP-GRADE] CRITICAL: Invalidate cache for ALL users with this role
+            // This must happen AFTER transaction commits successfully
+            if (result.addedCount > 0 || result.removedCount > 0) {
+                await this.invalidateCacheForUsersWithRole(roleId);
+            }
+
+            return result;
         } catch (error) {
             console.error('[FATAL-SERVICE] updateRolePermissions FAILED:', error);
             console.error(error.stack);
             throw error;
+        }
+    }
+
+    /**
+     * Invalidate permission cache for all users who have a specific role assigned.
+     * Called when role permissions change.
+     */
+    private async invalidateCacheForUsersWithRole(roleId: string): Promise<void> {
+        // Find all users with this role
+        const userRoles = await this.prisma.userRole.findMany({
+            where: { roleId },
+            select: { userId: true }
+        });
+
+        const userIds = [...new Set(userRoles.map(ur => ur.userId))];
+
+        console.log(`[CACHE-INVALIDATION] Invalidating cache for ${userIds.length} users with role ${roleId}`);
+
+        // Invalidate each user's permission and decision cache
+        for (const userId of userIds) {
+            await this.cachedPermissionsService.invalidateUser(userId);
+            await this.decisionOrchestrator.invalidateUser(userId);
         }
     }
 }

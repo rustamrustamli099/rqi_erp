@@ -41,6 +41,9 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
@@ -49,16 +52,22 @@ const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
 const redis_service_1 = require("../redis/redis.service");
 const refresh_token_service_1 = require("./refresh-token.service");
+const cached_effective_permissions_service_1 = require("./cached-effective-permissions.service");
+const decision_orchestrator_1 = require("../decision/decision.orchestrator");
 let AuthService = class AuthService {
     identityUseCase;
     jwtService;
     redisService;
     refreshTokenService;
-    constructor(identityUseCase, jwtService, redisService, refreshTokenService) {
+    cachedPermissionsService;
+    decisionOrchestrator;
+    constructor(identityUseCase, jwtService, redisService, refreshTokenService, cachedPermissionsService, decisionOrchestrator) {
         this.identityUseCase = identityUseCase;
         this.jwtService = jwtService;
         this.redisService = redisService;
         this.refreshTokenService = refreshTokenService;
+        this.cachedPermissionsService = cachedPermissionsService;
+        this.decisionOrchestrator = decisionOrchestrator;
     }
     async validateUser(email, pass) {
         const user = await this.identityUseCase.findUserByEmail(email);
@@ -85,8 +94,21 @@ let AuthService = class AuthService {
         };
     }
     async login(user, rememberMe = false, ip, agent) {
+        await this.cachedPermissionsService.invalidateUser(user.id);
+        await this.decisionOrchestrator.invalidateUser(user.id);
         const targetScopeType = 'SYSTEM';
         const targetScopeId = null;
+        const permissions = await this.cachedPermissionsService.computeEffectivePermissions({
+            userId: user.id,
+            scopeType: targetScopeType,
+            scopeId: targetScopeId
+        });
+        if (permissions.length === 0) {
+            throw new common_1.ForbiddenException({
+                message: 'NO_PERMISSIONS',
+                description: 'Bu hesabın sistemə giriş üçün icazəsi yoxdur. Zəhmət olmasa administratorla əlaqə saxlayın.'
+            });
+        }
         const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent, targetScopeType, targetScopeId);
         const refreshToken = rtResult.token;
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
@@ -150,9 +172,12 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => decision_orchestrator_1.DecisionOrchestrator))),
     __metadata("design:paramtypes", [identity_usecase_1.IdentityUseCase,
         jwt_1.JwtService,
         redis_service_1.RedisService,
-        refresh_token_service_1.RefreshTokenService])
+        refresh_token_service_1.RefreshTokenService,
+        cached_effective_permissions_service_1.CachedEffectivePermissionsService,
+        decision_orchestrator_1.DecisionOrchestrator])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

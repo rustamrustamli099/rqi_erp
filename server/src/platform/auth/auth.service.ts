@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { IdentityUseCase } from '../identity/application/identity.usecase';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RedisService } from '../redis/redis.service';
 import * as crypto from 'crypto';
 import { RefreshTokenService } from './refresh-token.service';
+import { CachedEffectivePermissionsService } from './cached-effective-permissions.service';
+import { DecisionOrchestrator } from '../decision/decision.orchestrator';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +16,9 @@ export class AuthService {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         private redisService: RedisService, // Injected for revocation
         private refreshTokenService: RefreshTokenService,
+        private cachedPermissionsService: CachedEffectivePermissionsService,
+        @Inject(forwardRef(() => DecisionOrchestrator))
+        private decisionOrchestrator: DecisionOrchestrator,
     ) { }
 
     async validateUser(email: string, pass: string): Promise<any> {
@@ -61,8 +66,27 @@ export class AuthService {
         // Authenticate User -> Default to SYSTEM -> Issue Token
         // User must explicitly switch to TENANT context later if needed.
 
+        // [SAP-GRADE] CRITICAL: Invalidate ALL caches for this user on login
+        // This ensures fresh permissions are computed, not stale cached data
+        await this.cachedPermissionsService.invalidateUser(user.id);
+        await this.decisionOrchestrator.invalidateUser(user.id);
+
         const targetScopeType = 'SYSTEM';
         const targetScopeId = null;
+
+        // [SAP-GRADE] CHECK: User must have at least one permission to access the system
+        const permissions = await this.cachedPermissionsService.computeEffectivePermissions({
+            userId: user.id,
+            scopeType: targetScopeType,
+            scopeId: targetScopeId
+        });
+
+        if (permissions.length === 0) {
+            throw new ForbiddenException({
+                message: 'NO_PERMISSIONS',
+                description: 'Bu hesabın sistemə giriş üçün icazəsi yoxdur. Zəhmət olmasa administratorla əlaqə saxlayın.'
+            });
+        }
 
         // 1. Generate Opaque Refresh Token (Bank-Grade)
         // Embed SYSTEM scope in the RT for consistency

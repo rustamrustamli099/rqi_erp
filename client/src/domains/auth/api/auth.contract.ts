@@ -45,8 +45,11 @@ export const authApi = createApi({
                     } else {
                         console.error("[AuthApi] Unexpected payload structure", payload);
                     }
-                } catch (err) {
+                } catch (err: any) {
                     console.error("[AuthApi] Login Failed", err);
+                    // [SAP-GRADE] CRITICAL: Do NOT set credentials on failed login
+                    // This ensures user stays on login page and cannot access protected routes
+                    // No dispatch here - credentials remain unset
                 }
             },
         }),

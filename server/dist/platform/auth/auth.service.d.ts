@@ -2,12 +2,16 @@ import { IdentityUseCase } from '../identity/application/identity.usecase';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '../redis/redis.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { CachedEffectivePermissionsService } from './cached-effective-permissions.service';
+import { DecisionOrchestrator } from '../decision/decision.orchestrator';
 export declare class AuthService {
     private identityUseCase;
     private jwtService;
     private redisService;
     private refreshTokenService;
-    constructor(identityUseCase: IdentityUseCase, jwtService: JwtService, redisService: RedisService, refreshTokenService: RefreshTokenService);
+    private cachedPermissionsService;
+    private decisionOrchestrator;
+    constructor(identityUseCase: IdentityUseCase, jwtService: JwtService, redisService: RedisService, refreshTokenService: RefreshTokenService, cachedPermissionsService: CachedEffectivePermissionsService, decisionOrchestrator: DecisionOrchestrator);
     validateUser(email: string, pass: string): Promise<any>;
     issueTokenForScope(user: any, scopeType: string, scopeId: string | null): Promise<{
         access_token: string;
