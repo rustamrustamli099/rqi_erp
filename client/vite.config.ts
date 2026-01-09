@@ -17,6 +17,15 @@ export default defineConfig({
       "@domains": path.resolve(__dirname, "./src/domains"),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
   // @ts-expect-error Vitest config extension
   test: {
     globals: true,

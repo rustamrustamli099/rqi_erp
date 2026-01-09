@@ -28,7 +28,7 @@ export const useMenu = (): UseMenuResult => {
     const { isAuthenticated, authState, activeTenantType, permissions } = useAuth();
 
     const isStable = authState === 'STABLE';
-    const loading = !isStable || authState === 'BOOTSTRAPPING';
+    const loading = !isStable;
 
     const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
