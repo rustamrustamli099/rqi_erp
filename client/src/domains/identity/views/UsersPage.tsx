@@ -47,30 +47,14 @@ export default function UsersPage() {
     // Fix: Search by ID 'users_group' which matches backend definition
     const pageNode = useMemo(() => findNode(menu, 'users_group') || findNode(menu, 'admin.users'), [menu]);
 
-    // Owner Shim: If node not found in menu (e.g. filtered), fabricate it for Owner
-    const effectivePageNode = useMemo(() => {
-        if (pageNode) return pageNode;
-        if (isOwner) {
-            return {
-                id: 'users_group',
-                label: 'İstifadəçilər',
-                children: [
-                    { id: 'users', label: 'İstifadəçilər', tabKey: 'users', path: '/admin/users?tab=users' },
-                    { id: 'curators', label: 'Kuratorlar', tabKey: 'curators', path: '/admin/users?tab=curators' }
-                ]
-            } as unknown as ResolvedNavNode;
-        }
-        return undefined;
-    }, [pageNode, isOwner]);
-
-    const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
+    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get("tab");
-    // Allow access if Owner OR key is in allowed list
-    const activeTab = currentParam && ((isOwner && ['users', 'curators'].includes(currentParam)) || allowedKeys.includes(currentParam))
+    // Only allow if key is in allowed list
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : '';
 
@@ -80,8 +64,8 @@ export default function UsersPage() {
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (val: string) => {
-        // Owner can access all
-        if (!isOwner && !allowedKeys.includes(val)) return;
+        // Strict: only allow if in allowedKeys
+        if (!allowedKeys.includes(val)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -90,7 +74,7 @@ export default function UsersPage() {
         });
     };
 
-    if (!isOwner && allowedKeys.length === 0) {
+    if (allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <p className="text-sm text-muted-foreground">You do not have permission to view Users.</p>

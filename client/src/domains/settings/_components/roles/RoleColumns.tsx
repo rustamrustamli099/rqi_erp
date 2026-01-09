@@ -141,7 +141,7 @@ export function createRoleColumns(
                                 </DropdownMenuItem>
                             )}
 
-                            {isVisible('manage_permissions') && (
+                            {isVisible('select_permissions') && (
                                 <DropdownMenuItem onClick={() => handlers.onSelectPermissions(role)}>
                                     <Check className="mr-2 h-4 w-4" /> İcazələri İdarə Et
                                 </DropdownMenuItem>

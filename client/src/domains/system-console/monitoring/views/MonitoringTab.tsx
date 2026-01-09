@@ -16,7 +16,7 @@ import { AnomalyDetectionTab } from "./AnomalyDetectionTab";
 import { SystemLogsTab } from "./SystemLogsTab";
 import { Inline403 } from "@/shared/components/security/Inline403";
 import { ScrollableSubTabsFromResolver } from "@/shared/components/ui/ScrollableSubTabs";
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 // SubTab component mapping
 const SUBTAB_CONTENT: Record<string, React.ReactNode> = {

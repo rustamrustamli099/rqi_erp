@@ -7,6 +7,7 @@ export interface MenuItem {
     permission?: string;
     children?: MenuItem[];
     disabled?: boolean;
+    actions?: any; // Contextual actions resolved by Decision Center
 }
 
 export const ADMIN_MENU_TREE: MenuItem[] = [
@@ -163,7 +164,8 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'security',
                 label: 'Siyasətlər (Policies)',
                 path: '/admin/settings?tab=security',
-                permission: 'system.settings.security.security_policy.global_policy.read',
+                // SAP-GRADE: Permissionless container
+                // permission: 'system.settings.security.security_policy.global_policy.read',
                 children: [
                     { id: 'password', label: 'Şifrə Siyasəti', path: '/admin/settings?tab=security&subTab=password', permission: 'system.settings.security.security_policy.password.read' },
                     { id: 'login', label: 'Giriş Nəzarəti', path: '/admin/settings?tab=security&subTab=login', permission: 'system.settings.security.security_policy.login.read' },
@@ -180,7 +182,8 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             {
                 id: 'user_rights',
                 label: 'İstifadəçi Hüquqları',
-                permission: 'system.settings.security.user_rights.role.read',
+                // SAP-GRADE: Permissionless container
+                // permission: 'system.settings.security.user_rights.role.read',
                 children: [{
                     id: 'roles',
                     label: 'Rollar',
@@ -357,9 +360,35 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
         },
         {
             id: 'monitoring',
-            label: 'Monitoring',
+            label: 'System Monitorinqi',
             path: '/admin/console?tab=monitoring',
-            permission: 'system.system_console.monitoring.dashboard.read'
+            // Permissionless container (permissions are on children)
+            children: [
+                {
+                    id: 'dashboard',
+                    label: 'Dashboard',
+                    path: '/admin/console?tab=monitoring&subTab=dashboard',
+                    permission: 'system.system_console.monitoring.dashboard.read'
+                },
+                {
+                    id: 'alerts',
+                    label: 'Alert Rules',
+                    path: '/admin/console?tab=monitoring&subTab=alerts',
+                    permission: 'system.system_console.monitoring.dashboard.read'
+                },
+                {
+                    id: 'anomalies',
+                    label: 'Anomalies',
+                    path: '/admin/console?tab=monitoring&subTab=anomalies',
+                    permission: 'system.system_console.monitoring.dashboard.read'
+                },
+                {
+                    id: 'logs',
+                    label: 'Logs',
+                    path: '/admin/console?tab=monitoring&subTab=logs',
+                    permission: 'system.system_console.monitoring.dashboard.read'
+                }
+            ]
         },
         {
             id: 'audit',

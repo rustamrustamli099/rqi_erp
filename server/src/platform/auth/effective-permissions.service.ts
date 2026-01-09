@@ -33,6 +33,22 @@ export class EffectivePermissionsService {
         this.logger.debug(`Computing permissions for User: ${userId}, Scope: ${scopeType}:${scopeId}`);
 
         // ---------------------------------------------------------
+        // 0. CHECK SUPERUSER / OWNER STATUS (SAP-Grade "Firefighter")
+        // ---------------------------------------------------------
+        const user = await (this.prisma as any).user.findUnique({
+            where: { id: userId },
+            select: { isOwner: true }
+        });
+
+        if (user?.isOwner) {
+            this.logger.debug(`User ${userId} is OWNER. Granting ALL permissions.`);
+            const allPermissions = await (this.prisma as any).permission.findMany({
+                select: { slug: true }
+            });
+            return allPermissions.map((p: any) => p.slug);
+        }
+
+        // ---------------------------------------------------------
         // 1. LOAD ASSIGNMENTS (The ONLY Entry Point)
         // ---------------------------------------------------------
         // We query the "UserRoleAssignment" table. 

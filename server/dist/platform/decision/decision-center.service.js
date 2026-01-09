@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DecisionCenterService = void 0;
 const common_1 = require("@nestjs/common");
+const action_registry_1 = require("./action.registry");
 let DecisionCenterService = class DecisionCenterService {
     resolveNavigationTree(tree, userPermissions) {
         const permissionSet = new Set(userPermissions);
@@ -30,13 +31,35 @@ let DecisionCenterService = class DecisionCenterService {
                     continue;
                 }
             }
+            const actions = this.resolveActionsForNode(node.id, permissionSet);
             const resolvedNode = {
                 ...node,
-                children: visibleChildren.length > 0 ? visibleChildren : undefined
+                children: visibleChildren.length > 0 ? visibleChildren : undefined,
+                actions
             };
             resolved.push(resolvedNode);
         }
         return resolved;
+    }
+    resolveActionsForNode(nodeId, permissionSet) {
+        const config = action_registry_1.ACTION_PERMISSIONS_REGISTRY.find(c => c.entityKey === nodeId);
+        if (!config)
+            return undefined;
+        const resolvedActions = config.actions.map(a => ({
+            actionKey: a.actionKey,
+            state: permissionSet.has(a.permissionSlug) ? 'enabled' : 'hidden'
+        })).filter(a => a.state !== 'hidden');
+        if (resolvedActions.length === 0)
+            return undefined;
+        const toolbarKeys = ['create', 'export_to_excel', 'submit', 'approve', 'reject', 'import', 'manage_seats'];
+        const rowKeys = ['update', 'delete', 'read', 'change_status', 'impersonate', 'view_audit', 'cancel'];
+        return {
+            actions: resolvedActions,
+            byContext: {
+                toolbar: resolvedActions.filter(a => toolbarKeys.includes(a.actionKey)),
+                row: resolvedActions.filter(a => rowKeys.includes(a.actionKey) || !toolbarKeys.includes(a.actionKey))
+            }
+        };
     }
     resolveActions(userPermissions) {
         return userPermissions;

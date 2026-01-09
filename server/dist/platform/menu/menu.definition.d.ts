@@ -6,5 +6,6 @@ export interface MenuItem {
     permission?: string;
     children?: MenuItem[];
     disabled?: boolean;
+    actions?: any;
 }
 export declare const ADMIN_MENU_TREE: MenuItem[];

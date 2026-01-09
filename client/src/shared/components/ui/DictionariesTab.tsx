@@ -57,7 +57,7 @@ import type {
 } from "@/shared/constants/reference-data"
 import AddressSettingsTab from "./AddressSettingsTab"
 import TimezoneSettingsTab from "./TimezoneSettingsTab"
-import { type ResolvedNavNode } from "@/app/security/navigationResolver"
+import { type ResolvedNavNode } from "@/app/navigation/useMenu"
 
 interface DictionariesTabProps {
     tabNode: ResolvedNavNode;

@@ -29,6 +29,13 @@ let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
         this.decisionCenter = decisionCenter;
         this.cache = cache;
     }
+    async getSessionState(user) {
+        return this.resolveDecisionCached(user.userId, user.scopeType || 'UNKNOWN', user.tenantId || null, 'GLOBAL_SESSION');
+    }
+    async getNavigationForUser(user) {
+        const state = await this.getSessionState(user);
+        return state.navigation;
+    }
     async resolveDecisionCached(userId, scopeType, scopeId, routeHash) {
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId, routeHash);
         const cached = await this.cache.get(cacheKey);

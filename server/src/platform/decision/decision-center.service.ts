@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MenuItem } from '../menu/menu.definition';
+import { ACTION_PERMISSIONS_REGISTRY } from './action.registry';
 
 /**
  * SAP-GRADE DECISION CENTER
@@ -57,17 +58,51 @@ export class DecisionCenterService {
                 }
             }
 
-            // 4. Construct Result Node
+            // 4. Resolve Contextual Actions (SAP-Grade Enrichment)
+            // Backend attaches actions for UI to consume directly
+            const actions = this.resolveActionsForNode(node.id, permissionSet);
+
+            // 5. Construct Result Node
             // Clone to avoid mutating original definition
             const resolvedNode: MenuItem = {
                 ...node,
-                children: visibleChildren.length > 0 ? visibleChildren : undefined
+                children: visibleChildren.length > 0 ? visibleChildren : undefined,
+                actions // Attach actions
             };
 
             resolved.push(resolvedNode);
         }
 
         return resolved;
+    }
+
+    /**
+     * Helper to resolve actions for a specific node/entity
+     */
+    private resolveActionsForNode(nodeId: string, permissionSet: Set<string>): any {
+        const config = ACTION_PERMISSIONS_REGISTRY.find(c => c.entityKey === nodeId);
+        if (!config) return undefined;
+
+        const resolvedActions = config.actions.map(a => ({
+            actionKey: a.actionKey,
+            // SAP Rule: If user has permission -> enabled. Else -> hidden.
+            // We can strictly hide denied actions.
+            state: permissionSet.has(a.permissionSlug) ? 'enabled' : 'hidden'
+        })).filter(a => a.state !== 'hidden');
+
+        if (resolvedActions.length === 0) return undefined;
+
+        // Mimic legacy 'byContext' structure for frontend compatibility
+        const toolbarKeys = ['create', 'export_to_excel', 'submit', 'approve', 'reject', 'import', 'manage_seats'];
+        const rowKeys = ['update', 'delete', 'read', 'change_status', 'impersonate', 'view_audit', 'cancel'];
+
+        return {
+            actions: resolvedActions,
+            byContext: {
+                toolbar: resolvedActions.filter(a => toolbarKeys.includes(a.actionKey)),
+                row: resolvedActions.filter(a => rowKeys.includes(a.actionKey) || !toolbarKeys.includes(a.actionKey)) // Default to row if not in toolbar?
+            }
+        };
     }
 
     /**

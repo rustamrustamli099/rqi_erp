@@ -38,7 +38,7 @@ import {
     Download
 } from "lucide-react";
 import { toast } from "sonner";
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { Inline403 } from "@/shared/components/security/Inline403";
 import { cn } from "@/lib/utils";
 import { workflowService } from "@/domains/settings/_services/workflow.service";

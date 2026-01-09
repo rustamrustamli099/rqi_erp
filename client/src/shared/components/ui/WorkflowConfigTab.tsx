@@ -159,7 +159,7 @@ const MOCK_REQUESTS: ApprovalRequest[] = [
     }
 ]
 
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { ScrollableSubTabsFromResolver, ScrollableSubTabs, type SubTabItem } from "@/shared/components/ui/ScrollableSubTabs";
 import { useSearchParams } from "react-router-dom";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";

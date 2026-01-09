@@ -86,7 +86,7 @@ export const admin_panel_permissions = {
                 perms: ['read', 'create', 'update', 'delete', 'change_status']
             },
             user_rights: {
-                role: {
+                roles: {
                     perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'select_permissions', 'submit', 'approve', 'reject']
                 },
                 permission: {

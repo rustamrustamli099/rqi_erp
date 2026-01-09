@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 
 // SAP-GRADE imports
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { ScrollableSubTabsFromResolver } from "@/shared/components/ui/ScrollableSubTabs";
 // PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
 import { usePageState } from "@/app/security/usePageState";

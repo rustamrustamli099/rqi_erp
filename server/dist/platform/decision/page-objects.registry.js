@@ -268,6 +268,21 @@ exports.PAGE_OBJECTS_REGISTRY = [
         entityKey: 'billing_packages',
         readPermission: 'system.billing.compact_packages.read',
     },
+    {
+        pageKey: 'Z_TENANT_SETTINGS',
+        entityKey: 'tenant_settings',
+        readPermission: 'system.tenant_settings.read',
+    },
+    {
+        pageKey: 'Z_TENANT_APPROVALS',
+        entityKey: 'tenant_approvals',
+        readPermission: 'system.tenant_approvals.read',
+    },
+    {
+        pageKey: 'Z_FINANCE',
+        entityKey: 'finance',
+        readPermission: 'system.finance.read',
+    },
 ];
 function getPageObject(pageKey) {
     return exports.PAGE_OBJECTS_REGISTRY.find(p => p.pageKey === pageKey);

@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Info, AlertTriangle, Shield, CreditCard, Bell, Lock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/domains/auth/context/AuthContext";
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { Inline403 } from "@/shared/components/security/Inline403";
 
 interface BillingConfigFormProps {

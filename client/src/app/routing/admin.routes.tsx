@@ -15,6 +15,7 @@ import FilesManagerPage from "@/domains/file-manager/views/FilesManagerPage";
 import { BillingRoutes } from "@/domains/billing/routes";
 import { BranchesRoutes } from "@/domains/branches/routes";
 import { ProtectedRoute } from "@/app/routing/ProtectedRoute";
+import { PageGate } from "@/app/security/PageGate";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -43,63 +44,81 @@ export default function AdminRoutes() {
             {/* Users */}
             <Route path="users" element={
                 <ProtectedRoute>
-                    <UsersPage />
+                    <PageGate pageKey="Z_USERS">
+                        <UsersPage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Profile - always accessible if authenticated */}
             <Route path="profile" element={
                 <ProtectedRoute>
-                    <ProfilePage />
+                    <PageGate pageKey="Z_PROFILE">
+                        <ProfilePage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Branches */}
             <Route path="branches/*" element={
                 <ProtectedRoute>
-                    <BranchesRoutes />
+                    <PageGate pageKey="Z_BRANCHES">
+                        <BranchesRoutes />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Files */}
             <Route path="files" element={
                 <ProtectedRoute>
-                    <FilesManagerPage />
+                    <PageGate pageKey="Z_FILES">
+                        <FilesManagerPage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Tenants */}
             <Route path="tenants" element={
                 <ProtectedRoute>
-                    <TenantList />
+                    <PageGate pageKey="Z_TENANTS">
+                        <TenantList />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Approvals */}
             <Route path="approvals" element={
                 <ProtectedRoute>
-                    <ApprovalsPage />
+                    <PageGate pageKey="Z_APPROVALS">
+                        <ApprovalsPage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Guide */}
             <Route path="guide" element={
                 <ProtectedRoute>
-                    <PlatformOverviewPage />
+                    <PageGate pageKey="Z_GUIDE">
+                        <PlatformOverviewPage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* System Console */}
             <Route path="console" element={
                 <ProtectedRoute>
-                    <ConsolePage />
+                    <PageGate pageKey="Z_CONSOLE">
+                        <ConsolePage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
             {/* Developer Hub */}
             <Route path="developer" element={
                 <ProtectedRoute>
-                    <DeveloperHubPage />
+                    <PageGate pageKey="Z_DEVELOPER">
+                        <DeveloperHubPage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
@@ -113,7 +132,9 @@ export default function AdminRoutes() {
             {/* Finance */}
             <Route path="finance" element={
                 <ProtectedRoute>
-                    <FinancePage />
+                    <PageGate pageKey="Z_FINANCE">
+                        <FinancePage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 

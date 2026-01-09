@@ -43,7 +43,27 @@ export class DecisionOrchestrator {
         private readonly cache: CacheService
     ) { }
 
-    // ... (getNavigationForUser and getSessionState remain the same)
+    /**
+     * Get full session state (Navigation + Actions + Canonical Path)
+     * Cached by user+scope
+     */
+    async getSessionState(user: any): Promise<DecisionResult> {
+        return this.resolveDecisionCached(
+            user.userId,
+            user.scopeType || 'UNKNOWN',
+            user.tenantId || null,
+            'GLOBAL_SESSION'
+        );
+    }
+
+    /**
+     * Get just navigation tree for user
+     * Wrapper validation around session state
+     */
+    async getNavigationForUser(user: any): Promise<MenuItem[]> {
+        const state = await this.getSessionState(user);
+        return state.navigation;
+    }
 
     private async resolveDecisionCached(
         userId: string,

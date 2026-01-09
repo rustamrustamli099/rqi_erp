@@ -11,7 +11,7 @@ export declare class SessionController {
         scopeType: any;
         scopeId: any;
     }>;
-    getBootstrap(req: any): Promise<any>;
+    getBootstrap(req: any): Promise<import("../../decision/decision.orchestrator").DecisionResult>;
     switchContext(req: any, dto: SwitchContextDto): Promise<{
         access_token: string;
         user: {

@@ -28,6 +28,7 @@ export interface ResolvedNavNode {
     tabKey?: string;
     subTabKey?: string;
     children?: ResolvedNavNode[];
+    actions?: any;
 }
 
 interface UseMenuResult {

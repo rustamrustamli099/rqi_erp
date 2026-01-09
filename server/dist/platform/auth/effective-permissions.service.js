@@ -22,6 +22,17 @@ let EffectivePermissionsService = EffectivePermissionsService_1 = class Effectiv
     async computeEffectivePermissions(params) {
         const { userId, scopeType, scopeId } = params;
         this.logger.debug(`Computing permissions for User: ${userId}, Scope: ${scopeType}:${scopeId}`);
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { isOwner: true }
+        });
+        if (user?.isOwner) {
+            this.logger.debug(`User ${userId} is OWNER. Granting ALL permissions.`);
+            const allPermissions = await this.prisma.permission.findMany({
+                select: { slug: true }
+            });
+            return allPermissions.map((p) => p.slug);
+        }
         const assignments = await this.prisma.userRole.findMany({
             where: {
                 userId: userId,

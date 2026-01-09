@@ -18,8 +18,7 @@ export class RolesController {
     ) { }
 
     @Put(':id/permissions')
-    // TODO: Re-enable after verifying permission exists in user's role
-    // @RequirePermissions('system.settings.security.user_rights.roles.update')
+    @RequirePermissions('system.settings.security.user_rights.roles.select_permissions')
     updatePermissions(
         @Param('id') id: string,
         @Body() dto: UpdateRolePermissionsDto,

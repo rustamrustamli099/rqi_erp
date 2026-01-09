@@ -367,6 +367,29 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'billing_packages',
         readPermission: 'system.billing.compact_packages.read',
     },
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TENANT PORTAL DOMAIN
+    // ═══════════════════════════════════════════════════════════════════════
+    {
+        pageKey: 'Z_TENANT_SETTINGS',
+        entityKey: 'tenant_settings',
+        readPermission: 'system.tenant_settings.read',
+    },
+    {
+        pageKey: 'Z_TENANT_APPROVALS',
+        entityKey: 'tenant_approvals',
+        readPermission: 'system.tenant_approvals.read',
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FINANCE DOMAIN
+    // ═══════════════════════════════════════════════════════════════════════
+    {
+        pageKey: 'Z_FINANCE',
+        entityKey: 'finance',
+        readPermission: 'system.finance.read',
+    },
 ];
 
 

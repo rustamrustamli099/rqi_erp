@@ -249,7 +249,7 @@ const RoleTable = ({
 }
 
 // Import ResolvedNavNode type
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { ScrollableSubTabsFromResolver } from "@/shared/components/ui/ScrollableSubTabs";
 
 interface RolesPageProps {
@@ -293,7 +293,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     // Explicitly resolve row actions for usage in handlers
     const deleteAction = rowActions.find(a => a.actionKey === 'delete');
     const changeStatusAction = rowActions.find(a => a.actionKey === 'change_status');
-    const managePermissionsAction = rowActions.find(a => a.actionKey === 'manage_permissions');
+    const managePermissionsAction = rowActions.find(a => a.actionKey === 'select_permissions');
     const matrixUpdateAction = toolbarActions.find(a => a.actionKey === 'update');
     // Compliance Actions
     const soc2Action = toolbarActions.find(a => a.actionKey === 'download_json_soc2');
@@ -679,10 +679,13 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
             // Update current role local state to reflect new permissions
             setCurrentRole(prev => prev ? { ...prev, version: (prev.version || 1) + 1 } : null);
         } catch (error: any) {
-            if (error?.response?.data?.message?.includes('VERSION_CONFLICT')) {
+            const errorData = error?.response?.data;
+            const errorMessage = typeof errorData?.message === 'object' ? errorData?.message?.message : errorData?.message;
+
+            if (errorMessage?.includes('VERSION_CONFLICT')) {
                 toast.error("Versiya konflikti! Səhifəni yeniləyin və yenidən cəhd edin.");
             } else {
-                toast.error("Xəta baş verdi: " + (error?.response?.data?.message || error.message));
+                toast.error("Xəta baş verdi: " + (errorMessage || error.message));
             }
         } finally {
             setIsSaving(false);

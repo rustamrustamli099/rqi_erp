@@ -112,10 +112,10 @@ export function ScrollableSubTabs({
  * 
  * Specifically designed to work with navigationResolver output
  */
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 interface ScrollableSubTabsFromResolverProps {
-    tabNode: ResolvedNavNode;
+    tabNode?: ResolvedNavNode;
     value: string;
     onValueChange: (value: string) => void;
     /** Map subTab keys to their content components */

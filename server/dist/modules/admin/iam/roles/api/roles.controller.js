@@ -100,6 +100,7 @@ let RolesController = class RolesController {
 exports.RolesController = RolesController;
 __decorate([
     (0, common_1.Put)(':id/permissions'),
+    (0, permissions_guard_1.RequirePermissions)('system.settings.security.user_rights.roles.select_permissions'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),

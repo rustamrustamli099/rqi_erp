@@ -78,6 +78,10 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'submit', permissionSlug: 'system.settings.security.user_rights.roles.submit' },
             { actionKey: 'approve', permissionSlug: 'system.settings.security.user_rights.roles.approve' },
             { actionKey: 'reject', permissionSlug: 'system.settings.security.user_rights.roles.reject' },
+            { actionKey: 'select_permissions', permissionSlug: 'system.settings.security.user_rights.roles.select_permissions' },
+            { actionKey: 'change_status', permissionSlug: 'system.settings.security.user_rights.roles.change_status' },
+            { actionKey: 'copy', permissionSlug: 'system.settings.security.user_rights.roles.copy' },
+            { actionKey: 'view_audit_log', permissionSlug: 'system.settings.security.user_rights.roles.view_audit_log' },
         ],
     },
 

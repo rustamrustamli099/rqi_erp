@@ -68,44 +68,8 @@ export default function SystemCorePage() {
     // Fix: Search by ID 'system_console'
     const consolePageNode = useMemo(() => findNode(menu, 'system_console') || findNode(menu, 'admin.console'), [menu]);
 
-    // Owner Shim: Fabricate if missing OR if incomplete (e.g. Monitoring has no children)
-    const effectivePageNode = useMemo(() => {
-        // If we found a node, check if it seems valid/complete. If not, and we are Owner, use Shim.
-        // E.g. backend sends 'monitoring' but with 0 children.
-        const isIncomplete = consolePageNode && consolePageNode.children?.some(c => c.id === 'monitoring' && (!c.children || c.children.length === 0));
-
-        if (consolePageNode && !isIncomplete && !isOwner) return consolePageNode;
-        // If Owner, we prefer the Shim if the backend node is missing OR incomplete. 
-        // Or honestly, for Owner now, just use Shim to guarantee keys match what we expect in render logic below.
-
-        if (isOwner || !consolePageNode) {
-            // Shim with Correct Keys based on User Feedback
-            return {
-                id: 'system_console',
-                label: 'Sistem Konsolu',
-                children: [
-                    { id: 'console_dash', label: 'Dashboard', tabKey: 'console_dash' },
-                    {
-                        id: 'monitoring', label: 'Monitorinq', tabKey: 'monitoring',
-                        children: [
-                            { id: 'dashboard', label: 'Dashboard', subTabKey: 'dashboard' },
-                            { id: 'alerts', label: 'Alert Rules', subTabKey: 'alerts' },
-                            { id: 'anomalies', label: 'Anomalies', subTabKey: 'anomalies' },
-                            { id: 'logs', label: 'System Logs', subTabKey: 'logs' }
-                        ]
-                    },
-                    { id: 'audit', label: 'Audit', tabKey: 'audit' },
-                    { id: 'scheduler', label: 'Job Registry', tabKey: 'scheduler' },
-                    { id: 'retention', label: 'Retention', tabKey: 'retention' },
-                    { id: 'feature_flags', label: 'Feature Flags', tabKey: 'feature_flags' },
-                    { id: 'policy_security', label: 'Policies', tabKey: 'policy_security' },
-                    { id: 'feedback', label: 'Feedback', tabKey: 'feedback' },
-                    { id: 'tools', label: 'Alətlər', tabKey: 'tools' }
-                ]
-            } as unknown as ResolvedNavNode;
-        }
-        return consolePageNode;
-    }, [consolePageNode, isOwner]);
+    // SAP-GRADE: Direct assignment, no shims
+    const effectivePageNode = consolePageNode;
 
     const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
@@ -113,36 +77,19 @@ export default function SystemCorePage() {
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get("tab");
-    // Owner bypass for active tab check
-    const currentTab = currentParam && ((isOwner) || allowedKeys.includes(currentParam))
+
+    const currentTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : '';
 
     // Get current tab node for passing to child components
     const currentTabNode = useMemo(() => {
-        // Owner fabrication for current node
-        const found = allowedTabs.find(t => (t.tabKey || t.id) === currentTab);
-        if (isOwner && !found) {
-            // Fallback shim for current tab if not in list
-            if (currentTab === 'monitoring') {
-                return {
-                    id: 'monitoring', label: 'Monitorinq', tabKey: 'monitoring',
-                    children: [
-                        { id: 'dashboard', label: 'Dashboard', subTabKey: 'dashboard' },
-                        { id: 'alerts', label: 'Alert Rules', subTabKey: 'alerts' },
-                        { id: 'anomalies', label: 'Anomalies', subTabKey: 'anomalies' },
-                        { id: 'logs', label: 'System Logs', subTabKey: 'logs' }
-                    ]
-                } as any;
-            }
-            return { id: currentTab, label: currentTab, tabKey: currentTab } as any;
-        }
-        return found;
-    }, [allowedTabs, currentTab, isOwner]);
+        return allowedTabs.find(t => (t.tabKey || t.id) === currentTab);
+    }, [allowedTabs, currentTab]);
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (value: string) => {
-        if (!isOwner && !allowedKeys.includes(value)) return;
+        if (!allowedKeys.includes(value)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -151,7 +98,7 @@ export default function SystemCorePage() {
         });
     };
 
-    if (!isOwner && allowedKeys.length === 0) {
+    if (allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <p className="text-sm text-muted-foreground">You do not have permission to view System Console.</p>

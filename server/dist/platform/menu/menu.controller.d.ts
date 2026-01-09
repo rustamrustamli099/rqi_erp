@@ -3,6 +3,6 @@ export declare class MenuController {
     private readonly decisionOrchestrator;
     constructor(decisionOrchestrator: DecisionOrchestrator);
     getMyMenu(req: any): Promise<{
-        menu: any;
+        menu: import("./menu.definition").MenuItem[];
     }>;
 }

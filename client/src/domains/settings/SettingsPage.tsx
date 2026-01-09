@@ -106,18 +106,15 @@ export default function SettingsPage() {
         return extractKeys(allowedTabs);
     }, [allowedTabs]);
 
-    // Filter sidebar - Owner sees all
+    // Filter sidebar - Show only allowed items
     const visibleSidebarGroups = useMemo(() => {
-        if (isOwner) return ALL_SIDEBAR_ITEMS;
         return ALL_SIDEBAR_ITEMS.map(group => ({
             ...group,
             items: group.items.filter(item => allowedKeys.includes(item.id))
         })).filter(group => group.items.length > 0);
-    }, [allowedKeys, isOwner]);
+    }, [allowedKeys]);
 
     // Get current tabNode for passing to children
-    // SAP-GRADE: Must find the CONTAINER node for complex tabs (billing_config, user_rights)
-    // so that the child component receives the sub-items to render.
     // SAP-GRADE: Must find the CONTAINER node for complex tabs (billing_config, user_rights)
     // so that the child component receives the sub-items to render.
     const currentTabNode = useMemo(() => {
@@ -141,52 +138,6 @@ export default function SettingsPage() {
         // 1. Try to find exact ID match (Container priority)
         let foundNode = findRecursive(settingsPageNode.children, n => n.id === tabKey);
 
-        // --- COMPATIBILITY SHIM (FIX FOR STALE BACKEND CACHE) ---
-        // Priority Shim: Check for aliased IDs BEFORE path fallback to avoid finding leaf nodes
-        if (!foundNode && tabKey === 'user_rights') {
-            // Shim 1: Old backend used ID 'rights'
-            foundNode = findRecursive(settingsPageNode.children, n => n.id === 'rights');
-
-            // Shim 2 (Emergency): If not found (e.g. filtered by permissions or totally missing), FABRICATE IT.
-            // This ensures Owners can always see the page structure even if backend menu is incomplete.
-            if (!foundNode) {
-                foundNode = {
-                    id: 'user_rights',
-                    label: 'İstifadəçi Hüquqları',
-                    path: '/admin/settings?tab=user_rights',
-                    children: [
-                        {
-                            id: 'roles', label: 'Rollar', subTabKey: 'roles', path: '/admin/settings?tab=user_rights&subTab=roles',
-                            actions: {
-                                byContext: {
-                                    toolbar: [{ actionKey: 'create', state: 'enabled', label: 'Yeni Rol' }, { actionKey: 'export_to_excel', state: 'enabled', label: 'Export' }],
-                                    row: [{ actionKey: 'delete', state: 'enabled', label: 'Sil' }, { actionKey: 'change_status', state: 'enabled', label: 'Status' }, { actionKey: 'manage_permissions', state: 'enabled', label: 'İcazələr' }]
-                                }
-                            }
-                        },
-                        {
-                            id: 'matrix_view', label: 'Matris', subTabKey: 'matrix_view', path: '/admin/settings?tab=user_rights&subTab=matrix_view',
-                            actions: { byContext: { toolbar: [{ actionKey: 'update', state: 'enabled', label: 'Yenilə' }], row: [] } }
-                        },
-                        {
-                            id: 'compliance', label: 'Compliance', subTabKey: 'compliance', path: '/admin/settings?tab=user_rights&subTab=compliance',
-                            actions: {
-                                byContext: {
-                                    toolbar: [
-                                        { actionKey: 'generate_evidence', state: 'enabled', label: 'Sübut Generasiya Et' },
-                                        { actionKey: 'download_json_soc2', state: 'enabled', label: 'SOC2 JSON' },
-                                        { actionKey: 'download_json_iso', state: 'enabled', label: 'ISO 27001 JSON' },
-                                        { actionKey: 'download_report', state: 'enabled', label: 'Hesabatı Yüklə' }
-                                    ],
-                                    row: []
-                                }
-                            }
-                        }
-                    ]
-                } as unknown as ResolvedNavNode;
-            }
-        }
-
         // 2. Fallback: Find by path match (Leaf priority, where ID != key)
         if (!foundNode) {
             foundNode = findRecursive(settingsPageNode.children, n => {
@@ -195,48 +146,19 @@ export default function SettingsPage() {
             });
         }
 
-        if (foundNode) {
-            // Shim: Security Section (Handle Old Group 'security' or Item 'policies')
-            // Fixes "Content not found" by injecting the expected sub-tabs
-            if (foundNode.id === 'security' || foundNode.id === 'policies') {
-                return {
-                    ...foundNode,
-                    children: [
-                        { id: 'password', subTabKey: 'password', label: 'Şifrə Siyasəti', permission: 'system.settings.security.security_policy.password.read' },
-                        { id: 'login', subTabKey: 'login', label: 'Giriş Nəzarəti', permission: 'system.settings.security.security_policy.login.read' },
-                        { id: 'session', subTabKey: 'session', label: 'Sessiya', permission: 'system.settings.security.security_policy.session.read' },
-                        { id: 'restrictions', subTabKey: 'restrictions', label: 'Qlobal Məhdudiyyətlər', permission: 'system.settings.security.security_policy.restrictions.read' }
-                    ]
-                };
-            }
-
-            // Shim: Workflow (Handle missing children in old backend)
-            // Fixes blank Workflow tab
-            if (foundNode.id === 'workflow' && (!foundNode.children || foundNode.children.length === 0)) {
-                return {
-                    ...foundNode,
-                    children: [
-                        { id: 'config', subTabKey: 'config', label: 'Konfiqurasiya', permission: 'system.settings.system_configurations.workflow.configuration.read' },
-                        { id: 'monitor', subTabKey: 'monitor', label: 'Monitorinq', permission: 'system.settings.system_configurations.workflow.configuration.read' }
-                    ]
-                };
-            }
-        }
-        // ---------------------------------------------------------
-
         return foundNode;
     }, [settingsPageNode, searchParams]);
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get('tab');
-    const activeTab = currentParam && (isOwner || allowedKeys.includes(currentParam))
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : '';
 
     // Handler for tab change - SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (tabId: string) => {
-        if (!isOwner && !allowedKeys.includes(tabId)) return;
+        if (!allowedKeys.includes(tabId)) return;
         setSearchParams(_prev => {
             // SAP-GRADE: Start fresh with only navigation params
             const newParams = new URLSearchParams();
@@ -257,7 +179,7 @@ export default function SettingsPage() {
         )
     }
 
-    if (!isOwner && allowedKeys.length === 0) {
+    if (allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <Inline403 message="You do not have permission to view Settings." />

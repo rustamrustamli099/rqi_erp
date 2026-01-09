@@ -6,7 +6,7 @@
 
 import MonitoringTab from "./MonitoringTab";
 import { PageHeader } from "@/shared/components/ui/page-header";
-import { type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 interface MonitoringPageProps {
     tabNode: ResolvedNavNode;

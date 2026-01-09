@@ -171,23 +171,8 @@ export default function DeveloperHubPage() {
     // Search by ID 'developer_hub' or key 'admin.developer'
     const pageNode = useMemo(() => findNode(menu, 'developer_hub') || findNode(menu, 'admin.developer'), [menu]);
 
-    // Owner Shim: Fabricate if missing
-    const effectivePageNode = useMemo(() => {
-        if (pageNode) return pageNode;
-        if (isOwner) {
-            return {
-                id: 'developer_hub',
-                label: 'Developer Hub',
-                children: [
-                    { id: 'api', label: 'API Reference', tabKey: 'api' },
-                    { id: 'sdk', label: 'SDKs & Libraries', tabKey: 'sdk' },
-                    { id: 'webhooks', label: 'Webhooks', tabKey: 'webhooks' },
-                    { id: 'perm_map', label: 'Permission Map', tabKey: 'perm_map' }
-                ]
-            } as unknown as ResolvedNavNode;
-        }
-        return undefined;
-    }, [pageNode, isOwner]);
+    // SAP-GRADE: Direct assignment, no shims
+    const effectivePageNode = pageNode;
 
     const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
@@ -195,15 +180,15 @@ export default function DeveloperHubPage() {
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get('tab');
-    // Allow access if Owner OR key is in allowed list
-    const activeTab = currentParam && ((isOwner && ['api', 'sdk', 'webhooks', 'perm_map'].includes(currentParam)) || allowedKeys.includes(currentParam))
+
+    // Allow access only if key is in allowed list
+    const activeTab = currentParam && allowedKeys.includes(currentParam)
         ? currentParam
         : '';
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (value: string) => {
-        // Owner can access all
-        if (!isOwner && !allowedKeys.includes(value)) return;
+        if (!allowedKeys.includes(value)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -225,7 +210,7 @@ export default function DeveloperHubPage() {
         );
     }
 
-    if (!isOwner && allowedKeys.length === 0) {
+    if (allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <Inline403 message="Bu bölməni görmək üçün icazəniz yoxdur." />

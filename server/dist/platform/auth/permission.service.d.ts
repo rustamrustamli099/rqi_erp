@@ -82,7 +82,7 @@ export declare const admin_panel_permissions: {
                 perms: string[];
             };
             user_rights: {
-                role: {
+                roles: {
                     perms: string[];
                 };
                 permission: {
