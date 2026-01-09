@@ -61,7 +61,7 @@ const statusOptions = [
 
 // PHASE 14G: Props interface
 interface UsersListTabProps {
-    actions?: ActionsMap;
+    actions?: Partial<ActionsMap>;
 }
 
 export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) {
@@ -510,10 +510,10 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
                 onOpenChange={(open: boolean) => !open && setActionUser(null)}
                 title={dialogContent.title}
                 description={dialogContent.description}
-                onAction={handleConfirmAction}
+                onConfirm={handleConfirmAction}
                 variant={dialogContent.variant}
-                actionLabel="Təsdiqlə"
-                cancelLabel="Ləğv et"
+                confirmText="Təsdiqlə"
+                cancelText="Ləğv et"
             />
 
             <UserFormDialog
@@ -525,6 +525,16 @@ export function UsersListTab({ actions = {} as ActionsMap }: UsersListTabProps) 
                     status: selectedUser.status as "Active" | "Inactive"
                 } : undefined}
                 onSubmit={userFormMode === 'create' ? handleCreateUser : handleUpdateUser}
+                availableRoles={roleOptions.map(r => ({
+                    id: r.value,
+                    name: r.value,
+                    description: r.label,
+                    scope: 'TENANT', // Default scope
+                    isSystem: false,
+                    permissions: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }))}
             />
 
             {/* SAP Fiori Style: Read-only Detail Sheet */}

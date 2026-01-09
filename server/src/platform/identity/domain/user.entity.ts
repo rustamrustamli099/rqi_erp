@@ -8,7 +8,7 @@ export class User extends AggregateRoot<User> {
         public passwordHash: string | null,
         public fullName: string | null,
         public isActive: boolean,
-        public isOwner: boolean,
+
         // Schema has tenantId, branchId, roleId.
         // Schema has tenantId, branchId, roleId.
         public tenantId: string | null,

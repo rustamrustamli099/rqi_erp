@@ -29,10 +29,6 @@ let AccessControlGuard = class AccessControlGuard {
         if (!policy) {
             return true;
         }
-        const userRole = user.role;
-        if (userRole === 'owner' || userRole === 'superadmin') {
-            return true;
-        }
         const now = new Date();
         const dayOfWeek = now.getDay();
         const currentHour = now.getHours();

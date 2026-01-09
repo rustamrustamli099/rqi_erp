@@ -22,11 +22,7 @@ export class AccessControlGuard implements CanActivate {
             return true; // No restrictions
         }
 
-        // Bypass checks for Owner/SuperAdmin
-        const userRole = (user as any).role;
-        if (userRole === 'owner' || userRole === 'superadmin') {
-            return true;
-        }
+
 
         const now = new Date();
         const dayOfWeek = now.getDay(); // 0-6

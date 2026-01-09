@@ -26,7 +26,6 @@ let PrismaUserRepository = class PrismaUserRepository {
                 password: user.passwordHash || '',
                 fullName: user.fullName,
                 tenantId: user.tenantId,
-                isOwner: user.isOwner,
             },
             create: {
                 id: user.id,
@@ -34,7 +33,6 @@ let PrismaUserRepository = class PrismaUserRepository {
                 password: user.passwordHash || '',
                 fullName: user.fullName,
                 tenantId: user.tenantId,
-                isOwner: user.isOwner,
             }
         });
     }
@@ -55,7 +53,7 @@ let PrismaUserRepository = class PrismaUserRepository {
         return raw.map(this.mapToDomain);
     }
     mapToDomain(raw) {
-        return new user_entity_1.User(raw.id, raw.email, raw.password, raw.fullName || raw.name, true, raw.isOwner || false, raw.tenantId, raw.createdAt, raw.updatedAt);
+        return new user_entity_1.User(raw.id, raw.email, raw.password, raw.fullName || raw.name, true, raw.tenantId, raw.createdAt, raw.updatedAt);
     }
     async updateRefreshToken(id, hashedRefreshToken) {
         await this.prisma.user.update({

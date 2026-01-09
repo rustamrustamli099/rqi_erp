@@ -5,7 +5,7 @@ import { LEGACY_TO_CANONICAL_MAP, isCanonical } from '@/app/security/permission-
 interface User {
     id: string;
     email: string;
-    isOwner?: boolean;
+    email: string;
     roles?: any[];
     permissions?: string[];
     tenantId?: string;
@@ -68,8 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (reduxUser.scopeType) return reduxUser.scopeType;
         if (reduxUser.scope) return reduxUser.scope;
 
-        // Fallback for legacy objects (should not happen in SAP mode)
-        if (reduxUser.isOwner && !isImpersonating) return 'SYSTEM';
         return isSystemTenant(reduxUser.tenantId) ? 'SYSTEM' : 'TENANT';
     }, [reduxUser, isImpersonating]);
 
@@ -103,12 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     data.permissions ||
                     [];
 
-                // SAP-GRADE: Owner Bypass Logic for Logging
-                if (userObj.isOwner || responseData.isOwner) {
-                    console.log("[AuthContext] Owner Access (Bypass) - Full Permissions Granted");
-                } else {
-                    console.log("[AuthContext] Raw Perms Extracted:", rawPerms.length);
-                }
+                console.log("[AuthContext] Raw Perms Extracted:", rawPerms.length);
 
                 // Mapped (Canonical)
                 const mappedPerms = rawPerms.map(p => {

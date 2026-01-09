@@ -73,13 +73,7 @@ export default function UsersPage() {
         });
     };
 
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <p className="text-sm text-muted-foreground">You do not have permission to view Users.</p>
-            </div>
-        );
-    }
+
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground animate-in fade-in duration-500">

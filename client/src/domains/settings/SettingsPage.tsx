@@ -118,10 +118,10 @@ export default function SettingsPage() {
             if (child.children && child.children.length > 0) {
                 // It's a group
                 groups.push({
-                    groupLabel: child.label || child.title || 'Group',
+                    groupLabel: child.label || 'Group',
                     items: child.children.map(subItem => ({
                         id: subItem.id || subItem.key || 'unknown',
-                        label: subItem.label || subItem.title || subItem.id,
+                        label: subItem.label || subItem.id,
                         path: subItem.path
                     }))
                 });
@@ -129,7 +129,7 @@ export default function SettingsPage() {
                 // It's a loose item
                 looseItems.push({
                     id: child.id || child.key || 'unknown',
-                    label: child.label || child.title || child.id,
+                    label: child.label || child.id,
                     path: child.path
                 });
             }
@@ -210,13 +210,7 @@ export default function SettingsPage() {
         )
     }
 
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <Inline403 message="You do not have permission to view Settings." />
-            </div>
-        )
-    }
+
 
 
     return (

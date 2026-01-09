@@ -17,9 +17,7 @@ let TenantContextGuard = class TenantContextGuard {
             const params = request.params;
             if (params && params.tenantId) {
                 if (params.tenantId !== user.tenantId) {
-                    if (user.role !== 'SuperAdmin' && user.role !== 'Owner') {
-                        throw new common_1.ForbiddenException('Access to other tenant scope denied');
-                    }
+                    throw new common_1.ForbiddenException('Access to other tenant scope denied');
                 }
             }
         }

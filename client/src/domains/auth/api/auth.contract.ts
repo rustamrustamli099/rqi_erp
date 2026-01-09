@@ -38,7 +38,6 @@ export const authApi = createApi({
                                 roles: payload.user.roles || [],
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 permissions: payload.user.permissions || [],
-                                isOwner: payload.user.isOwner || payload.isOwner || false,
                             } as any,
                             token: payload.access_token
                         }));

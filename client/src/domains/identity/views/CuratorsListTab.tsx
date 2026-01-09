@@ -68,7 +68,7 @@ const MOCK_ASSIGNMENTS = [
 
 // PHASE 14G: Props interface
 interface CuratorsListTabProps {
-    actions?: ActionsMap;
+    actions?: Partial<ActionsMap>;
 }
 
 export function CuratorsListTab({ actions = {} as ActionsMap }: CuratorsListTabProps) {

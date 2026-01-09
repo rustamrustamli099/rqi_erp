@@ -44,7 +44,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
     const activeNode = resolvedSubTabs.find(st => (st.subTabKey || st.id) === currentSubTab);
     // actions property comes from resolveNavigationTree -> populateActions
     // It returns the ResolvedActions object, which has an 'actions' array property
-    const updateAction = activeNode?.actions?.actions?.find(a => a.actionKey === 'update');
+    const updateAction = activeNode?.actions?.actions?.find((a: any) => a.actionKey === 'update');
     const canUpdate = updateAction && updateAction.state !== 'disabled' && updateAction.state !== 'hidden';
 
     const handleTabChange = (value: string) => {
@@ -63,9 +63,7 @@ export function BillingConfigForm({ tabNode }: BillingConfigFormProps) {
         );
     }
 
-    if (allowedKeys.length === 0) {
-        return <Inline403 message="Billing konfiqurasiyasını görmək üçün icazəniz yoxdur." />;
-    }
+
 
     return (
         <div className="space-y-6">

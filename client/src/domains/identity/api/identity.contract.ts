@@ -2,7 +2,7 @@ import { api } from "@/shared/lib/api";
 
 // Define User type to avoid circular dependency
 export interface User {
-    id: number;
+    id: string;
     name: string;
     email: string;
     role: string;
@@ -43,7 +43,7 @@ export const identityApi = {
             return users;
         } catch (e) {
             console.warn("Using mock users");
-            return MOCK_USERS as User[];
+            return MOCK_USERS as unknown as User[];
         }
     },
 
@@ -52,12 +52,12 @@ export const identityApi = {
         return response.data;
     },
 
-    updateUser: async (id: number, data: UpdateUserRequest): Promise<User> => {
+    updateUser: async (id: string, data: UpdateUserRequest): Promise<User> => {
         const response = await api.patch<User>(`/users/${id}`, data);
         return response.data;
     },
 
-    deleteUser: async (id: number): Promise<void> => {
+    deleteUser: async (id: string): Promise<void> => {
         await api.delete(`/users/${id}`);
     },
 

@@ -103,12 +103,6 @@ let AuthService = class AuthService {
             scopeType: targetScopeType,
             scopeId: targetScopeId
         });
-        if (permissions.length === 0) {
-            throw new common_1.ForbiddenException({
-                message: 'NO_PERMISSIONS',
-                description: 'Bu hesabın sistemə giriş üçün icazəsi yoxdur. Zəhmət olmasa administratorla əlaqə saxlayın.'
-            });
-        }
         const rtResult = await this.refreshTokenService.generateToken(user.id, ip, agent, targetScopeType, targetScopeId);
         const refreshToken = rtResult.token;
         await this.identityUseCase.updateRefreshToken(user.id, refreshToken);
@@ -122,7 +116,6 @@ let AuthService = class AuthService {
                 id: user.id,
                 email: user.email,
                 fullName: user.fullName,
-                isOwner: user.isOwner,
                 permissions: []
             }
         };

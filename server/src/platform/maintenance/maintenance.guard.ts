@@ -26,9 +26,7 @@ export class MaintenanceGuard implements CanActivate {
         // BUT if we want to block *login* too, we might need it before?
         // Let's assume AuthGuard runs first or we use APP_GUARD order.
 
-        if (user && (user.role === 'SuperAdmin' || user.role === 'Owner')) {
-            return true;
-        }
+
 
         throw new ServiceUnavailableException(status.message);
     }

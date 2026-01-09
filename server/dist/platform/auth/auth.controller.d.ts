@@ -54,7 +54,6 @@ export declare class AuthController {
             id: any;
             email: any;
             fullName: any;
-            isOwner: any;
             permissions: never[];
         };
     }>;

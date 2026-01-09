@@ -93,7 +93,7 @@ export function SecuritySettingsForm({ tabNode }: SecuritySettingsFormProps) {
     const subTabs = tabNode?.children ?? [];
     const allowedKeys = subTabs.map(st => st.subTabKey || st.id);
     const urlSubTab = searchParams.get('subTab') || '';
-    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0] || 'password';
+    const currentSubTab = allowedKeys.includes(urlSubTab) ? urlSubTab : '';
 
     const handleTabChange = (value: string) => {
         if (!allowedKeys.includes(value)) return;

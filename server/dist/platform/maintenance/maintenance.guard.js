@@ -27,9 +27,6 @@ let MaintenanceGuard = class MaintenanceGuard {
         }
         const request = context.switchToHttp().getRequest();
         const user = request.user;
-        if (user && (user.role === 'SuperAdmin' || user.role === 'Owner')) {
-            return true;
-        }
         throw new common_1.ServiceUnavailableException(status.message);
     }
 };

@@ -81,12 +81,7 @@ export class AuthService {
             scopeId: targetScopeId
         });
 
-        if (permissions.length === 0) {
-            throw new ForbiddenException({
-                message: 'NO_PERMISSIONS',
-                description: 'Bu hesabın sistemə giriş üçün icazəsi yoxdur. Zəhmət olmasa administratorla əlaqə saxlayın.'
-            });
-        }
+
 
         // 1. Generate Opaque Refresh Token (Bank-Grade)
         // Embed SYSTEM scope in the RT for consistency
@@ -109,7 +104,6 @@ export class AuthService {
                 id: user.id,
                 email: user.email,
                 fullName: user.fullName,
-                isOwner: (user as any).isOwner,
                 permissions: []    // REMOVED from Token/Login. Must fetch via Context.
             }
         };

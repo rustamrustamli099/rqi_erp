@@ -15,12 +15,7 @@ export class TenantContextGuard implements CanActivate {
             const params = request.params;
             if (params && params.tenantId) {
                 if (params.tenantId !== user.tenantId) {
-                    // Start of specific exception for SuperAdmins (optional, logic can vary)
-                    // If user.role === 'SuperAdmin', maybe allow?
-                    // For now, strict isolation:
-                    if (user.role !== 'SuperAdmin' && user.role !== 'Owner') {
-                        throw new ForbiddenException('Access to other tenant scope denied');
-                    }
+                    throw new ForbiddenException('Access to other tenant scope denied');
                 }
             }
         } else if (user && !user.tenantId) {

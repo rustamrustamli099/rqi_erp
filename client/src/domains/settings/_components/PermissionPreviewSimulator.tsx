@@ -29,36 +29,12 @@ interface PermissionPreviewSimulatorProps {
 
 export function PermissionPreviewSimulator({ permissions, context = 'admin', className }: PermissionPreviewSimulatorProps) {
     const simulation = useMemo(() => SimulatorEngine.run(permissions, context), [permissions, context])
-    const isAccessDenied = permissions.length === 0;
     const [searchTerm, setSearchTerm] = useState("")
 
     const filteredRoutes = useMemo(() => {
         if (!searchTerm) return simulation.accessibleRoutes;
         return simulation.accessibleRoutes.filter(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [simulation.accessibleRoutes, searchTerm]);
-
-    if (isAccessDenied) {
-        return (
-            <div className={cn("grid place-items-center h-[500px] bg-muted/10 border border-border rounded-lg", className)}>
-                <div className={cn("text-center space-y-4 max-w-sm p-8 bg-card rounded-xl shadow-sm border border-destructive/20")}>
-                    <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-                        <ShieldAlert className="w-8 h-8 text-destructive" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-foreground">Giriş Qadağandır</h3>
-                        <p className="text-sm text-muted-foreground mt-2">
-                            Bu istifadəçinin heç bir icazəsi yoxdur. Sistemə daxil olduqda birbaşa
-                            <span className="font-mono text-xs bg-destructive/10 text-destructive px-1 py-0.5 rounded mx-1">/access-denied</span>
-                            səhifəsinə yönləndiriləcək.
-                        </p>
-                    </div>
-                    <div className="pt-2">
-                        <Badge variant="destructive" className="px-4 py-1">ACCESS DENIED</Badge>
-                    </div>
-                </div>
-            </div>
-        )
-    }
 
     return (
         <div className={cn("grid grid-cols-1 md:grid-cols-[280px_1fr] border border-border rounded-lg overflow-hidden h-[600px] bg-background", className)}>
