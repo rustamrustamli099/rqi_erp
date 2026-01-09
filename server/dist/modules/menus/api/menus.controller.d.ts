@@ -2,5 +2,5 @@ import { MenusUseCase } from '../application/menus.usecase';
 export declare class MenusController {
     private menusUseCase;
     constructor(menusUseCase: MenusUseCase);
-    getSidebar(req: any): Promise<any[]>;
+    getSidebar(req: any): Promise<import("../../../platform/menu/menu.definition").MenuItem[]>;
 }

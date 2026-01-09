@@ -10,6 +10,7 @@
 
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/app/routing/ProtectedRoute";
+import { PageGate } from "@/app/security/PageGate";
 import TenantDashboard from "@/domains/dashboard/views/TenantDashboard";
 
 export default function WorkspaceRoutes() {
@@ -20,7 +21,9 @@ export default function WorkspaceRoutes() {
         <Routes>
             <Route index element={
                 <ProtectedRoute>
-                    <TenantDashboard />
+                    <PageGate pageKey="Z_DASHBOARD">
+                        <TenantDashboard />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 

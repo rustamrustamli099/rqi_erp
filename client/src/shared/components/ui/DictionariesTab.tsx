@@ -87,13 +87,7 @@ export function DictionariesTab({ tabNode }: DictionariesTabProps) {
         });
     };
 
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <p className="text-sm text-muted-foreground">You do not have permission to view Dictionaries.</p>
-            </div>
-        );
-    }
+
 
     return (
         <div className="space-y-4">

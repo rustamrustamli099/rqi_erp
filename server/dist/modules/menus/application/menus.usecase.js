@@ -13,39 +13,17 @@ exports.MenusUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../../prisma.service");
 const menu_definition_1 = require("../../../platform/menu/menu.definition");
+const decision_center_service_1 = require("../../../platform/decision/decision-center.service");
 let MenusUseCase = class MenusUseCase {
     prisma;
-    constructor(prisma) {
+    decisionCenter;
+    constructor(prisma, decisionCenter) {
         this.prisma = prisma;
+        this.decisionCenter = decisionCenter;
     }
     async getSidebar(user) {
-        const userPermissions = new Set(user.permissions || []);
-        return this.filterMenu(menu_definition_1.ADMIN_MENU_TREE, userPermissions);
-    }
-    enrichMenu(items) {
-        return items.map(item => ({
-            ...item,
-            children: item.children ? this.enrichMenu(item.children) : undefined
-        }));
-    }
-    filterMenu(items, userPermissions) {
-        const filtered = [];
-        for (const item of items) {
-            const selfAllowed = !item.permission || userPermissions.has(item.permission);
-            let visibleChildren = [];
-            if (item.children && item.children.length > 0) {
-                visibleChildren = this.filterMenu(item.children, userPermissions);
-            }
-            const anyChildVisible = visibleChildren.length > 0;
-            const isVisible = selfAllowed || anyChildVisible;
-            if (isVisible) {
-                filtered.push({
-                    ...item,
-                    children: visibleChildren.length > 0 ? visibleChildren : undefined
-                });
-            }
-        }
-        return filtered;
+        const userPermissions = user.permissions || [];
+        return this.decisionCenter.resolveNavigationTree(menu_definition_1.ADMIN_MENU_TREE, userPermissions);
     }
     async createDefaultMenu() {
         return;
@@ -54,6 +32,7 @@ let MenusUseCase = class MenusUseCase {
 exports.MenusUseCase = MenusUseCase;
 exports.MenusUseCase = MenusUseCase = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        decision_center_service_1.DecisionCenterService])
 ], MenusUseCase);
 //# sourceMappingURL=menus.usecase.js.map

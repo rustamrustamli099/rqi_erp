@@ -393,12 +393,41 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
     },
 
     // ═══════════════════════════════════════════════════════════════════════
+    // HR DOMAIN
+    // ═══════════════════════════════════════════════════════════════════════
+    {
+        pageKey: 'Z_HR',
+        entityKey: 'hr',
+        readPermission: 'system.hr.read',
+    },
+    {
+        pageKey: 'Z_EMPLOYEES',
+        entityKey: 'hr_employees',
+        readPermission: 'system.hr.employees.read',
+    },
+    {
+        pageKey: 'Z_DEPARTMENTS',
+        entityKey: 'hr_departments',
+        readPermission: 'system.hr.departments.read',
+    },
+    {
+        pageKey: 'Z_ATTENDANCE',
+        entityKey: 'hr_attendance',
+        readPermission: 'system.hr.attendance.read',
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════
     // FINANCE DOMAIN
     // ═══════════════════════════════════════════════════════════════════════
     {
         pageKey: 'Z_FINANCE',
         entityKey: 'finance',
         readPermission: 'system.finance.read',
+    },
+    {
+        pageKey: 'Z_RESELLER',
+        entityKey: 'reseller',
+        readPermission: 'reseller.dashboard.read',
     },
 ];
 

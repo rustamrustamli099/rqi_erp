@@ -60,14 +60,7 @@ export default function MonitoringTab({ tabNode }: MonitoringTabProps) {
         }, { replace: true });
     };
 
-    // Terminal 403 if no allowed subTabs
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <Inline403 message="Bu bölməni görmək üçün icazəniz yoxdur." />
-            </div>
-        );
-    }
+
 
     // DEV debugging
     if (import.meta.env?.DEV) {

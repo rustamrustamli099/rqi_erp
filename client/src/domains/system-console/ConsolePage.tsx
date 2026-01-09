@@ -97,13 +97,7 @@ export default function SystemCorePage() {
         });
     };
 
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <p className="text-sm text-muted-foreground">You do not have permission to view System Console.</p>
-            </div>
-        );
-    }
+
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

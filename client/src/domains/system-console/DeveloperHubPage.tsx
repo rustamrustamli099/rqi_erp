@@ -209,13 +209,7 @@ export default function DeveloperHubPage() {
         );
     }
 
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <Inline403 message="Bu bölməni görmək üçün icazəniz yoxdur." />
-            </div>
-        );
-    }
+
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground animate-in fade-in duration-500">

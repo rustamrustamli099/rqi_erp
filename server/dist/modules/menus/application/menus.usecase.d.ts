@@ -1,9 +1,10 @@
 import { PrismaService } from '../../../prisma.service';
+import { MenuItem } from '../../../platform/menu/menu.definition';
+import { DecisionCenterService } from '../../../platform/decision/decision-center.service';
 export declare class MenusUseCase {
     private readonly prisma;
-    constructor(prisma: PrismaService);
-    getSidebar(user: any): Promise<any[]>;
-    private enrichMenu;
-    private filterMenu;
+    private readonly decisionCenter;
+    constructor(prisma: PrismaService, decisionCenter: DecisionCenterService);
+    getSidebar(user: any): Promise<MenuItem[]>;
     createDefaultMenu(): Promise<void>;
 }
