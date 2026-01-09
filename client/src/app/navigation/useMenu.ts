@@ -1,18 +1,11 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * 🛑 DEPRECATED — PHASE 14H.3 🛑
+ * PHASE 14H.5: Menu Hook (TEMPORARY FALLBACK)
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * THIS FILE IS SCHEDULED FOR REMOVAL IN PHASE 15.
+ * TEMPORARY: Uses resolveNavigationTree until backend /me/menu is ready.
  * 
- * CURRENT ROLE: Sidebar menu rendering using navigationResolver.
- * 
- * MIGRATION PATH:
- * - Menu should be fetched from /session/bootstrap API
- * - Backend returns pre-resolved navigation tree
- * - No client-side permission filtering
- * 
- * ⚠️ DO NOT ADD NEW FEATURES TO THIS FILE ⚠️
+ * TODO (Phase 15): Convert to backend API fetch when endpoint is stable.
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
@@ -20,40 +13,52 @@ import { useMemo } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
 import { resolveNavigationTree, type ResolvedNavNode } from '@/app/security/navigationResolver';
 
+export type { ResolvedNavNode };
+
+interface UseMenuResult {
+    menu: ResolvedNavNode[];
+    loading: boolean;
+    getFirstAllowedRoute: () => string;
+}
+
 /**
- * Enterprise Menu Hook - SAP Grade
- * 
- * Returns ONLY resolveNavigationTree output.
- * This is the SINGLE canonical menu source for Sidebar.
+ * TEMPORARY: Uses frontend resolver until backend is ready.
  */
-export const useMenu = () => {
-    const { activeTenantType, isLoading, authState, permissions } = useAuth();
+export const useMenu = (): UseMenuResult => {
+    const { isAuthenticated, authState, activeTenantType, permissions } = useAuth();
 
     const isStable = authState === 'STABLE';
+    const loading = !isStable || authState === 'BOOTSTRAPPING';
+
     const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
-    const menu = useMemo((): ResolvedNavNode[] => {
-        if (!isStable || permissions.length === 0) return [];
+    // TEMPORARY: Use resolveNavigationTree
+    const menu = useMemo(() => {
+        if (!isAuthenticated || !isStable) return [];
+        return resolveNavigationTree(context, permissions, 'system');
+    }, [isAuthenticated, isStable, context, permissions]);
 
-        // SAP-GRADE: Use resolveNavigationTree as SINGLE decision source
-        // Map context to scope for action resolution (as done in resolver)
-        const actionScope = context === 'admin' ? 'system' : 'tenant';
-        return resolveNavigationTree(context, permissions, actionScope);
-    }, [permissions, isStable, context]);
-
-    const getFirstAllowedRoute = () => {
+    const getFirstAllowedRoute = (): string => {
         if (menu.length === 0) {
             return '/access-denied';
         }
-        return menu[0].path || '/access-denied';
+        // Find first menu item with a path
+        const findFirstPath = (nodes: ResolvedNavNode[]): string | null => {
+            for (const node of nodes) {
+                if (node.path) return node.path;
+                if (node.children?.length) {
+                    const childPath = findFirstPath(node.children);
+                    if (childPath) return childPath;
+                }
+            }
+            return null;
+        };
+        return findFirstPath(menu) || '/access-denied';
     };
 
     return {
         menu,
-        loading: isLoading,
+        loading,
         getFirstAllowedRoute
     };
 };
-
-// Re-export types for consumers
-export type { ResolvedNavNode };
