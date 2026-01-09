@@ -13,10 +13,15 @@ export interface ApprovalItem {
     };
     metadata?: any;
 }
+export interface ApprovalEligibility {
+    canApproveSystemRoles: boolean;
+    canApproveTenantRoles: boolean;
+}
 export declare class ApprovalsService {
     private readonly rolesService;
     constructor(rolesService: RolesService);
-    getPendingApprovals(userId: string, permissions: string[]): Promise<ApprovalItem[]>;
+    computeEligibility(permissions: string[]): ApprovalEligibility;
+    getPendingApprovals(userId: string, eligibility: ApprovalEligibility): Promise<ApprovalItem[]>;
     approve(id: string, type: 'ROLE', approverId: string, context: {
         scopeType: string;
         scopeId: string | null;

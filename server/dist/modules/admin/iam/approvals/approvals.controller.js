@@ -26,7 +26,8 @@ let ApprovalsController = class ApprovalsController {
         const user = req.user;
         const userId = user.sub || user.userId || user.id;
         const permissions = user.permissions || [];
-        const items = await this.approvalsService.getPendingApprovals(userId, permissions);
+        const eligibility = this.approvalsService.computeEligibility(permissions);
+        const items = await this.approvalsService.getPendingApprovals(userId, eligibility);
         return {
             items,
             count: items.length

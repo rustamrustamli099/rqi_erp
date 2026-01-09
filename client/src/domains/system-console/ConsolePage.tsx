@@ -7,8 +7,8 @@ import { ShieldAlert, Server as ServerIcon, Activity, Database, Flag, MessageSqu
 import { ScrollableTabs } from "@/shared/components/ui/scrollable-tabs";
 import { SystemHealthWidget, CacheManager, MaintenanceControls } from "./components/SystemDashboardWidgets";
 
-// SAP-GRADE: Import resolver and ResolvedNavNode type
-import { resolveNavigationTree, type ResolvedNavNode } from "@/app/security/navigationResolver";
+// PHASE 14H: Use backend menu instead of frontend resolver
+import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { useAuth } from "@/domains/auth/context/AuthContext";
 
 // Lazy load components
@@ -43,21 +43,22 @@ export default function SystemCorePage() {
         setPageKey("sys-admin");
     }, [setPageKey]);
 
-    // SAP-GRADE: Build tree ONCE using resolveNavigationTree
-    const tree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions, 'system');
-    }, [permissions]);
+    // PHASE 14H: Use backend menu for tab visibility
+    const { menu } = useMenu();
 
-    // SAP-GRADE: Find console page node from tree
-    const consolePageNode = useMemo(() => {
-        return tree.find(node => node.pageKey === 'admin.console');
-    }, [tree]);
+    const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
+        for (const node of nodes) {
+            if (node.pageKey === key || node.key === key) return node;
+            if (node.children) {
+                const found = findNode(node.children, key);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    };
 
-    // SAP-GRADE: Get allowed tabs from node children (NOT from helper call)
-    const allowedTabs = useMemo(() => {
-        return consolePageNode?.children ?? [];
-    }, [consolePageNode]);
-
+    const consolePageNode = useMemo(() => findNode(menu, 'admin.console'), [menu]);
+    const allowedTabs = useMemo(() => consolePageNode?.children ?? [], [consolePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback

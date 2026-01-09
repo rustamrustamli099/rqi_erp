@@ -1,11 +1,11 @@
 /**
  * PHASE 14H: Notifications Hook
- * Uses resolved navigation tree for visibility - NO direct can() calls
+ * Uses backend menu for visibility - NO resolveNavigationTree calls
  */
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import type { NotificationItem } from "@/domains/settings/constants/notifications"
 import { useAuth } from "@/domains/auth/context/AuthContext"
-import { resolveNavigationTree } from "@/app/security/navigationResolver"
+import { useMenu } from "@/app/navigation/useMenu"
 
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     {
@@ -41,18 +41,22 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 
 export function useNotifications() {
     const [notifications, setNotifications] = useState<NotificationItem[]>([])
-    const { permissions, activeTenantType } = useAuth()
+    const { activeTenantType } = useAuth()
 
-    // PHASE 14H: Get visibility from resolved navigation tree
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant'
-    const navTree = useMemo(
-        () => resolveNavigationTree(context, permissions, 'system'),
-        [context, permissions]
-    )
+    // PHASE 14H: Use backend menu for visibility
+    const { menu } = useMenu()
 
-    // Helper to check if page is visible in nav tree
-    const isPageVisible = (pageKey: string) =>
-        navTree.some(node => node.pageKey === pageKey)
+    // Helper to check if page is visible in backend menu
+    const isPageVisible = (pageKey: string) => {
+        const findNode = (nodes: any[], key: string): boolean => {
+            for (const node of nodes) {
+                if (node.pageKey === key || node.key === key) return true
+                if (node.children && findNode(node.children, key)) return true
+            }
+            return false
+        }
+        return findNode(menu, pageKey)
+    }
 
     useEffect(() => {
         // PHASE 14H: Filter notifications based on nav tree visibility (NOT can())
@@ -81,7 +85,7 @@ export function useNotifications() {
         }, 15000); // Check every 15 seconds
 
         return () => clearInterval(interval);
-    }, [navTree]) // Depend on navTree instead of empty array
+    }, [menu]) // Depend on menu instead of navTree
 
     const unreadCount = notifications.filter(n => !n.read).length
 

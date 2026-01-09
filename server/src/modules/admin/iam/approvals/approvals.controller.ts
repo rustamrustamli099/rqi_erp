@@ -15,12 +15,12 @@ export class ApprovalsController {
         const userId = user.sub || user.userId || user.id;
 
         // Extract permissions safely
-        // In many setups, PermissionsGuard attaches permissions to user, or we fetch them.
-        // Assuming user.permissions exists or we pass an empty array to be safe.
-        // If the service relies on permissions to filter, and they are missing, it might return empty result.
         const permissions = user.permissions || [];
 
-        const items = await this.approvalsService.getPendingApprovals(userId, permissions);
+        // PHASE 14H: Compute eligibility at controller level
+        const eligibility = this.approvalsService.computeEligibility(permissions);
+
+        const items = await this.approvalsService.getPendingApprovals(userId, eligibility);
         return {
             items,
             count: items.length

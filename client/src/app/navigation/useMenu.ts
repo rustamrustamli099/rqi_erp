@@ -1,28 +1,51 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * PHASE 14H.5: Menu Hook (TEMPORARY FALLBACK)
+ * PHASE 14H: Menu Hook (STABLE LOCAL VERSION)
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * TEMPORARY: Uses resolveNavigationTree until backend /me/menu is ready.
+ * DECISION: Use local resolveNavigationTree.
  * 
- * TODO (Phase 15): Convert to backend API fetch when endpoint is stable.
+ * WHY:
+ * - Backend API (/me/menu) has authentication issues (401)
+ * - Local resolver is STABLE and works correctly
+ * - DecisionCenterService on backend still enforces menu for API calls
+ * 
+ * TRADE-OFF:
+ * - Menu filtering happens on frontend (not ideal for SAP purity)
+ * - BUT: All ACTION decisions still go through backend (usePageState)
+ * - Frontend cannot ADD permissions, only filter based on what backend gave
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { useMemo } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
-import { resolveNavigationTree, type ResolvedNavNode } from '@/app/security/navigationResolver';
+import { resolveNavigationTree, type ResolvedNavNode as ResolverNavNode } from '@/app/security/navigationResolver';
 
-export type { ResolvedNavNode };
+export interface ResolvedNavNode {
+    id: string;
+    key?: string;
+    label: string;
+    path?: string;
+    icon?: string;
+    pageKey?: string;
+    tabKey?: string;
+    subTabKey?: string;
+    children?: ResolvedNavNode[];
+    visible?: boolean;
+    permission?: string;
+}
 
 interface UseMenuResult {
     menu: ResolvedNavNode[];
     loading: boolean;
+    error: string | null;
     getFirstAllowedRoute: () => string;
+    refetch: () => void;
 }
 
 /**
- * TEMPORARY: Uses frontend resolver until backend is ready.
+ * STABLE: Uses local resolver for menu visibility.
+ * Actions are still controlled by backend via usePageState.
  */
 export const useMenu = (): UseMenuResult => {
     const { isAuthenticated, authState, activeTenantType, permissions } = useAuth();
@@ -32,17 +55,17 @@ export const useMenu = (): UseMenuResult => {
 
     const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
-    // TEMPORARY: Use resolveNavigationTree
-    const menu = useMemo(() => {
+    // Use local resolveNavigationTree
+    const menu = useMemo<ResolvedNavNode[]>(() => {
         if (!isAuthenticated || !isStable) return [];
-        return resolveNavigationTree(context, permissions, 'system');
+        const rawTree = resolveNavigationTree(context, permissions, 'system');
+        return mapTree(rawTree);
     }, [isAuthenticated, isStable, context, permissions]);
 
     const getFirstAllowedRoute = (): string => {
         if (menu.length === 0) {
             return '/access-denied';
         }
-        // Find first menu item with a path
         const findFirstPath = (nodes: ResolvedNavNode[]): string | null => {
             for (const node of nodes) {
                 if (node.path) return node.path;
@@ -59,6 +82,25 @@ export const useMenu = (): UseMenuResult => {
     return {
         menu,
         loading,
-        getFirstAllowedRoute
+        error: null,
+        getFirstAllowedRoute,
+        refetch: () => { } // No-op for local version
     };
 };
+
+// Map resolver output to our interface
+function mapTree(nodes: ResolverNavNode[]): ResolvedNavNode[] {
+    return nodes.map(node => ({
+        id: node.id,
+        key: node.key,
+        label: node.label,
+        path: node.path,
+        icon: node.icon,
+        pageKey: node.pageKey,
+        tabKey: node.tabKey,
+        subTabKey: node.subTabKey,
+        children: node.children ? mapTree(node.children) : undefined,
+        visible: node.visible,
+        permission: node.permission
+    }));
+}

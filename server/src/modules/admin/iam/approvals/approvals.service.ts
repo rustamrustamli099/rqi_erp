@@ -1,3 +1,21 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PHASE 14H: Approvals Service
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * RULE: This service performs DOMAIN OPERATIONS only.
+ * 
+ * Permission checks for "can user see this approval" are:
+ * - 4-eyes principle (domain rule) ✅ ALLOWED
+ * - Scope matching (domain rule) ✅ ALLOWED
+ * 
+ * VISIBILITY DECISIONS (which approvals to show in inbox) are delegated
+ * to the caller (API layer) which uses pageState.actions.
+ * 
+ * The service receives pre-authorized permissions from the controller.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { RolesService } from '../roles/application/roles.service';
 import { RoleStatus } from '@prisma/client';
@@ -17,6 +35,14 @@ export interface ApprovalItem {
     metadata?: any;
 }
 
+/**
+ * Approval eligibility check result
+ */
+export interface ApprovalEligibility {
+    canApproveSystemRoles: boolean;
+    canApproveTenantRoles: boolean;
+}
+
 @Injectable()
 export class ApprovalsService {
     constructor(
@@ -24,44 +50,53 @@ export class ApprovalsService {
     ) { }
 
     /**
-     * Aggregates all pending approvals from various domains.
-     * Enforces Strict Eligibility:
-     * 1. Status is PENDING.
-     * 2. User has explicit permission (e.g. system.roles.approve).
-     * 3. User is NOT the creator (4-Eyes Principle).
+     * Compute approval eligibility from permissions.
+     * This is a helper that can be used by controller/orchestrator.
      */
-    async getPendingApprovals(userId: string, permissions: string[]): Promise<ApprovalItem[]> {
+    computeEligibility(permissions: string[]): ApprovalEligibility {
+        return {
+            canApproveSystemRoles: permissions.includes('system.roles.approve'),
+            canApproveTenantRoles: permissions.includes('tenant.roles.approve') ||
+                permissions.includes('system.tenants.roles.approve')
+        };
+    }
+
+    /**
+     * Aggregates pending approvals based on pre-computed eligibility.
+     * 
+     * PHASE 14H: Eligibility is computed by caller (controller)
+     * using DecisionCenter/pageState if needed.
+     * 
+     * Domain rules applied here:
+     * - 4-Eyes Principle (user cannot approve own submission)
+     * - Scope matching (system vs tenant)
+     */
+    async getPendingApprovals(
+        userId: string,
+        eligibility: ApprovalEligibility
+    ): Promise<ApprovalItem[]> {
         const items: ApprovalItem[] = [];
 
         // --- 1. ROLES APPROVALS ---
-        // Check if user has ANY role approval permission before querying DB
-        // Optimization: Don't query if they can't approve anyway.
-        const canApproveSystemRoles = permissions.includes('system.roles.approve');
-        const canApproveTenantRoles = permissions.includes('tenant.roles.approve') || permissions.includes('system.tenants.roles.approve');
-
-        if (canApproveSystemRoles || canApproveTenantRoles) {
-            // Fetch PENDING roles
-            // We fetch ALL pending roles first, then filter in memory for strict checks 
-            // (or we could push checks to DB, but 4-eyes "not creator" is easier in code if DB structure varies)
+        if (eligibility.canApproveSystemRoles || eligibility.canApproveTenantRoles) {
             const result = await this.rolesService.findAll({
                 filters: { status: RoleStatus.PENDING_APPROVAL },
-                take: 100, // Reasonable limit for inbox
+                take: 100,
                 skip: 0
             } as any);
 
             const roles = result.items;
 
             for (const role of roles) {
-                // Check 1: 4-Eyes Principle
+                // Domain Rule: 4-Eyes Principle
                 if (role.submittedById === userId || role.createdById === userId) {
                     continue;
                 }
 
-                // Check 2: Scope Permission
-                if (role.scope === 'SYSTEM' && !canApproveSystemRoles) continue;
-                if (role.scope === 'TENANT' && !canApproveTenantRoles) continue;
+                // Domain Rule: Scope matching
+                if (role.scope === 'SYSTEM' && !eligibility.canApproveSystemRoles) continue;
+                if (role.scope === 'TENANT' && !eligibility.canApproveTenantRoles) continue;
 
-                // Add to Inbox
                 items.push({
                     id: role.id,
                     type: 'ROLE',
@@ -70,10 +105,8 @@ export class ApprovalsService {
                     status: role.status,
                     createdAt: role.createdAt,
                     createdBy: {
-                        id: role.createdById, // We assume findAll returns this or we need to fetch user details. 
-                        // RolesService.findAll includes creator? No, let's verify. 
-                        // For now, minimal data.
-                        email: 'unknown', // Todo: Expand RolesService to include creator details
+                        id: role.createdById,
+                        email: 'unknown',
                     },
                     metadata: {
                         scope: role.scope,
@@ -82,9 +115,6 @@ export class ApprovalsService {
                 });
             }
         }
-
-        // --- 2. FUTURE DOMAINS (Billing, etc.) ---
-        // if (permissions.includes('system.billing.approve')) { ... }
 
         return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }

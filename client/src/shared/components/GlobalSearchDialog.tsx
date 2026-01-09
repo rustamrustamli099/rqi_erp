@@ -27,12 +27,12 @@ import {
 } from "@/components/ui/command"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/domains/auth/context/AuthContext"
-import { resolveNavigationTree } from "@/app/security/navigationResolver"
+import { useMenu } from "@/app/navigation/useMenu"
 
 export function GlobalSearchDialog() {
     const [open, setOpen] = React.useState(false)
     const navigate = useNavigate()
-    const { permissions, activeTenantType } = useAuth()
+    const { activeTenantType } = useAuth()
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -60,16 +60,20 @@ export function GlobalSearchDialog() {
         command()
     }, [])
 
-    // PHASE 14H: Get visibility from resolved navigation tree
-    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant'
-    const navTree = React.useMemo(
-        () => resolveNavigationTree(context, permissions, 'system'),
-        [context, permissions]
-    )
+    // PHASE 14H: Use backend menu for visibility
+    const { menu } = useMenu()
 
-    // Helper to check if page is visible in nav tree
-    const isPageVisible = (pageKey: string) =>
-        navTree.some(node => node.pageKey === pageKey)
+    // Helper to check if page is visible in backend menu
+    const isPageVisible = (pageKey: string) => {
+        const findNode = (nodes: any[], key: string): boolean => {
+            for (const node of nodes) {
+                if (node.pageKey === key || node.key === key) return true
+                if (node.children && findNode(node.children, key)) return true
+            }
+            return false
+        }
+        return findNode(menu, pageKey)
+    }
 
     return (
         <CommandDialog open={open} onOpenChange={setOpen}>

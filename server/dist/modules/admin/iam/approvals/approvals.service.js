@@ -18,11 +18,16 @@ let ApprovalsService = class ApprovalsService {
     constructor(rolesService) {
         this.rolesService = rolesService;
     }
-    async getPendingApprovals(userId, permissions) {
+    computeEligibility(permissions) {
+        return {
+            canApproveSystemRoles: permissions.includes('system.roles.approve'),
+            canApproveTenantRoles: permissions.includes('tenant.roles.approve') ||
+                permissions.includes('system.tenants.roles.approve')
+        };
+    }
+    async getPendingApprovals(userId, eligibility) {
         const items = [];
-        const canApproveSystemRoles = permissions.includes('system.roles.approve');
-        const canApproveTenantRoles = permissions.includes('tenant.roles.approve') || permissions.includes('system.tenants.roles.approve');
-        if (canApproveSystemRoles || canApproveTenantRoles) {
+        if (eligibility.canApproveSystemRoles || eligibility.canApproveTenantRoles) {
             const result = await this.rolesService.findAll({
                 filters: { status: client_1.RoleStatus.PENDING_APPROVAL },
                 take: 100,
@@ -33,9 +38,9 @@ let ApprovalsService = class ApprovalsService {
                 if (role.submittedById === userId || role.createdById === userId) {
                     continue;
                 }
-                if (role.scope === 'SYSTEM' && !canApproveSystemRoles)
+                if (role.scope === 'SYSTEM' && !eligibility.canApproveSystemRoles)
                     continue;
-                if (role.scope === 'TENANT' && !canApproveTenantRoles)
+                if (role.scope === 'TENANT' && !eligibility.canApproveTenantRoles)
                     continue;
                 items.push({
                     id: role.id,

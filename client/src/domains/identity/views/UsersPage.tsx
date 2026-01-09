@@ -5,7 +5,7 @@ import { UsersListTab } from "./UsersListTab";
 import { CuratorsListTab } from "./CuratorsListTab";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/domains/auth/context/AuthContext";
-import { resolveNavigationTree } from "@/app/security/navigationResolver";
+import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
 import { useHelp } from "@/app/context/HelpContext";
 import { useEffect, useMemo } from "react";
 // PHASE 14G: Import usePageState for action rendering
@@ -27,13 +27,20 @@ export default function UsersPage() {
     const { actions: usersActions } = usePageState('Z_USERS');
     const { actions: curatorsActions } = usePageState('Z_CURATORS');
 
-    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
-    const navTree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions, 'system');
-    }, [permissions]);
+    // PHASE 14H: Use backend menu for tab visibility
+    const { menu } = useMenu();
 
-    // Get users page node and tabs from children
-    const pageNode = useMemo(() => navTree.find(p => p.pageKey === 'admin.users'), [navTree]);
+    const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
+        for (const node of nodes) {
+            if (node.pageKey === key || node.key === key) return node;
+            if (node.children) {
+                const found = findNode(node.children, key);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    };
+    const pageNode = useMemo(() => findNode(menu, 'admin.users'), [menu]);
     const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 

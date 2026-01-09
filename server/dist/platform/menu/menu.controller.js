@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenuController = void 0;
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const decision_orchestrator_1 = require("../decision/decision.orchestrator");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const tenant_context_guard_1 = require("../tenant-context/tenant-context.guard");
@@ -37,6 +38,7 @@ __decorate([
 exports.MenuController = MenuController = __decorate([
     (0, common_1.Controller)('me/menu'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, tenant_context_guard_1.TenantContextGuard),
+    (0, throttler_1.SkipThrottle)(),
     __metadata("design:paramtypes", [decision_orchestrator_1.DecisionOrchestrator])
 ], MenuController);
 //# sourceMappingURL=menu.controller.js.map

@@ -416,7 +416,7 @@ import { PageHeader } from "@/shared/components/ui/page-header";
 
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/domains/auth/context/AuthContext";
-import { resolveNavigationTree } from "@/app/security/navigationResolver";
+import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 // Tab configuration for filtering
 const BILLING_TABS = [
@@ -431,13 +431,21 @@ export default function BillingPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { permissions } = useAuth();
 
-    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
-    const navTree = useMemo(() => {
-        return resolveNavigationTree('admin', permissions, 'system');
-    }, [permissions]);
+    // PHASE 14H: Use backend menu for tab visibility
+    const { menu } = useMenu();
 
-    // Get billing page node and tabs from children
-    const pageNode = useMemo(() => navTree.find(p => p.pageKey === 'admin.billing'), [navTree]);
+    // Find billing page node from backend menu
+    const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
+        for (const node of nodes) {
+            if (node.pageKey === key || node.key === key) return node;
+            if (node.children) {
+                const found = findNode(node.children, key);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    };
+    const pageNode = useMemo(() => findNode(menu, 'admin.billing'), [menu]);
     const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 

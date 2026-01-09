@@ -55,7 +55,7 @@ const timezones = [
 ]
 
 import { getSettingsTabsForUI } from "@/app/navigation/tabSubTab.registry";
-import { resolveNavigationTree, type ResolvedNavNode } from "@/app/security/navigationResolver";
+import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 // --- Sidebar Navigation Items ---
 // Single Source of Truth from TAB_SUBTAB_REGISTRY
@@ -66,19 +66,23 @@ export default function SettingsPage() {
     const { isLoading, permissions } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
 
-    // SAP-GRADE: Single Decision Center - resolveNavigationTree once
-    // SAP-GRADE: Resolve navigation tree
-    const tree = useMemo(() => resolveNavigationTree('admin', permissions, 'system'), [permissions]);
-    const settingsPageNode = tree.find(n => n.pageKey === 'admin.settings');
+    // PHASE 14H: Use backend menu for tab visibility
+    const { menu, loading: menuLoading } = useMenu();
 
-    // DEBUG - SİL SONRA (User Permission Diagnosis)
-    if (import.meta.env?.DEV) {
-        console.log('[SettingsPage] DEBUG:', {
-            activePermissions: permissions.filter(p => p.includes('settings') || p.includes('billing')),
-            settingsChildren: settingsPageNode?.children?.map(c => c.tabKey),
-            billingConfigNode: settingsPageNode?.children?.find(c => c.tabKey === 'billing_config')
-        });
-    }
+    // Find settings page node from backend menu
+    const settingsPageNode = useMemo(() => {
+        const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
+            for (const node of nodes) {
+                if (node.pageKey === key || node.key === key) return node;
+                if (node.children) {
+                    const found = findNode(node.children, key);
+                    if (found) return found;
+                }
+            }
+            return undefined;
+        };
+        return findNode(menu, 'admin.settings');
+    }, [menu]);
 
     // Tabs from page node children
     const allowedTabs = useMemo(() => settingsPageNode?.children ?? [], [settingsPageNode]);
