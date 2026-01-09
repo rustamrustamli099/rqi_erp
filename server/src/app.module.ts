@@ -20,7 +20,7 @@ import { MaintenanceModule } from './platform/maintenance/maintenance.module';
 import { AuditModule } from './system/audit/audit.module';
 import { RetentionModule } from './platform/retention/retention.module';
 import { MonitoringModule } from './platform/observability/monitoring.module';
-import { MenusModule } from './modules/menus/menus.module';
+// [PHASE 14H] REMOVED: MenusModule - duplicate /me/menu endpoint, using DecisionModule instead
 import { PermissionsModule } from './modules/admin/iam/permissions/permissions.module';
 import { RolesModule } from './modules/admin/iam/roles/roles.module';
 import { RoleApprovalsModule } from './modules/admin/iam/role-approvals/role-approvals.module';
@@ -69,7 +69,7 @@ import { DecisionModule } from './platform/decision/decision.module';
     AuditModule,
     RetentionModule,
     MonitoringModule,
-    MenusModule,
+    // [PHASE 14H] REMOVED: MenusModule - duplicate, canonical menu is in DecisionModule
     PermissionsModule,
     RolesModule,
     FilesModule,

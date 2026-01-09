@@ -76,6 +76,11 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
     // SETTINGS - GENERAL
     // ═══════════════════════════════════════════════════════════════════════
     {
+        pageKey: 'Z_SETTINGS',
+        entityKey: 'settings',
+        readPermission: 'system.settings.read',
+    },
+    {
         pageKey: 'Z_SETTINGS_COMPANY_PROFILE',
         entityKey: 'settings_company_profile',
         readPermission: 'system.settings.general.company_profile.read',
@@ -156,6 +161,11 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
     // ═══════════════════════════════════════════════════════════════════════
     // BILLING DOMAIN
     // ═══════════════════════════════════════════════════════════════════════
+    {
+        pageKey: 'Z_BILLING',
+        entityKey: 'billing',
+        readPermission: 'system.billing.read',
+    },
     {
         pageKey: 'Z_MARKETPLACE',
         entityKey: 'marketplace',

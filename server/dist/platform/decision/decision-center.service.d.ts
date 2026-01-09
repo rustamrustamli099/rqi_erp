@@ -7,4 +7,8 @@ export declare class DecisionCenterService {
     getCanonicalPath(resolvedTree: MenuItem[]): string | null;
     evaluateRoute(tree: MenuItem[], userPermissions: string[], path: string): boolean;
     private findPathInTree;
+    computeApprovalsEligibility(permissions: string[]): {
+        canApproveSystemRoles: boolean;
+        canApproveTenantRoles: boolean;
+    };
 }

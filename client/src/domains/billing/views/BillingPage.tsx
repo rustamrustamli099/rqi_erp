@@ -99,17 +99,17 @@ function SubscriptionsView() {
     const [formData, setFormData] = useState<any>({});
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, description: string, variant: "default" | "destructive", action: () => void }>({ isOpen: false, title: "", description: "", variant: "default", action: () => { } });
     const { permissions } = useAuth();
-    const isOwner = permissions.length > 100;
+
 
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_BILLING_PLANS');
 
     // FIX: Owner Priority - Force Enabled
-    const canCreate = isOwner || (actions?.GS_BILLING_PLANS_CREATE ?? false);
-    const canUpdate = isOwner || (actions?.GS_BILLING_PLANS_UPDATE ?? false);
-    const canDelete = isOwner || (actions?.GS_BILLING_PLANS_DELETE ?? false);
-    const canChangeStatus = isOwner || (actions?.GS_BILLING_PLANS_CHANGE_STATUS ?? false);
-    const canExport = isOwner || (actions?.GS_BILLING_PLANS_EXPORT ?? false);
+    const canCreate = actions?.GS_BILLING_PLANS_CREATE ?? false;
+    const canUpdate = actions?.GS_BILLING_PLANS_UPDATE ?? false;
+    const canDelete = actions?.GS_BILLING_PLANS_DELETE ?? false;
+    const canChangeStatus = actions?.GS_BILLING_PLANS_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_BILLING_PLANS_EXPORT ?? false;
 
     const handleSavePlan = (data: any) => {
         if (editingPlan) {
@@ -439,7 +439,7 @@ export default function BillingPage() {
     const { menu } = useMenu();
 
     // Owner Access Bypass
-    const isOwner = permissions.length > 100;
+
 
     // Find billing page node from backend menu
     const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
@@ -581,17 +581,17 @@ function MarketplaceView() {
     // Data State
     const [products, setProducts] = useState<Product[]>(MARKETPLACE_FEATURES);
     const { permissions } = useAuth();
-    const isOwner = permissions.length > 100;
+
 
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_BILLING_MARKETPLACE');
 
     // FIX: Owner Priority - If Owner, force TRUE. Else use backend state.
-    const canCreate = isOwner || (actions?.GS_BILLING_MARKETPLACE_CREATE ?? false);
-    const canUpdate = isOwner || (actions?.GS_BILLING_MARKETPLACE_UPDATE ?? false);
-    const canDelete = isOwner || (actions?.GS_BILLING_MARKETPLACE_DELETE ?? false);
-    const canChangeStatus = isOwner || (actions?.GS_BILLING_MARKETPLACE_CHANGE_STATUS ?? false);
-    const canExport = isOwner || (actions?.GS_BILLING_MARKETPLACE_EXPORT ?? false);
+    const canCreate = actions?.GS_BILLING_MARKETPLACE_CREATE ?? false;
+    const canUpdate = actions?.GS_BILLING_MARKETPLACE_UPDATE ?? false;
+    const canDelete = actions?.GS_BILLING_MARKETPLACE_DELETE ?? false;
+    const canChangeStatus = actions?.GS_BILLING_MARKETPLACE_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_BILLING_MARKETPLACE_EXPORT ?? false;
 
     // UI State
     const [searchTerm, setSearchTerm] = useState("");
@@ -1158,17 +1158,17 @@ function PackagesView() {
     const [editingPackage, setEditingPackage] = useState<any | null>(null);
     const [viewingPackage, setViewingPackage] = useState<any | null>(null);
     const { permissions } = useAuth();
-    const isOwner = permissions.length > 100;
+
 
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_BILLING_PACKAGES');
 
     // FIX: Owner Priority - Force Enabled
-    const canCreate = isOwner || (actions?.GS_BILLING_PACKAGES_CREATE ?? false);
-    const canUpdate = isOwner || (actions?.GS_BILLING_PACKAGES_UPDATE ?? false);
-    const canDelete = isOwner || (actions?.GS_BILLING_PACKAGES_DELETE ?? false);
-    const canChangeStatus = isOwner || (actions?.GS_BILLING_PACKAGES_CHANGE_STATUS ?? false);
-    const canExport = isOwner || (actions?.GS_BILLING_PACKAGES_EXPORT ?? false);
+    const canCreate = actions?.GS_BILLING_PACKAGES_CREATE ?? false;
+    const canUpdate = actions?.GS_BILLING_PACKAGES_UPDATE ?? false;
+    const canDelete = actions?.GS_BILLING_PACKAGES_DELETE ?? false;
+    const canChangeStatus = actions?.GS_BILLING_PACKAGES_CHANGE_STATUS ?? false;
+    const canExport = actions?.GS_BILLING_PACKAGES_EXPORT ?? false;
 
     // Confirmation State
     const [confirmState, setConfirmState] = useState<{

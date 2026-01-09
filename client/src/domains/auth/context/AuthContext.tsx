@@ -63,22 +63,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If not authenticated, default to SYSTEM (or handled by login redirect)
         if (!reduxUser) return 'SYSTEM';
 
-        // Strategy 0: Robust Permission Check (Fixes Owner sidebar issue)
-        // If user has platform permissions, they are in SYSTEM context.
-        if (permissions.some(p => p.startsWith('platform.') || p.startsWith('system.'))) return 'SYSTEM';
-        // FIX Phase 38: Explicitly detect TENANT context if user has tenant permissions
-        if (permissions.some(p => p.startsWith('tenant.'))) return 'TENANT';
+        // SAP-GRADE: Single Decision Center
+        // Backend decides scope. Frontend reads it.
+        if (reduxUser.scopeType) return reduxUser.scopeType;
+        if (reduxUser.scope) return reduxUser.scope;
 
-        // Strategy:
-        // 1. If impersonating, strictly use the IMPERSONATED user's tenantId.
-        // 2. If owner, normally SYSTEM, but if they are owner of a tenant org? 
-        //    (Usually Owner is Platform Owner).
-        //    For now: Owner -> SYSTEM.
-        // 3. Else check tenantId.
-
+        // Fallback for legacy objects (should not happen in SAP mode)
         if (reduxUser.isOwner && !isImpersonating) return 'SYSTEM';
         return isSystemTenant(reduxUser.tenantId) ? 'SYSTEM' : 'TENANT';
-    }, [reduxUser, isImpersonating, permissions]);
+    }, [reduxUser, isImpersonating]);
 
     // Load Session (Permissions)
     const loadSessionData = async () => {

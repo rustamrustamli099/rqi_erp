@@ -24,7 +24,6 @@
 
 import React from 'react';
 import { usePageState } from '@/app/security/usePageState';
-import { useAuth } from '@/domains/auth/context/AuthContext';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -66,14 +65,10 @@ export function PageGate({ pageKey, children, fallback }: PageGateProps) {
         );
     }
 
-    // PHASE 14H: Emergency Owner Bypass
-    // Ensure Owners are never locked out even if backend PageState fails
-    const { permissions } = useAuth();
-    const isOwner = permissions.length > 100;
 
-    if (isOwner) {
-        return <>{children}</>;
-    }
+    // [PHASE 14H] REMOVED: Owner bypass was here
+    // Frontend must NEVER compute authorization
+    // Only backend pageState.authorized is authoritative
 
     // Error state
     if (error) {

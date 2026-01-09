@@ -34,7 +34,7 @@ let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
     }
     async getNavigationForUser(user) {
         const state = await this.getSessionState(user);
-        return state.navigation;
+        return state;
     }
     async resolveDecisionCached(userId, scopeType, scopeId, routeHash) {
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId, routeHash);

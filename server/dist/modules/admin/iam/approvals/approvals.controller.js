@@ -17,16 +17,19 @@ const common_1 = require("@nestjs/common");
 const approvals_service_1 = require("./approvals.service");
 const jwt_auth_guard_1 = require("../../../../platform/auth/jwt-auth.guard");
 const permissions_guard_1 = require("../../../../platform/auth/permissions.guard");
+const decision_center_service_1 = require("../../../../platform/decision/decision-center.service");
 let ApprovalsController = class ApprovalsController {
     approvalsService;
-    constructor(approvalsService) {
+    decisionCenterService;
+    constructor(approvalsService, decisionCenterService) {
         this.approvalsService = approvalsService;
+        this.decisionCenterService = decisionCenterService;
     }
     async getPending(req) {
         const user = req.user;
         const userId = user.sub || user.userId || user.id;
         const permissions = user.permissions || [];
-        const eligibility = this.approvalsService.computeEligibility(permissions);
+        const eligibility = this.decisionCenterService.computeApprovalsEligibility(permissions);
         const items = await this.approvalsService.getPendingApprovals(userId, eligibility);
         return {
             items,
@@ -80,6 +83,7 @@ __decorate([
 exports.ApprovalsController = ApprovalsController = __decorate([
     (0, common_1.Controller)('admin/approvals'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
-    __metadata("design:paramtypes", [approvals_service_1.ApprovalsService])
+    __metadata("design:paramtypes", [approvals_service_1.ApprovalsService,
+        decision_center_service_1.DecisionCenterService])
 ], ApprovalsController);
 //# sourceMappingURL=approvals.controller.js.map

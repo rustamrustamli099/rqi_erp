@@ -17,6 +17,7 @@ const SYSTEM_SLUGS = {
         MANAGE_BILLING: 'system.tenants.manage_billing',
         MANAGE_FEATURES: 'system.tenants.manage_features',
         MANAGE_CONTRACT: 'system.tenants.manage_contract',
+        MANAGE_RESTRICTIONS: 'system.tenants.manage_restrictions',
         VIEW_AUDIT: 'system.tenants.view_audit',
     },
     BRANCHES: {
@@ -69,7 +70,9 @@ const SYSTEM_SLUGS = {
     SETTINGS: {
         READ: 'system.settings.read',
         UPDATE: 'system.settings.update',
+
         GENERAL: {
+            READ: 'system.settings.general.read', // Added for consistency if needed, but primarily top-level
             COMPANY_PROFILE: {
                 READ: 'system.settings.general.company_profile.read',
                 UPDATE: 'system.settings.general.company_profile.update',
@@ -143,6 +146,7 @@ const SYSTEM_SLUGS = {
             READ: 'system.settings.system_configurations.read',
             MANAGE: 'system.settings.system_configurations.update',
             BILLING: {
+                READ: 'system.billing.read',
                 // VIEW removed
             },
             DICTIONARIES: {

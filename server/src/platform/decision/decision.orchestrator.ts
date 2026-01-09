@@ -60,9 +60,9 @@ export class DecisionOrchestrator {
      * Get just navigation tree for user
      * Wrapper validation around session state
      */
-    async getNavigationForUser(user: any): Promise<MenuItem[]> {
+    async getNavigationForUser(user: any): Promise<DecisionResult> {
         const state = await this.getSessionState(user);
-        return state.navigation;
+        return state;
     }
 
     private async resolveDecisionCached(

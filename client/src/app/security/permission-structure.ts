@@ -10,7 +10,7 @@ export const ADMIN_PERMISSION_HIERARCHY = {
         perms: ['read']
     },
     tenants: {
-        perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'impersonate', 'manage_users', 'manage_security', 'manage_billing', 'manage_features', 'manage_contract', 'view_audit']
+        perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'impersonate', 'manage_users', 'manage_security', 'manage_billing', 'manage_features', 'manage_contract', 'manage_restrictions', 'view_audit']
     },
     branches: { perms: ['read', 'create', 'update', 'delete', 'export_to_excel', 'read_details', "change_status"] },
     users: {
@@ -322,7 +322,6 @@ const ACTION_LABEL_MAP: Record<string, string> = {
     invite: 'Dəvət Et',
     send_invite: 'Dəvət Göndər',
     impersonate: 'Simulyasiya Et',
-    manage_restrictions: 'Məhdudiyyətləri İdarə Et',
     connect_to_employee: 'İşçiyə Bağla',
     reset_password: 'Şifrəni Sıfırla',
     copy_id: 'ID Kopyala',
@@ -375,6 +374,7 @@ const ACTION_LABEL_MAP: Record<string, string> = {
     manage_billing: 'Bilinq və Tarixçə',
     manage_features: 'Modul və Limitlər',
     manage_contract: 'Müqavilə İdarəetməsi',
+    manage_restrictions: 'Məhdudiyyətlər',
     view_audit: 'Audit Qeydləri',
     // System Guide
     share: 'Paylaş',

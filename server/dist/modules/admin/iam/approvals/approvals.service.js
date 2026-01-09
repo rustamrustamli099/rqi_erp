@@ -18,13 +18,6 @@ let ApprovalsService = class ApprovalsService {
     constructor(rolesService) {
         this.rolesService = rolesService;
     }
-    computeEligibility(permissions) {
-        return {
-            canApproveSystemRoles: permissions.includes('system.roles.approve'),
-            canApproveTenantRoles: permissions.includes('tenant.roles.approve') ||
-                permissions.includes('system.tenants.roles.approve')
-        };
-    }
     async getPendingApprovals(userId, eligibility) {
         const items = [];
         if (eligibility.canApproveSystemRoles || eligibility.canApproveTenantRoles) {

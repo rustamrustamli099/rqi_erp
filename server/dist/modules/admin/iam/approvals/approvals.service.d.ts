@@ -20,7 +20,6 @@ export interface ApprovalEligibility {
 export declare class ApprovalsService {
     private readonly rolesService;
     constructor(rolesService: RolesService);
-    computeEligibility(permissions: string[]): ApprovalEligibility;
     getPendingApprovals(userId: string, eligibility: ApprovalEligibility): Promise<ApprovalItem[]>;
     approve(id: string, type: 'ROLE', approverId: string, context: {
         scopeType: string;

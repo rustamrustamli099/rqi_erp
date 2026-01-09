@@ -49,17 +49,7 @@ export class ApprovalsService {
         private readonly rolesService: RolesService
     ) { }
 
-    /**
-     * Compute approval eligibility from permissions.
-     * This is a helper that can be used by controller/orchestrator.
-     */
-    computeEligibility(permissions: string[]): ApprovalEligibility {
-        return {
-            canApproveSystemRoles: permissions.includes('system.roles.approve'),
-            canApproveTenantRoles: permissions.includes('tenant.roles.approve') ||
-                permissions.includes('system.tenants.roles.approve')
-        };
-    }
+
 
     /**
      * Aggregates pending approvals based on pre-computed eligibility.

@@ -29,7 +29,6 @@ const maintenance_module_1 = require("./platform/maintenance/maintenance.module"
 const audit_module_1 = require("./system/audit/audit.module");
 const retention_module_1 = require("./platform/retention/retention.module");
 const monitoring_module_1 = require("./platform/observability/monitoring.module");
-const menus_module_1 = require("./modules/menus/menus.module");
 const permissions_module_1 = require("./modules/admin/iam/permissions/permissions.module");
 const roles_module_1 = require("./modules/admin/iam/roles/roles.module");
 const role_approvals_module_1 = require("./modules/admin/iam/role-approvals/role-approvals.module");
@@ -85,7 +84,6 @@ exports.AppModule = AppModule = __decorate([
             audit_module_1.AuditModule,
             retention_module_1.RetentionModule,
             monitoring_module_1.MonitoringModule,
-            menus_module_1.MenusModule,
             permissions_module_1.PermissionsModule,
             roles_module_1.RolesModule,
             files_module_1.FilesModule,

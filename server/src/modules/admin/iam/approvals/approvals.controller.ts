@@ -2,11 +2,15 @@ import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@
 import { ApprovalsService } from './approvals.service';
 import { JwtAuthGuard } from '../../../../platform/auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../../../platform/auth/permissions.guard';
+import { DecisionCenterService } from '../../../../platform/decision/decision-center.service';
 
 @Controller('admin/approvals')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ApprovalsController {
-    constructor(private readonly approvalsService: ApprovalsService) { }
+    constructor(
+        private readonly approvalsService: ApprovalsService,
+        private readonly decisionCenterService: DecisionCenterService
+    ) { }
 
     @Get('pending')
     async getPending(@Request() req: any) {
@@ -17,8 +21,8 @@ export class ApprovalsController {
         // Extract permissions safely
         const permissions = user.permissions || [];
 
-        // PHASE 14H: Compute eligibility at controller level
-        const eligibility = this.approvalsService.computeEligibility(permissions);
+        // PHASE 14H: Compute eligibility via DecisionCenter
+        const eligibility = this.decisionCenterService.computeApprovalsEligibility(permissions);
 
         const items = await this.approvalsService.getPendingApprovals(userId, eligibility);
         return {

@@ -19,9 +19,6 @@ let MenusUseCase = class MenusUseCase {
         this.prisma = prisma;
     }
     async getSidebar(user) {
-        if (user.isOwner) {
-            return this.enrichMenu(menu_definition_1.ADMIN_MENU_TREE);
-        }
         const userPermissions = new Set(user.permissions || []);
         return this.filterMenu(menu_definition_1.ADMIN_MENU_TREE, userPermissions);
     }

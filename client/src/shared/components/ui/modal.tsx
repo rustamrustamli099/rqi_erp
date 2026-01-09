@@ -6,6 +6,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 interface ModalProps {
     title: string
@@ -34,13 +35,13 @@ export function Modal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onChange}>
-            <DialogContent className={className}>
-                <DialogHeader>
+            <DialogContent className={cn("max-h-[90vh] flex flex-col", className)}>
+                <DialogHeader className="flex-shrink-0">
                     <DialogTitle>{title}</DialogTitle>
                     {description && <DialogDescription>{description}</DialogDescription>}
                 </DialogHeader>
-                <div className="grid gap-4 py-4 flex-1 min-h-0">{children}</div>
-                {footer && <DialogFooter>{footer}</DialogFooter>}
+                <div className="flex-1 overflow-y-auto min-h-0 py-4 px-1 -mx-1">{children}</div>
+                {footer && <DialogFooter className="flex-shrink-0">{footer}</DialogFooter>}
             </DialogContent>
         </Dialog>
     )

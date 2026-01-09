@@ -36,6 +36,7 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'manage_billing', permissionSlug: 'system.tenants.manage_billing' },
             { actionKey: 'manage_features', permissionSlug: 'system.tenants.manage_features' },
             { actionKey: 'manage_contract', permissionSlug: 'system.tenants.manage_contract' },
+            { actionKey: 'manage_restrictions', permissionSlug: 'system.tenants.manage_restrictions' },
             { actionKey: 'view_audit', permissionSlug: 'system.tenants.view_audit' },
             { actionKey: 'export_to_excel', permissionSlug: 'system.tenants.export_to_excel' },
         ],

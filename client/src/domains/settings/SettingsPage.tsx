@@ -69,8 +69,7 @@ export default function SettingsPage() {
     // PHASE 14H: Use backend menu for tab visibility
     const { menu, loading: menuLoading } = useMenu();
 
-    // Owner bypass check
-    const isOwner = permissions.length > 100;
+
 
     // Find settings page node from backend menu
     const settingsPageNode = useMemo(() => {

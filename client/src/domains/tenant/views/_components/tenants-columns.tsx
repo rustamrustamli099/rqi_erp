@@ -75,6 +75,7 @@ const ActionCell = ({
     // Group Visibility Flags (SAP-GRADE UI)
     const hasIdentity = actions[ACTION_KEYS.TENANTS_MANAGE_USERS] || actions[ACTION_KEYS.TENANTS_MANAGE_SECURITY] || actions[ACTION_KEYS.TENANTS_IMPERSONATE];
     const hasOps = actions[ACTION_KEYS.TENANTS_MANAGE_FEATURES] || actions[ACTION_KEYS.TENANTS_MANAGE_BILLING] || actions[ACTION_KEYS.TENANTS_VIEW_AUDIT];
+    const hasRestrictions = actions[ACTION_KEYS.TENANTS_MANAGE_RESTRICTIONS];
     const hasLegal = actions[ACTION_KEYS.TENANTS_MANAGE_CONTRACT];
     const hasDestructive = actions[ACTION_KEYS.TENANTS_DELETE];
 
@@ -153,13 +154,20 @@ const ActionCell = ({
                     </>
                 )}
 
-                {/* GROUP 4: Legal & Contract */}
-                {hasLegal && (
+                {/* GROUP 4: Restrictions (Separate Permission) */}
+                {hasRestrictions && (
                     <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onRestrictions(row)}>
                             <ShieldAlert className="mr-2 h-4 w-4" /> Məhdudiyyətlər
                         </DropdownMenuItem>
+                    </>
+                )}
+
+                {/* GROUP 5: Legal & Contract */}
+                {hasLegal && (
+                    <>
+                        <DropdownMenuSeparator />
                         {(isCancelled) ? (
                             <DropdownMenuItem onClick={() => onSignContract(row)} className="text-green-600" disabled={isPending}>
                                 <FileSignature className="mr-2 h-4 w-4" /> Müqavilə Bağla

@@ -55,7 +55,7 @@ let DecisionCenterService = class DecisionCenterService {
         if (resolvedActions.length === 0)
             return undefined;
         const toolbarKeys = ['create', 'export_to_excel', 'submit', 'approve', 'reject', 'import', 'manage_seats', 'download_json_soc2', 'download_json_iso', 'generate_evidence', 'download_report'];
-        const rowKeys = ['update', 'delete', 'read', 'change_status', 'impersonate', 'view_audit', 'cancel', 'select_permissions', 'copy', 'view_audit_log'];
+        const rowKeys = ['update', 'delete', 'read', 'change_status', 'impersonate', 'view_audit', 'cancel', 'select_permissions', 'copy', 'view_audit_log', 'manage_users', 'manage_security', 'manage_billing', 'manage_features', 'manage_contract', 'manage_restrictions'];
         return {
             actions: resolvedActions,
             byContext: {
@@ -94,6 +94,13 @@ let DecisionCenterService = class DecisionCenterService {
             }
         }
         return false;
+    }
+    computeApprovalsEligibility(permissions) {
+        return {
+            canApproveSystemRoles: permissions.includes('system.roles.approve'),
+            canApproveTenantRoles: permissions.includes('tenant.roles.approve') ||
+                permissions.includes('system.tenants.roles.approve')
+        };
     }
 };
 exports.DecisionCenterService = DecisionCenterService;

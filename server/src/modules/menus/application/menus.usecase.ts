@@ -11,9 +11,7 @@ export class MenusUseCase {
         // Filtering: Code (Permissions)
 
         // 1. Owner Bypass
-        if (user.isOwner) {
-            return this.enrichMenu(ADMIN_MENU_TREE);
-        }
+
 
         // 2. Permission Filtering
         const userPermissions = new Set<string>((user.permissions as string[]) || []);

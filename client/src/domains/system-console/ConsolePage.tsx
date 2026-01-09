@@ -50,8 +50,7 @@ export default function SystemCorePage() {
     // PHASE 14H: Use backend menu for tab visibility
     const { menu } = useMenu();
 
-    // Owner Access Bypass
-    const isOwner = permissions.length > 100;
+
 
     const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
         for (const node of nodes) {

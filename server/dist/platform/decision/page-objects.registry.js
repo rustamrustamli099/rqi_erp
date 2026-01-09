@@ -19,6 +19,11 @@ exports.PAGE_OBJECTS_REGISTRY = [
         readPermission: 'system.tenants.read',
     },
     {
+        pageKey: 'Z_SETTINGS',
+        entityKey: 'settings',
+        readPermission: 'system.settings.read',
+    },
+    {
         pageKey: 'Z_SETTINGS_COMPANY_PROFILE',
         entityKey: 'settings_company_profile',
         readPermission: 'system.settings.general.company_profile.read',
@@ -82,6 +87,11 @@ exports.PAGE_OBJECTS_REGISTRY = [
         pageKey: 'Z_COMPLIANCE',
         entityKey: 'compliance',
         readPermission: 'system.settings.security.user_rights.compliance.read',
+    },
+    {
+        pageKey: 'Z_BILLING',
+        entityKey: 'billing',
+        readPermission: 'system.billing.read',
     },
     {
         pageKey: 'Z_MARKETPLACE',

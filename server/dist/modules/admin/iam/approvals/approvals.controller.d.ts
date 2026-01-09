@@ -1,7 +1,9 @@
 import { ApprovalsService } from './approvals.service';
+import { DecisionCenterService } from '../../../../platform/decision/decision-center.service';
 export declare class ApprovalsController {
     private readonly approvalsService;
-    constructor(approvalsService: ApprovalsService);
+    private readonly decisionCenterService;
+    constructor(approvalsService: ApprovalsService, decisionCenterService: DecisionCenterService);
     getPending(req: any): Promise<{
         items: import("./approvals.service").ApprovalItem[];
         count: number;

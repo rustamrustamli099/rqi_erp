@@ -37,7 +37,9 @@ export default function AdminRoutes() {
             {/* Dashboard */}
             <Route path="dashboard" element={
                 <ProtectedRoute>
-                    <AdminDashboard />
+                    <PageGate pageKey="Z_DASHBOARD">
+                        <AdminDashboard />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
@@ -125,7 +127,9 @@ export default function AdminRoutes() {
             {/* Billing */}
             <Route path="billing/*" element={
                 <ProtectedRoute>
-                    <BillingRoutes />
+                    <PageGate pageKey="Z_BILLING">
+                        <BillingRoutes />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 
@@ -141,7 +145,9 @@ export default function AdminRoutes() {
             {/* Settings */}
             <Route path="settings" element={
                 <ProtectedRoute>
-                    <SettingsPage />
+                    <PageGate pageKey="Z_SETTINGS">
+                        <SettingsPage />
+                    </PageGate>
                 </ProtectedRoute>
             } />
 

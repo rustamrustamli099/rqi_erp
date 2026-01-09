@@ -49,6 +49,7 @@ interface UseMenuResult {
 export const useMenu = (): UseMenuResult => {
     const { isAuthenticated, authState, activeTenantType } = useAuth();
     const [menu, setMenu] = useState<ResolvedNavNode[]>([]);
+    const [defaultRoute, setDefaultRoute] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -98,11 +99,15 @@ export const useMenu = (): UseMenuResult => {
             }
 
             const result = await response.json();
-            // Handle NestJS response wrapper: { statusCode, data: { menu: [...] } }
-            const menuData = result.data?.menu || result.menu || [];
+            // Handle NestJS response wrapper: { statusCode, data: { menu: [...], defaultRoute: '...' } }
+            // Or flat: { menu: ..., defaultRoute: ... }
+            const dataBase = result.data || result;
+            const menuData = dataBase.menu || [];
+            const defaultRouteData = dataBase.defaultRoute || null;
 
-            console.log('[useMenu] Menu loaded:', menuData.length, 'items');
+            console.log('[useMenu] Menu loaded:', menuData.length, 'items. Default Route:', defaultRouteData);
             setMenu(menuData);
+            setDefaultRoute(defaultRouteData);
 
             // Mark as fetched for this context
             fetchedRef.current = true;
@@ -126,21 +131,10 @@ export const useMenu = (): UseMenuResult => {
     }, [isAuthenticated, isStable, context]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const getFirstAllowedRoute = (): string => {
-        if (menu.length === 0) {
+        if (!defaultRoute) {
             return '/access-denied';
         }
-        // Find first path in tree (backend already ordered by priority)
-        const findFirstPath = (nodes: ResolvedNavNode[]): string | null => {
-            for (const node of nodes) {
-                if (node.path) return node.path;
-                if (node.children?.length) {
-                    const childPath = findFirstPath(node.children);
-                    if (childPath) return childPath;
-                }
-            }
-            return null;
-        };
-        return findFirstPath(menu) || '/access-denied';
+        return defaultRoute;
     };
 
     return {

@@ -4,5 +4,7 @@ export declare class MenuController {
     constructor(decisionOrchestrator: DecisionOrchestrator);
     getMyMenu(req: any): Promise<{
         menu: import("./menu.definition").MenuItem[];
+        defaultRoute: string | null;
+        actions: string[];
     }>;
 }

@@ -404,3 +404,149 @@ If:
 
 Then:
 System is NOT SAP PFCG compliant.
+# RQI ERP — GEMINI CONSTITUTION (GLOBAL STRUCTURE, A–Z)
+
+> **Status:** ARCHITECTURALLY LOCKED  
+> **Audience:** All contributors (Backend + Frontend + DevOps)
+
+---
+
+## 0) Prime Directive
+
+This project is an **ERP-grade system**. Authorization is security-critical.
+
+**Correctness > Convenience.**
+
+---
+
+## CRITICAL — SAP PFCG AUTHORIZATION CONSTITUTION (HARD LAW)
+
+### 1) Single Decision Center
+- Authorization decisions are made ONLY on the backend:
+  - EffectivePermissionsService computes the permission set.
+  - DecisionCenterService resolves menu + Z_* page objects + UI actions/sections.
+  - DecisionOrchestrator orchestrates caching + API contracts.
+- Any additional decision point (frontend OR backend domain service) is a violation.
+
+### 2) Frontend Must Be Dumb
+Frontend is a dumb renderer:
+- MUST NOT compute menu visibility
+- MUST NOT compute default route ("first allowed route")
+- MUST NOT filter tabs/subtabs by permissions
+- MUST NOT use permissions.includes(), can(), canAny(), canAll(), hasPermission()
+- MUST NOT implement "owner bypass" or "permission-count bypass"
+
+Frontend may only:
+- Render `pageState.authorized`, `pageState.sections`, `pageState.actions` coming from backend.
+- Redirect or show empty states based on backend `authorized` flag (no client 403 decisions).
+
+### 3) Default UI State = Hidden
+- Buttons/actions/tabs/sections are HIDDEN unless backend explicitly enables them.
+- Missing action key must be treated as `false`.
+
+### 4) Exact-Match Only
+- Authorization checks must be exact string matches.
+- No prefix matching, wildcard rules, or startsWith-based authorization.
+- Any startsWith logic must be limited to non-gating analytics only, never visibility or routing.
+
+### 5) Z_* Authorization Objects Are Mandatory
+- Every routable page MUST have a Z_* pageKey.
+- Every route MUST enforce `pageState.authorized` via PageGate (or equivalent).
+- Parent routes with tabs must have a parent Z_* (e.g., Z_SETTINGS, Z_BILLING) to gate the entry.
+
+### 6) No Duplicate Menu Authorities
+- There must be exactly ONE menu endpoint and ONE menu resolver.
+- Menu payload must be backend-authoritative and consumed directly by frontend.
+- Frontend registries may only store UI metadata (label/icon/order), never permissions.
+
+### 7) Domain Services Must Not Decide UI Eligibility
+- Backend domain services must not perform `permissions.includes` to decide "can approve", "can reject", "can see".
+- Such decisions belong to DecisionCenterService outputs (pageState/actions) only.
+
+---
+
+## FRONTEND BRAIN BAN (ABSOLUTE BAN)
+
+Frontend is NOT a security layer.
+Frontend is NOT an authorization engine.
+Frontend must NEVER behave like the backend.
+
+### Forbidden (Build-Blocking)
+Any occurrence in `client/src/**` is a violation:
+
+- `can()`, `hasPermission()`, `hasAny()`, `hasAll()` — anywhere in domain/shared UI
+- `permissions.includes(...)` used to control visibility or access
+- permission-based `ProtectedRoute` or route gating
+- any client-side navigation resolver that computes menu/tab visibility
+- any permission inference (e.g., auto-add `.read` / `.view`)
+- any fallback access when backend mapping is missing
+
+### Allowed (Frontend Role)
+Frontend may ONLY:
+- fetch backend-resolved outputs:
+  - ResolvedNavigationTree
+  - ResolvedPageState `{ authorized, sections, actions }`
+- render UI using only these flags
+- show empty-state or redirect based on `authorized=false`
+- send user intent (clicks/forms) to backend
+
+---
+
+## SAP VISIBILITY LAW
+
+**LAW:** Visibility logic is structural and permissions-driven ONLY.
+
+1. **Permissions belong to Nodes, NOT Containers.**
+   - A container (Page/Group) has NO permissions of its own.
+
+2. **Parent Visibility Rule:**
+   - A parent is VISIBLE if and only if ANY child is visible.
+   - If all children are hidden, the parent MUST generally be hidden.
+
+3. **Order-Independence:**
+   - Visibility calculations MUST be order-independent.
+   - `children[0]` logic is FORBIDDEN for determining visibility or defaults.
+
+---
+
+## ACTION AUTHORIZATION LAW
+
+**LAW:** Actions are treated as SAP Transaction Codes.
+
+1. **1 Action = 1 Permission (EXACT MATCH).**
+   - Action `create` -> Permission `ref.create`
+   - Action `approve` -> Permission `ref.approve`
+
+2. **NO Semantic Logic.**
+   - No `OR`, `AND`, or `ANY` logic for a single action.
+   - No fallback permissions ("if not create, try update").
+
+3. **Resolution Location.**
+   - Actions are resolved ONLY inside the Decision Center.
+   - The UI receives a `ResolvedAction[]` list with `state: 'enabled' | 'disabled' | 'hidden'`.
+
+---
+
+## FORBIDDEN PATTERNS (BLACKLIST)
+
+**THE FOLLOWING ARE BANNED FOREVER:**
+
+1. **UI-Level Decision Hooks:** e.g., `useCanDoX()`, `useActionVisibility()`.
+2. **Component Permission Checks:** e.g., `<Button disabled={!can('perm')} />`.
+3. **Registry Access from UI:** Importing `ACTION_REGISTRY` in a `.tsx` file.
+4. **Helper Deciders:** Functions like `isActionVisible(action)`.
+5. **Multiple Decision Engines:** Separating "Menu Logic" from "Action Logic".
+6. **Static Menus:** Hardcoded links bypassing the Resolver.
+7. **Owner Bypass:** Frontend permission-count bypass (e.g., permissions.length > 100).
+
+---
+
+## WHY THIS EXISTS
+
+This system is built to **SAP/Bank-Grade ERP Standards**.
+
+- **Scale:** Small "convenience" violations scale into unmaintainable security holes.
+- **Audit:** An auditor must look at **ONE** file to verify security.
+- **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
+
+**If behavior diverges from these laws, IT IS A BUG.**

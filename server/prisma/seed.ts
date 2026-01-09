@@ -19,7 +19,8 @@ const SYSTEM_SLUGS = {
         MANAGE_SECURITY: 'system.tenants.manage_security',
         MANAGE_BILLING: 'system.tenants.manage_billing',
         MANAGE_FEATURES: 'system.tenants.manage_features', // Modules, Limits
-        MANAGE_CONTRACT: 'system.tenants.manage_contract', // Suspend, Terminate, Restrictions
+        MANAGE_CONTRACT: 'system.tenants.manage_contract', // Suspend, Terminate
+        MANAGE_RESTRICTIONS: 'system.tenants.manage_restrictions', // weekday and hours and ip restrictions
         VIEW_AUDIT: 'system.tenants.view_audit',
         // MANAGE legacy removal - using granular instead
     },
