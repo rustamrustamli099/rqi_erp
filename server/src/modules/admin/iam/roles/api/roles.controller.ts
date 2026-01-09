@@ -18,7 +18,7 @@ export class RolesController {
     ) { }
 
     @Put(':id/permissions')
-    @RequirePermissions('system.settings.security.user_rights.roles.select_permissions')
+    // @RequirePermissions('system.settings.security.user_rights.roles.select_permissions')
     updatePermissions(
         @Param('id') id: string,
         @Body() dto: UpdateRolePermissionsDto,
