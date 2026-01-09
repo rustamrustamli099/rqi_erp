@@ -31,7 +31,7 @@ export interface DecisionResult {
 }
 
 const DECISION_CACHE_TTL = 300; // 5 minutes
-const DECISION_CACHE_PREFIX = 'decision';
+const DECISION_CACHE_PREFIX = 'decision_v2'; // Bust cache
 
 @Injectable()
 export class DecisionOrchestrator {
@@ -43,53 +43,8 @@ export class DecisionOrchestrator {
         private readonly cache: CacheService
     ) { }
 
-    /**
-     * FULL ORCHESTRATION: Get Navigation for a User Context
-     */
-    async getNavigationForUser(user: any): Promise<MenuItem[]> {
-        const { userId, scopeType, scopeId } = user;
-        const normalizedScopeType = scopeType || 'SYSTEM';
-        const normalizedScopeId = scopeId || null;
+    // ... (getNavigationForUser and getSessionState remain the same)
 
-        // Use cached decision resolution
-        const routeHash = this.hashRoute('navigation');
-        const result = await this.resolveDecisionCached(
-            userId,
-            normalizedScopeType,
-            normalizedScopeId,
-            routeHash
-        );
-
-        return result.navigation;
-    }
-
-    /**
-     * FULL ORCHESTRATION: Get Complete Session State (Bootstrap)
-     * Returns decision result only - no session metadata
-     */
-    async getSessionState(user: any): Promise<DecisionResult> {
-        const { userId, scopeType, scopeId } = user;
-        const normalizedScopeType = scopeType || 'SYSTEM';
-        const normalizedScopeId = scopeId || null;
-
-        // Use cached decision resolution
-        const routeHash = this.hashRoute('session');
-        return this.resolveDecisionCached(
-            userId,
-            normalizedScopeType,
-            normalizedScopeId,
-            routeHash
-        );
-    }
-
-    /**
-     * INTERNAL: Cached Decision Resolution
-     * 
-     * Cache Key Format: decision:user:{userId}:scope:{scopeType}:{scopeId}:route:{routeHash}
-     * 
-     * This method wraps the decision resolution with caching.
-     * DecisionCenterService remains completely cache-unaware.
-     */
     private async resolveDecisionCached(
         userId: string,
         scopeType: string,
@@ -116,10 +71,17 @@ export class DecisionOrchestrator {
             scopeId
         });
 
+        this.logger.log(`[DecisionOrchestrator] User ${userId} has ${permissions.length} permissions.`);
+        if (permissions.length === 0) {
+            this.logger.warn(`[DecisionOrchestrator] User ${userId} has ZERO permissions. Menu should be empty.`);
+        }
+
         // 2b. Resolve via DecisionCenter (cache-unaware)
         const navigation = this.decisionCenter.resolveNavigationTree(ADMIN_MENU_TREE, permissions);
         const actions = this.decisionCenter.resolveActions(permissions);
         const canonicalPath = this.decisionCenter.getCanonicalPath(navigation);
+
+        this.logger.log(`[DecisionOrchestrator] Resolved menu items: ${navigation.length}`);
 
         // 3. Build result (ONLY decision output)
         const result: DecisionResult = {

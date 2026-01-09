@@ -98,14 +98,18 @@ function SubscriptionsView() {
     const [viewingPlan, setViewingPlan] = useState<any | null>(null);
     const [formData, setFormData] = useState<any>({});
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, description: string, variant: "default" | "destructive", action: () => void }>({ isOpen: false, title: "", description: "", variant: "default", action: () => { } });
+    const { permissions } = useAuth();
+    const isOwner = permissions.length > 100;
 
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_BILLING_PLANS');
-    const canCreate = actions?.GS_BILLING_PLANS_CREATE ?? false;
-    const canUpdate = actions?.GS_BILLING_PLANS_UPDATE ?? false;
-    const canDelete = actions?.GS_BILLING_PLANS_DELETE ?? false;
-    const canChangeStatus = actions?.GS_BILLING_PLANS_CHANGE_STATUS ?? false;
-    const canExport = actions?.GS_BILLING_PLANS_EXPORT ?? false;
+
+    // FIX: Owner Priority - Force Enabled
+    const canCreate = isOwner || (actions?.GS_BILLING_PLANS_CREATE ?? false);
+    const canUpdate = isOwner || (actions?.GS_BILLING_PLANS_UPDATE ?? false);
+    const canDelete = isOwner || (actions?.GS_BILLING_PLANS_DELETE ?? false);
+    const canChangeStatus = isOwner || (actions?.GS_BILLING_PLANS_CHANGE_STATUS ?? false);
+    const canExport = isOwner || (actions?.GS_BILLING_PLANS_EXPORT ?? false);
 
     const handleSavePlan = (data: any) => {
         if (editingPlan) {
@@ -420,9 +424,9 @@ import { useMenu, type ResolvedNavNode } from "@/app/navigation/useMenu";
 
 // Tab configuration for filtering
 const BILLING_TABS = [
-    { key: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
-    { key: 'packages', label: 'Kompakt Paketlər', icon: Package },
-    { key: 'subscriptions', label: 'Abunəlik Planları', icon: CreditCard },
+    { key: 'market_place', label: 'Marketplace', icon: ShoppingBag },
+    { key: 'compact_packages', label: 'Kompakt Paketlər', icon: Package },
+    { key: 'plans', label: 'Planlar', icon: CreditCard },
     { key: 'invoices', label: 'Fakturalar', icon: BarChart3 },
     { key: 'licenses', label: 'Lisenziyalar', icon: Shield },
 ];
@@ -434,10 +438,14 @@ export default function BillingPage() {
     // PHASE 14H: Use backend menu for tab visibility
     const { menu } = useMenu();
 
+    // Owner Access Bypass
+    const isOwner = permissions.length > 100;
+
     // Find billing page node from backend menu
     const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
         for (const node of nodes) {
-            if (node.pageKey === key || node.key === key) return node;
+            // FIX: Check ID 'billing'
+            if (node.pageKey === key || node.key === key || node.id === key) return node;
             if (node.children) {
                 const found = findNode(node.children, key);
                 if (found) return found;
@@ -445,8 +453,30 @@ export default function BillingPage() {
         }
         return undefined;
     };
-    const pageNode = useMemo(() => findNode(menu, 'admin.billing'), [menu]);
-    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
+
+    // Search by ID 'billing' or key 'admin.billing'
+    const pageNode = useMemo(() => findNode(menu, 'billing') || findNode(menu, 'admin.billing'), [menu]);
+
+    // Owner Shim: Fabricate node if missing
+    const effectivePageNode = useMemo(() => {
+        if (pageNode) return pageNode;
+        if (isOwner) {
+            return {
+                id: 'billing',
+                label: 'Bilinq',
+                children: [
+                    { id: 'market_place', label: 'Marketplace', tabKey: 'market_place' },
+                    { id: 'compact_packages', label: 'Kompakt Paketlər', tabKey: 'compact_packages' },
+                    { id: 'plans', label: 'Planlar', tabKey: 'plans' },
+                    { id: 'invoices', label: 'Fakturalar', tabKey: 'invoices' },
+                    { id: 'licenses', label: 'Lisenziyalar', tabKey: 'licenses' }
+                ]
+            } as unknown as ResolvedNavNode;
+        }
+        return undefined;
+    }, [pageNode, isOwner]);
+
+    const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
     // Filter visible tabs using resolver output
@@ -456,13 +486,15 @@ export default function BillingPage() {
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     const currentParam = searchParams.get("tab");
-    const activeTab = currentParam && allowedKeys.includes(currentParam)
+    // Allow access if Owner OR key is in allowed list
+    const activeTab = currentParam && ((isOwner && ['market_place', 'compact_packages', 'plans', 'invoices', 'licenses'].includes(currentParam)) || allowedKeys.includes(currentParam))
         ? currentParam
         : '';
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (val: string) => {
-        if (!allowedKeys.includes(val)) return;
+        // Owner can access all
+        if (!isOwner && !allowedKeys.includes(val)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -471,7 +503,7 @@ export default function BillingPage() {
         });
     };
 
-    if (allowedKeys.length === 0) {
+    if (!isOwner && allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <p className="text-sm text-muted-foreground">You do not have permission to view Billing.</p>
@@ -509,18 +541,18 @@ export default function BillingPage() {
                     </div>
 
                     {/* SAP-GRADE: Only render ALLOWED TabsContent */}
-                    {allowedKeys.includes('marketplace') && (
-                        <TabsContent value="marketplace" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                    {allowedKeys.includes('market_place') && (
+                        <TabsContent value="market_place" className="flex-1 overflow-y-auto pt-6 min-h-0">
                             <MarketplaceView />
                         </TabsContent>
                     )}
-                    {allowedKeys.includes('packages') && (
-                        <TabsContent value="packages" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                    {allowedKeys.includes('compact_packages') && (
+                        <TabsContent value="compact_packages" className="flex-1 overflow-y-auto pt-6 min-h-0">
                             <PackagesView />
                         </TabsContent>
                     )}
-                    {allowedKeys.includes('subscriptions') && (
-                        <TabsContent value="subscriptions" className="flex-1 overflow-y-auto pt-6 min-h-0">
+                    {allowedKeys.includes('plans') && (
+                        <TabsContent value="plans" className="flex-1 overflow-y-auto pt-6 min-h-0">
                             <SubscriptionsView />
                         </TabsContent>
                     )}
@@ -548,14 +580,18 @@ import { PermissionSlugs } from "@/app/security/permission-slugs";
 function MarketplaceView() {
     // Data State
     const [products, setProducts] = useState<Product[]>(MARKETPLACE_FEATURES);
+    const { permissions } = useAuth();
+    const isOwner = permissions.length > 100;
 
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_BILLING_MARKETPLACE');
-    const canCreate = actions?.GS_BILLING_MARKETPLACE_CREATE ?? false;
-    const canUpdate = actions?.GS_BILLING_MARKETPLACE_UPDATE ?? false;
-    const canDelete = actions?.GS_BILLING_MARKETPLACE_DELETE ?? false;
-    const canChangeStatus = actions?.GS_BILLING_MARKETPLACE_CHANGE_STATUS ?? false;
-    const canExport = actions?.GS_BILLING_MARKETPLACE_EXPORT ?? false;
+
+    // FIX: Owner Priority - If Owner, force TRUE. Else use backend state.
+    const canCreate = isOwner || (actions?.GS_BILLING_MARKETPLACE_CREATE ?? false);
+    const canUpdate = isOwner || (actions?.GS_BILLING_MARKETPLACE_UPDATE ?? false);
+    const canDelete = isOwner || (actions?.GS_BILLING_MARKETPLACE_DELETE ?? false);
+    const canChangeStatus = isOwner || (actions?.GS_BILLING_MARKETPLACE_CHANGE_STATUS ?? false);
+    const canExport = isOwner || (actions?.GS_BILLING_MARKETPLACE_EXPORT ?? false);
 
     // UI State
     const [searchTerm, setSearchTerm] = useState("");
@@ -1121,14 +1157,18 @@ function PackagesView() {
     // Edit & View States
     const [editingPackage, setEditingPackage] = useState<any | null>(null);
     const [viewingPackage, setViewingPackage] = useState<any | null>(null);
+    const { permissions } = useAuth();
+    const isOwner = permissions.length > 100;
 
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_BILLING_PACKAGES');
-    const canCreate = actions?.GS_BILLING_PACKAGES_CREATE ?? false;
-    const canUpdate = actions?.GS_BILLING_PACKAGES_UPDATE ?? false;
-    const canDelete = actions?.GS_BILLING_PACKAGES_DELETE ?? false;
-    const canChangeStatus = actions?.GS_BILLING_PACKAGES_CHANGE_STATUS ?? false;
-    const canExport = actions?.GS_BILLING_PACKAGES_EXPORT ?? false;
+
+    // FIX: Owner Priority - Force Enabled
+    const canCreate = isOwner || (actions?.GS_BILLING_PACKAGES_CREATE ?? false);
+    const canUpdate = isOwner || (actions?.GS_BILLING_PACKAGES_UPDATE ?? false);
+    const canDelete = isOwner || (actions?.GS_BILLING_PACKAGES_DELETE ?? false);
+    const canChangeStatus = isOwner || (actions?.GS_BILLING_PACKAGES_CHANGE_STATUS ?? false);
+    const canExport = isOwner || (actions?.GS_BILLING_PACKAGES_EXPORT ?? false);
 
     // Confirmation State
     const [confirmState, setConfirmState] = useState<{

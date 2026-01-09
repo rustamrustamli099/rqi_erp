@@ -24,7 +24,8 @@ let MenuController = class MenuController {
         this.decisionOrchestrator = decisionOrchestrator;
     }
     async getMyMenu(req) {
-        return this.decisionOrchestrator.getNavigationForUser(req.user);
+        const navigation = await this.decisionOrchestrator.getNavigationForUser(req.user);
+        return { menu: navigation };
     }
 };
 exports.MenuController = MenuController;

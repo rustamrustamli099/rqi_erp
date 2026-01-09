@@ -273,7 +273,8 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     // SAP LAW: No implicit default (e.g. allowedKeys[0]). 
     // If URL param matches allowed key, use it. Otherwise, rely on parent node or nothing.
     // However, if we are at the root TAB, and no subtab is selected, activeNode is just the tabNode.
-    const currentTab = allowedKeys.includes(urlSubTab) ? urlSubTab : undefined;
+    // FIX: Default to first tab (Roles) to avoid blank screen
+    const currentTab = allowedKeys.includes(urlSubTab) ? urlSubTab : allowedKeys[0];
 
     // 2. Locate Node in Tree
     const activeNode = currentTab

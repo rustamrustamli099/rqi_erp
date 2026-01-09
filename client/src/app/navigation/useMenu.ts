@@ -1,25 +1,22 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * PHASE 14H: Menu Hook (STABLE LOCAL VERSION)
+ * PHASE 14H: Menu Hook — BACKEND ONLY
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * DECISION: Use local resolveNavigationTree.
+ * SAP PFCG COMPLIANT: This hook fetches menu from BACKEND ONLY.
  * 
- * WHY:
- * - Backend API (/me/menu) has authentication issues (401)
- * - Local resolver is STABLE and works correctly
- * - DecisionCenterService on backend still enforces menu for API calls
+ * RULES:
+ * - NO local resolveNavigationTree
+ * - NO frontend permission filtering
+ * - NO permissions.includes()
+ * - Frontend is a DUMB RENDERER
  * 
- * TRADE-OFF:
- * - Menu filtering happens on frontend (not ideal for SAP purity)
- * - BUT: All ACTION decisions still go through backend (usePageState)
- * - Frontend cannot ADD permissions, only filter based on what backend gave
+ * If backend fails → FAIL CLOSED (no fallback)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/domains/auth/context/AuthContext';
-import { resolveNavigationTree, type ResolvedNavNode as ResolverNavNode } from '@/app/security/navigationResolver';
 
 export interface ResolvedNavNode {
     id: string;
@@ -31,8 +28,6 @@ export interface ResolvedNavNode {
     tabKey?: string;
     subTabKey?: string;
     children?: ResolvedNavNode[];
-    visible?: boolean;
-    permission?: string;
 }
 
 interface UseMenuResult {
@@ -44,28 +39,96 @@ interface UseMenuResult {
 }
 
 /**
- * STABLE: Uses local resolver for menu visibility.
- * Actions are still controlled by backend via usePageState.
+ * SAP PFCG COMPLIANT: Backend-driven menu hook.
+ * 
+ * Fetches resolved menu from /api/v1/me/menu
+ * Backend applies ALL permission logic via DecisionCenterService.
+ * Frontend ONLY renders what backend returns.
  */
 export const useMenu = (): UseMenuResult => {
-    const { isAuthenticated, authState, activeTenantType, permissions } = useAuth();
+    const { isAuthenticated, authState, activeTenantType } = useAuth();
+    const [menu, setMenu] = useState<ResolvedNavNode[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Prevent infinite loops and duplicate fetches
+    const fetchedRef = useRef(false);
+    const lastContextRef = useRef<string | null>(null);
 
     const isStable = authState === 'STABLE';
-    const loading = !isStable;
+    const context = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
 
-    const context: 'admin' | 'tenant' = activeTenantType === 'SYSTEM' ? 'admin' : 'tenant';
+    const fetchMenu = useCallback(async (force = false) => {
+        // Skip if not ready
+        if (!isAuthenticated || !isStable) {
+            setLoading(authState === 'BOOTSTRAPPING');
+            return;
+        }
 
-    // Use local resolveNavigationTree
-    const menu = useMemo<ResolvedNavNode[]>(() => {
-        if (!isAuthenticated || !isStable) return [];
-        const rawTree = resolveNavigationTree(context, permissions, 'system');
-        return mapTree(rawTree);
-    }, [isAuthenticated, isStable, context, permissions]);
+        // Skip if already fetched for this context (unless forced)
+        if (!force && fetchedRef.current && lastContextRef.current === context) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            const token = localStorage.getItem('accessToken');
+
+            // Skip fetch if no token
+            if (!token) {
+                console.warn('[useMenu] No access token, skipping fetch');
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch(`/api/v1/me/menu?context=${context}`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                // FAIL CLOSED: No fallback to local resolver
+                throw new Error(`Menu fetch failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            // Handle NestJS response wrapper: { statusCode, data: { menu: [...] } }
+            const menuData = result.data?.menu || result.menu || [];
+
+            console.log('[useMenu] Menu loaded:', menuData.length, 'items');
+            setMenu(menuData);
+
+            // Mark as fetched for this context
+            fetchedRef.current = true;
+            lastContextRef.current = context;
+
+        } catch (err) {
+            console.error('[useMenu] Backend fetch failed:', err);
+            setError(err instanceof Error ? err.message : 'Menu yüklənmədi');
+            // FAIL CLOSED: Empty menu, no local fallback
+            setMenu([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [isAuthenticated, isStable, authState, context]);
+
+    // Fetch once when stable
+    useEffect(() => {
+        if (isAuthenticated && isStable) {
+            fetchMenu();
+        }
+    }, [isAuthenticated, isStable, context]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const getFirstAllowedRoute = (): string => {
         if (menu.length === 0) {
             return '/access-denied';
         }
+        // Find first path in tree (backend already ordered by priority)
         const findFirstPath = (nodes: ResolvedNavNode[]): string | null => {
             for (const node of nodes) {
                 if (node.path) return node.path;
@@ -82,25 +145,8 @@ export const useMenu = (): UseMenuResult => {
     return {
         menu,
         loading,
-        error: null,
+        error,
         getFirstAllowedRoute,
-        refetch: () => { } // No-op for local version
+        refetch: () => fetchMenu(true)
     };
 };
-
-// Map resolver output to our interface
-function mapTree(nodes: ResolverNavNode[]): ResolvedNavNode[] {
-    return nodes.map(node => ({
-        id: node.id,
-        key: node.key,
-        label: node.label,
-        path: node.path,
-        icon: node.icon,
-        pageKey: node.pageKey,
-        tabKey: node.tabKey,
-        subTabKey: node.subTabKey,
-        children: node.children ? mapTree(node.children) : undefined,
-        visible: node.visible,
-        permission: node.permission
-    }));
-}

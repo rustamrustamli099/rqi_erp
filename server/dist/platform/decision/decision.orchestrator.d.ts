@@ -13,8 +13,6 @@ export declare class DecisionOrchestrator {
     private readonly cache;
     private readonly logger;
     constructor(effectivePermissionsService: CachedEffectivePermissionsService, decisionCenter: DecisionCenterService, cache: CacheService);
-    getNavigationForUser(user: any): Promise<MenuItem[]>;
-    getSessionState(user: any): Promise<DecisionResult>;
     private resolveDecisionCached;
     private buildCacheKey;
     private hashRoute;

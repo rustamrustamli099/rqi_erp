@@ -18,7 +18,7 @@ const decision_center_service_1 = require("./decision-center.service");
 const cache_service_1 = require("../cache/cache.service");
 const menu_definition_1 = require("../menu/menu.definition");
 const DECISION_CACHE_TTL = 300;
-const DECISION_CACHE_PREFIX = 'decision';
+const DECISION_CACHE_PREFIX = 'decision_v2';
 let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
     effectivePermissionsService;
     decisionCenter;
@@ -28,21 +28,6 @@ let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
         this.effectivePermissionsService = effectivePermissionsService;
         this.decisionCenter = decisionCenter;
         this.cache = cache;
-    }
-    async getNavigationForUser(user) {
-        const { userId, scopeType, scopeId } = user;
-        const normalizedScopeType = scopeType || 'SYSTEM';
-        const normalizedScopeId = scopeId || null;
-        const routeHash = this.hashRoute('navigation');
-        const result = await this.resolveDecisionCached(userId, normalizedScopeType, normalizedScopeId, routeHash);
-        return result.navigation;
-    }
-    async getSessionState(user) {
-        const { userId, scopeType, scopeId } = user;
-        const normalizedScopeType = scopeType || 'SYSTEM';
-        const normalizedScopeId = scopeId || null;
-        const routeHash = this.hashRoute('session');
-        return this.resolveDecisionCached(userId, normalizedScopeType, normalizedScopeId, routeHash);
     }
     async resolveDecisionCached(userId, scopeType, scopeId, routeHash) {
         const cacheKey = this.buildCacheKey(userId, scopeType, scopeId, routeHash);
@@ -57,9 +42,14 @@ let DecisionOrchestrator = DecisionOrchestrator_1 = class DecisionOrchestrator {
             scopeType: scopeType,
             scopeId
         });
+        this.logger.log(`[DecisionOrchestrator] User ${userId} has ${permissions.length} permissions.`);
+        if (permissions.length === 0) {
+            this.logger.warn(`[DecisionOrchestrator] User ${userId} has ZERO permissions. Menu should be empty.`);
+        }
         const navigation = this.decisionCenter.resolveNavigationTree(menu_definition_1.ADMIN_MENU_TREE, permissions);
         const actions = this.decisionCenter.resolveActions(permissions);
         const canonicalPath = this.decisionCenter.getCanonicalPath(navigation);
+        this.logger.log(`[DecisionOrchestrator] Resolved menu items: ${navigation.length}`);
         const result = {
             navigation,
             actions,

@@ -268,7 +268,7 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <AreaChart data={GRAPH_DATA}>
                                     <defs>
                                         <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={[
                                     { name: 'NA', val: 4000 },
                                     { name: 'EU', val: 3000 },

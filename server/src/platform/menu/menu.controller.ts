@@ -22,6 +22,9 @@ export class MenuController {
     async getMyMenu(@Request() req: any) {
         // [SAP-GRADE] Orchestration handles extraction, permissions, and tree resolution
         // DecisionOrchestrator has built-in caching (5 min TTL)
-        return this.decisionOrchestrator.getNavigationForUser(req.user);
+        const navigation = await this.decisionOrchestrator.getNavigationForUser(req.user);
+
+        // Return wrapped response to match frontend useMenu.ts expectation
+        return { menu: navigation };
     }
 }

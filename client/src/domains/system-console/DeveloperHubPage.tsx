@@ -153,9 +153,13 @@ export default function DeveloperHubPage() {
     // PHASE 14H: Use backend menu for tab visibility
     const { menu } = useMenu();
 
+    // Owner Access Bypass
+    const isOwner = permissions.length > 100;
+
     const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
         for (const node of nodes) {
-            if (node.pageKey === key || node.key === key) return node;
+            // FIX: Check ID 'developer_hub'
+            if (node.pageKey === key || node.key === key || node.id === key) return node;
             if (node.children) {
                 const found = findNode(node.children, key);
                 if (found) return found;
@@ -163,20 +167,43 @@ export default function DeveloperHubPage() {
         }
         return undefined;
     };
-    const pageNode = useMemo(() => findNode(menu, 'admin.developer'), [menu]);
-    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
+
+    // Search by ID 'developer_hub' or key 'admin.developer'
+    const pageNode = useMemo(() => findNode(menu, 'developer_hub') || findNode(menu, 'admin.developer'), [menu]);
+
+    // Owner Shim: Fabricate if missing
+    const effectivePageNode = useMemo(() => {
+        if (pageNode) return pageNode;
+        if (isOwner) {
+            return {
+                id: 'developer_hub',
+                label: 'Developer Hub',
+                children: [
+                    { id: 'api', label: 'API Reference', tabKey: 'api' },
+                    { id: 'sdk', label: 'SDKs & Libraries', tabKey: 'sdk' },
+                    { id: 'webhooks', label: 'Webhooks', tabKey: 'webhooks' },
+                    { id: 'perm_map', label: 'Permission Map', tabKey: 'perm_map' }
+                ]
+            } as unknown as ResolvedNavNode;
+        }
+        return undefined;
+    }, [pageNode, isOwner]);
+
+    const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get('tab');
-    const activeTab = currentParam && allowedKeys.includes(currentParam)
+    // Allow access if Owner OR key is in allowed list
+    const activeTab = currentParam && ((isOwner && ['api', 'sdk', 'webhooks', 'perm_map'].includes(currentParam)) || allowedKeys.includes(currentParam))
         ? currentParam
         : '';
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (value: string) => {
-        if (!allowedKeys.includes(value)) return;
+        // Owner can access all
+        if (!isOwner && !allowedKeys.includes(value)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -198,7 +225,7 @@ export default function DeveloperHubPage() {
         );
     }
 
-    if (allowedKeys.length === 0) {
+    if (!isOwner && allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <Inline403 message="Bu bölməni görmək üçün icazəniz yoxdur." />
@@ -274,9 +301,9 @@ export default function DeveloperHubPage() {
                             </TabsContent>
                         )}
 
-                        {/* SDKs Tab */}
-                        {allowedKeys.includes('sdks') && (
-                            <TabsContent value="sdks" className="space-y-4">
+                        {/* SDKs Tab - Key: sdk */}
+                        {(allowedKeys.includes('sdk') || allowedKeys.includes('sdks')) && (
+                            <TabsContent value={activeTab === 'sdk' || activeTab === 'sdks' ? activeTab : 'sdk'} className="space-y-4">
                                 <div className="grid gap-4 md:grid-cols-3">
                                     {[
                                         { lang: "Node.js", ver: "v2.1.0", icon: "🟢" },
@@ -349,9 +376,9 @@ export default function DeveloperHubPage() {
                             </TabsContent>
                         )}
 
-                        {/* Permission Map Tab */}
-                        {allowedKeys.includes('permissions') && (
-                            <TabsContent value="permissions" className="space-y-4">
+                        {/* Permission Map Tab - Key: perm_map */}
+                        {(allowedKeys.includes('permissions') || allowedKeys.includes('perm_map')) && (
+                            <TabsContent value={activeTab === 'permissions' || activeTab === 'perm_map' ? activeTab : 'perm_map'} className="space-y-4">
                                 <Card className="border-none shadow-none">
                                     <CardHeader className="px-0">
                                         <div className="flex items-center justify-between">

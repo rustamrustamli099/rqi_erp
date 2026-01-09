@@ -60,32 +60,44 @@ const DesktopMenuItem = ({
     location: any
 }) => {
 
-    // SAP GRADE: Flat Navigation Logic using 'route'
-    // Matches if current pathname starts with route (Active State)
+    // Helper: Get first leaf path from item (for containers)
+    const getFirstLeafPath = (node: ResolvedNavNode): string | undefined => {
+        if (node.path) return node.path;
+        if (node.children && node.children.length > 0) {
+            return getFirstLeafPath(node.children[0]);
+        }
+        return undefined;
+    };
 
-    // Query param strictness:
-    // If route has ?tab=foo, we require that tab to be present.
+    // SAP GRADE: Active State Detection
+    // For containers: active if ANY child path matches
     const isActive = (() => {
         const currentPath = location.pathname;
-        const currentSearch = location.search;
 
-        // Base Route Match (e.g. /admin/settings)
-        // Must match exactly or be start of sub-path (if handled by routing)
-        // But for flat sidebar, usually exact match on module root.
-        const baseRoute = (item.path || '').split('?')[0];
-
-        if (currentPath !== baseRoute && !currentPath.startsWith(baseRoute + '/')) {
-            return false;
+        // Direct path match
+        if (item.path) {
+            const baseRoute = item.path.split('?')[0];
+            if (currentPath === baseRoute || currentPath.startsWith(baseRoute + '/')) {
+                return true;
+            }
         }
 
-        // Query Match
-        // If item has default tab (item.tab), we usually navigate to it.
-        // But highlighting: If generic match (/admin/users) and we are on /admin/users, it's active.
-        // If we are on /admin/users?tab=curators, is 'Users' (tab=users) active? 
-        // Yes, the Module is active.
-        // In this Flat Model, the MenuItem represents the MODULE.
-        // So simple path match is usually sufficient.
-        return true;
+        // Container: Check if any child is active (recursive)
+        const checkChildrenActive = (children: ResolvedNavNode[] | undefined): boolean => {
+            if (!children) return false;
+            for (const child of children) {
+                if (child.path) {
+                    const childBase = child.path.split('?')[0];
+                    if (currentPath === childBase || currentPath.startsWith(childBase + '/')) {
+                        return true;
+                    }
+                }
+                if (checkChildrenActive(child.children)) return true;
+            }
+            return false;
+        };
+
+        return checkChildrenActive(item.children);
     })();
 
     // Resolve Icon
@@ -95,9 +107,12 @@ const DesktopMenuItem = ({
     }
     const iconSize = "h-5 w-5";
 
-    // Navigate Handler
+    // Navigate Handler - Use first leaf path for containers
     const handleNavigate = () => {
-        navigate(item.path);
+        const targetPath = item.path || getFirstLeafPath(item);
+        if (targetPath) {
+            navigate(targetPath);
+        }
     };
 
     return (

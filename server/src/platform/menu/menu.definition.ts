@@ -156,14 +156,20 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             ]
         },
         {
-            id: 'security',
+            id: 'security_group',
             label: 'Təhlükəsizlik',
             icon: 'Shield',
             children: [{
-                id: 'policies',
+                id: 'security',
                 label: 'Siyasətlər (Policies)',
                 path: '/admin/settings?tab=security',
-                permission: 'system.settings.security.security_policy.global_policy.read'
+                permission: 'system.settings.security.security_policy.global_policy.read',
+                children: [
+                    { id: 'password', label: 'Şifrə Siyasəti', path: '/admin/settings?tab=security&subTab=password', permission: 'system.settings.security.security_policy.password.read' },
+                    { id: 'login', label: 'Giriş Nəzarəti', path: '/admin/settings?tab=security&subTab=login', permission: 'system.settings.security.security_policy.login.read' },
+                    { id: 'session', label: 'Sessiya', path: '/admin/settings?tab=security&subTab=session', permission: 'system.settings.security.security_policy.session.read' },
+                    { id: 'restrictions', label: 'Qlobal Məhdudiyyətlər', path: '/admin/settings?tab=security&subTab=restrictions', permission: 'system.settings.security.security_policy.restrictions.read' }
+                ]
             },
             {
                 id: 'sso',
@@ -172,25 +178,25 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 permission: 'system.settings.security.sso_OAuth.read'
             },
             {
-                id: 'rights',
+                id: 'user_rights',
                 label: 'İstifadəçi Hüquqları',
                 permission: 'system.settings.security.user_rights.role.read',
                 children: [{
                     id: 'roles',
                     label: 'Rollar',
-                    path: '/admin/settings?tab=roles',
+                    path: '/admin/settings?tab=user_rights&subTab=roles',
                     permission: 'system.settings.security.user_rights.roles.read'
                 },
                 {
                     id: 'matrix_view',
                     label: 'Matris',
-                    path: '/admin/settings?tab=roles&subTab=matrix_view',
+                    path: '/admin/settings?tab=user_rights&subTab=matrix_view',
                     permission: 'system.settings.security.user_rights.matrix_view.read'
                 },
                 {
                     id: 'compliance',
                     label: 'Compliance',
-                    path: '/admin/settings?tab=roles&subTab=compliance',
+                    path: '/admin/settings?tab=user_rights&subTab=compliance',
                     permission: 'system.settings.security.user_rights.compliance.read'
                 }]
             },
@@ -318,7 +324,21 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
                 id: 'workflow',
                 label: 'Workflow',
                 path: '/admin/settings?tab=workflow',
-                permission: 'system.settings.system_configurations.workflow.configuration.read'
+                permission: 'system.settings.system_configurations.workflow.configuration.read',
+                children: [
+                    {
+                        id: 'config',
+                        label: 'Konfiqurasiya',
+                        path: '/admin/settings?tab=workflow&subTab=config',
+                        permission: 'system.settings.system_configurations.workflow.configuration.read'
+                    },
+                    {
+                        id: 'monitor',
+                        label: 'Monitorinq',
+                        path: '/admin/settings?tab=workflow&subTab=monitor',
+                        permission: 'system.settings.system_configurations.workflow.configuration.read'
+                    }
+                ]
             },
             ]
         }

@@ -11,9 +11,10 @@ export default function AccessDeniedPage() {
 
     useEffect(() => {
         // Strict Security: Prevent users from manually accessing /access-denied
-        // EXCEPTION: Users with 0 permissions are sent here by AuthContext.
+        // EXCEPTION: Users with 0 permissions are sent here by AuthContext or RootRedirect.
         const isZeroPerm = permissions.length === 0;
-        const hasRedirectState = location.state?.error === 'access_denied_redirect';
+        const hasRedirectState = location.state?.error === 'access_denied_redirect' ||
+            location.state?.error === 'no_permissions';
 
         if (!isZeroPerm && !hasRedirectState) {
             console.warn("Manual access to /access-denied blocked. Redirecting to root.");

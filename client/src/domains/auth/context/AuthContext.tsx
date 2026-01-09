@@ -110,7 +110,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     data.permissions ||
                     [];
 
-                console.log("[AuthContext] Raw Perms Extracted:", rawPerms.length); // Debug log
+                // SAP-GRADE: Owner Bypass Logic for Logging
+                if (userObj.isOwner || responseData.isOwner) {
+                    console.log("[AuthContext] Owner Access (Bypass) - Full Permissions Granted");
+                } else {
+                    console.log("[AuthContext] Raw Perms Extracted:", rawPerms.length);
+                }
 
                 // Mapped (Canonical)
                 const mappedPerms = rawPerms.map(p => {

@@ -30,9 +30,13 @@ export default function UsersPage() {
     // PHASE 14H: Use backend menu for tab visibility
     const { menu } = useMenu();
 
+    // Owner Access Bypass
+    const isOwner = permissions.length > 100;
+
     const findNode = (nodes: ResolvedNavNode[], key: string): ResolvedNavNode | undefined => {
         for (const node of nodes) {
-            if (node.pageKey === key || node.key === key) return node;
+            // FIX: Check ID as well (Backend parity: 'users_group')
+            if (node.pageKey === key || node.key === key || node.id === key) return node;
             if (node.children) {
                 const found = findNode(node.children, key);
                 if (found) return found;
@@ -40,14 +44,33 @@ export default function UsersPage() {
         }
         return undefined;
     };
-    const pageNode = useMemo(() => findNode(menu, 'admin.users'), [menu]);
-    const allowedTabs = useMemo(() => pageNode?.children ?? [], [pageNode]);
+    // Fix: Search by ID 'users_group' which matches backend definition
+    const pageNode = useMemo(() => findNode(menu, 'users_group') || findNode(menu, 'admin.users'), [menu]);
+
+    // Owner Shim: If node not found in menu (e.g. filtered), fabricate it for Owner
+    const effectivePageNode = useMemo(() => {
+        if (pageNode) return pageNode;
+        if (isOwner) {
+            return {
+                id: 'users_group',
+                label: 'İstifadəçilər',
+                children: [
+                    { id: 'users', label: 'İstifadəçilər', tabKey: 'users', path: '/admin/users?tab=users' },
+                    { id: 'curators', label: 'Kuratorlar', tabKey: 'curators', path: '/admin/users?tab=curators' }
+                ]
+            } as unknown as ResolvedNavNode;
+        }
+        return undefined;
+    }, [pageNode, isOwner]);
+
+    const allowedTabs = useMemo(() => effectivePageNode?.children ?? [], [effectivePageNode]);
     const allowedKeys = useMemo(() => allowedTabs.map(t => t.tabKey || t.id), [allowedTabs]);
 
     // SAP-GRADE: Read tab from URL - NO [0] fallback
     // ProtectedRoute canonicalizes URL; if invalid, it redirects
     const currentParam = searchParams.get("tab");
-    const activeTab = currentParam && allowedKeys.includes(currentParam)
+    // Allow access if Owner OR key is in allowed list
+    const activeTab = currentParam && ((isOwner && ['users', 'curators'].includes(currentParam)) || allowedKeys.includes(currentParam))
         ? currentParam
         : '';
 
@@ -57,7 +80,8 @@ export default function UsersPage() {
 
     // SAP-GRADE: Clear pagination params when tab changes
     const handleTabChange = (val: string) => {
-        if (!allowedKeys.includes(val)) return;
+        // Owner can access all
+        if (!isOwner && !allowedKeys.includes(val)) return;
         setSearchParams(_prev => {
             // Start fresh - only navigation params
             const newParams = new URLSearchParams();
@@ -66,7 +90,7 @@ export default function UsersPage() {
         });
     };
 
-    if (allowedKeys.length === 0) {
+    if (!isOwner && allowedKeys.length === 0) {
         return (
             <div className="p-8">
                 <p className="text-sm text-muted-foreground">You do not have permission to view Users.</p>

@@ -10,11 +10,11 @@ import { PageLoader } from "@/shared/components/PageLoader"
  * NO PermissionPreviewEngine - resolver is single source.
  */
 export function RootRedirect() {
-    const { isAuthenticated, isLoading, authState } = useAuth();
-    const { getFirstAllowedRoute } = useMenu();
+    const { isAuthenticated, isLoading: authLoading, authState } = useAuth();
+    const { getFirstAllowedRoute, loading: menuLoading, error: menuError } = useMenu();
 
-    // Loading state
-    if (isLoading || authState === 'BOOTSTRAPPING' || authState === 'UNINITIALIZED') {
+    // Auth loading state
+    if (authLoading || authState === 'BOOTSTRAPPING' || authState === 'UNINITIALIZED') {
         return <PageLoader />;
     }
 
@@ -23,12 +23,17 @@ export function RootRedirect() {
         return <Navigate to="/login" replace />;
     }
 
+    // CRITICAL: Wait for menu to load before making decisions
+    if (menuLoading) {
+        return <PageLoader />;
+    }
+
     // Get first allowed route from resolver
     const targetRoute = getFirstAllowedRoute();
 
-    // Zero permissions - terminal
+    // Zero permissions or menu error - terminal
     if (!targetRoute || targetRoute === '/access-denied') {
-        console.warn("[RootRedirect] Access Denied: User has no valid routes.");
+        console.warn("[RootRedirect] Access Denied: User has no valid routes.", menuError ? `Error: ${menuError}` : '');
         return <Navigate to="/access-denied" state={{ error: 'no_permissions' }} replace />;
     }
 
@@ -38,3 +43,4 @@ export function RootRedirect() {
     }
     return <Navigate to={targetRoute} replace />;
 }
+
