@@ -524,9 +524,9 @@ export default function TenantList() {
                 onOpenChange={setIsDeleteDialogOpen}
                 title="Tenantı Sil"
                 description={`${currentTenant?.name} tenantını silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.`}
-                onAction={() => currentTenant && handleDeleteClick(currentTenant)}
+                onConfirm={() => currentTenant && handleDeleteClick(currentTenant)}
                 variant="destructive"
-                actionLabel="Sil"
+                confirmText="Sil"
             />
         </div>
     )

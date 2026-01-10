@@ -67,7 +67,7 @@ const ActionCell = ({
     onView, onEdit, onUsers, onLoginAs, onModules,
     onBilling, onRestrictions, onSignContract, onTerminate, onSuspend, onDelete,
     on2FAToggle, onResetPassword, onAuditLogs, onResourceLimits
-}: TenantsActionsProps & { actions: ActionsMap }) => {
+}: TenantsActionsProps & { actions: Record<string, boolean> }) => {
     const isPending = row.status === 'PENDING'
     const isCancelled = row.status === 'CANCELLED'
     const isActive = row.status === 'ACTIVE'
@@ -237,7 +237,7 @@ export const createColumns = ({
     handleAuditLogs,
     handleResourceLimits,
     prepareRestrictions
-}: CreateColumnsProps, actions: ActionsMap): ColumnDef<Tenant>[] => [
+}: CreateColumnsProps, actions: Record<string, boolean>): ColumnDef<Tenant>[] => [
         {
             accessorKey: "name",
             header: "Şirkət Adı",

@@ -71,6 +71,10 @@ export const createColumns = ({
             header: "Əməliyyatlar",
             cell: ({ row }) => {
                 const request = row.original
+                const hasActions = permissions.canApprove || permissions.canReject || permissions.canForward;
+
+                if (!hasActions) return null;
+
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

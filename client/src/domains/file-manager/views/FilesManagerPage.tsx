@@ -44,7 +44,6 @@ const MOCK_FILES_INITIAL: FileSystemItem[] = [
 ];
 
 export default function FilesManagerPage() {
-    // PHASE 100% PFCG: Backend-driven action visibility
     const { actions } = usePageState('Z_FILES');
     const canCreate = actions?.GS_FILES_CREATE ?? false;
     const canUpload = actions?.GS_FILES_UPLOAD ?? false;
@@ -52,6 +51,10 @@ export default function FilesManagerPage() {
     const canDelete = actions?.GS_FILES_DELETE ?? false;
     const canShare = actions?.GS_FILES_SHARE ?? false;
     const canManagePermissions = actions?.GS_FILES_MANAGE_PERMISSIONS ?? false;
+    const canDownload = actions?.GS_FILES_DOWNLOAD ?? false;
+
+    // Actions that justify a menu
+    const canModify = canUpdate || canDelete || canShare || canManagePermissions || canDownload;
 
     const [files, setFiles] = useState<FileSystemItem[]>(MOCK_FILES_INITIAL);
     const [currentFolderId, setCurrentFolderId] = useState<string>("root");
@@ -302,9 +305,9 @@ export default function FilesManagerPage() {
                                                     <FileUp className="w-4 h-4 mr-2" /> Köçür (Move)
                                                 </ContextMenuItem>
                                             )}
-                                            <ContextMenuItem onClick={handleCopy}>
-                                                <Copy className="w-4 h-4 mr-2" /> Kopyala
-                                            </ContextMenuItem>
+                                            {/* Copy not in backend - hidden by default */}
+                                            {/* <ContextMenuItem onClick={handleCopy}><Copy className="w-4 h-4 mr-2" /> Kopyala</ContextMenuItem> */}
+
                                             <ContextMenuSeparator />
                                             {canShare && (
                                                 <ContextMenuItem onClick={handleShare}>
@@ -316,11 +319,9 @@ export default function FilesManagerPage() {
                                                     <Shield className="w-4 h-4 mr-2" /> İcazələr
                                                 </ContextMenuItem>
                                             )}
-                                            {item.type === 'file' && (
-                                                <ContextMenuItem onClick={() => setHistoryItem(item)}>
-                                                    <Clock className="w-4 h-4 mr-2" /> Versiya Tarixçəsi
-                                                </ContextMenuItem>
-                                            )}
+                                            {/* History not in backend - hidden */}
+                                            {/* {item.type === 'file' && (<ContextMenuItem onClick={() => setHistoryItem(item)}><Clock className="w-4 h-4 mr-2" /> Versiya Tarixçəsi</ContextMenuItem>)} */}
+
                                             {canDelete && (
                                                 <>
                                                     <ContextMenuSeparator />
@@ -355,25 +356,27 @@ export default function FilesManagerPage() {
                                                 <td className="p-3 text-xs">{item.updatedAt}</td>
                                                 <td className="p-3 text-xs">{item.size ? (item.size / 1024).toFixed(0) + ' KB' : '-'}</td>
                                                 <td className="p-3">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="w-3 h-3" /></Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => item.type === "folder" ? setCurrentFolderId(item.id) : null}>Aç</DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            {canUpdate && <DropdownMenuItem onClick={() => { setRenamingItem(item); setTempName(item.name); }}>Adını dəyiş</DropdownMenuItem>}
-                                                            {canUpdate && <DropdownMenuItem onClick={() => setMovingItem(item)}>Köçür</DropdownMenuItem>}
-                                                            {canManagePermissions && <DropdownMenuItem onClick={() => setPermissionItem(item)}>İcazələr</DropdownMenuItem>}
-                                                            {item.type === 'file' && <DropdownMenuItem onClick={() => setHistoryItem(item)}>Tarixçə</DropdownMenuItem>}
-                                                            {canDelete && (
-                                                                <>
-                                                                    <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">Sil</DropdownMenuItem>
-                                                                </>
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
+                                                    {canModify && (
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="w-3 h-3" /></Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => item.type === "folder" ? setCurrentFolderId(item.id) : null}>Aç</DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                {canUpdate && <DropdownMenuItem onClick={() => { setRenamingItem(item); setTempName(item.name); }}>Adını dəyiş</DropdownMenuItem>}
+                                                                {canUpdate && <DropdownMenuItem onClick={() => setMovingItem(item)}>Köçür</DropdownMenuItem>}
+                                                                {canManagePermissions && <DropdownMenuItem onClick={() => setPermissionItem(item)}>İcazələr</DropdownMenuItem>}
+                                                                {/* Hidden History/Copy */}
+                                                                {canDelete && (
+                                                                    <>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">Sil</DropdownMenuItem>
+                                                                    </>
+                                                                )}
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}

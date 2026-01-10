@@ -191,6 +191,16 @@ export const PAGE_OBJECTS_REGISTRY: PageAuthorizationObject[] = [
         entityKey: 'licenses',
         readPermission: 'system.billing.licenses.read',
     },
+    {
+        pageKey: 'Z_BILLING_MARKETPLACE_PAGE',
+        entityKey: 'marketplace',
+        readPermission: 'system.billing.market_place.read',
+    },
+    {
+        pageKey: 'Z_BILLING_UPGRADE',
+        entityKey: 'upgrade',
+        readPermission: 'system.billing.upgrade.request',
+    },
 
     // ═══════════════════════════════════════════════════════════════════════
     // BILLING CONFIGURATIONS

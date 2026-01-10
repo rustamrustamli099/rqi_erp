@@ -277,7 +277,7 @@ function WorkflowRulesView() {
             stages: formStages,
             isActive: true,
             description: formDesc,
-            createdAt: editingRule ? editingRule.createdAt : new Date().toISOString()
+            createdAt: editingRule ? (editingRule.createdAt as string) : new Date().toISOString()
         }
 
         if (editingRule) {

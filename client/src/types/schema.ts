@@ -27,6 +27,7 @@ export type Tenant = {
     currency: string
     sectorId?: string
     domain?: string
+    subdomain?: string
     timezone?: string
 }
 

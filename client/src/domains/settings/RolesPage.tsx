@@ -42,16 +42,8 @@ import { RoleCreationWizard } from "./_components/RoleCreationWizard"
 import { RoleFormDialog, type RoleFormValues } from "./_components/RoleFormDialog"
 import { systemApi, type SystemPermission } from "@/domains/system-console/api/system.contract";
 import { useGetRolesQuery, useCreateRoleMutation, useUpdateRoleMutation, useDeleteRoleMutation, useGetRoleByIdQuery, type Role } from "@/store/api";
-import { PermissionMatrix } from "./_components/PermissionMatrix";
-import { PermissionTreeEditor } from "./_components/PermissionTreeEditor"
-import { permissionsStructure } from "@/app/security/permission-structure"
-import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
 
 import { useListQuery } from "@/shared/hooks/useListQuery"
-// SoD Engine
-import { SoDValidationService, type SoDValidationResult } from "@/app/security/sod-rules"
-import { SoDConflictModal } from "@/shared/components/security/SoDConflictModal"
-
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import { Modal } from "@/shared/components/ui/modal"
 import { FilterDrawer } from "@/shared/components/ui/filter-drawer"
@@ -398,7 +390,6 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
     const [dialogOpen, setDialogOpen] = useState(false)
     const [dialogMode, setDialogMode] = useState<"create" | "edit" | "view">("create")
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-    const [isDiffOpen, setIsDiffOpen] = useState(false) // For review dialog
     const [isPreviewOpen, setIsPreviewOpen] = useState(false) // For Simulator
 
 
@@ -687,7 +678,6 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
             }
         } finally {
             setIsSaving(false);
-            setIsDiffOpen(false);
         }
     };
 
@@ -751,7 +741,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 searchParams={searchParams}
             />
         ),
-        matrix_view: <PermissionMatrix roles={roles} onRefresh={fetchRoles} canEdit={matrixUpdateAction?.state === 'enabled'} />,
+        // matrix_view: <PermissionMatrix roles={roles} onRefresh={fetchRoles} canEdit={matrixUpdateAction?.state === 'enabled'} />,
         compliance: (
             <Card>
                 <CardHeader>
@@ -881,36 +871,9 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                                         </div>
                                     </div>
 
-                                    {/* Permission Tree Editor */}
-                                    <div className="p-6 bg-card min-h-[500px]">
-                                        {(() => {
-                                            const roleScope = currentRole?.scope || "TENANT";
-                                            // Check if user has permission to EDIT permissions
-                                            // SAP-GRADE: Strict check of manage_permissions action
-                                            const canManagePermissions = managePermissionsAction?.state === 'enabled';
-
-                                            // SAP FILTERING RULE: 
-                                            // System Role -> Only System/Common permissions
-                                            // Tenant Role -> Only Tenant/Common permissions
-                                            const filteredTree = permissionsStructure.filter(node => {
-                                                if (roleScope === "TENANT") {
-                                                    return node.scope === "TENANT" || node.scope === "COMMON";
-                                                }
-                                                if (roleScope === "SYSTEM") {
-                                                    return node.scope === "SYSTEM" || node.scope === "COMMON";
-                                                }
-                                                return false;
-                                            });
-
-                                            return (
-                                                <PermissionTreeEditor
-                                                    permissions={filteredTree}
-                                                    selectedSlugs={selectedPermissions}
-                                                    onChange={handlePermissionChange}
-                                                    readOnly={!canManagePermissions}
-                                                />
-                                            );
-                                        })()}
+                                    {/* Permission Tree Editor Placeholder */}
+                                    <div className="p-6 bg-card min-h-[200px] flex items-center justify-center text-muted-foreground">
+                                        İcazələrin idarə edilməsi yalnız Backend API vasitəsilə mümkündür. (Frontend RBAC Dumpped)
                                     </div>
 
                                     <div className="p-4 bg-muted/30 border-t flex justify-between items-center">
@@ -922,7 +885,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
 
                                             {/* Only show Save button if allowed to manage permissions */}
                                             {managePermissionsAction?.state === 'enabled' && (
-                                                <Button onClick={() => setIsDiffOpen(true)} disabled={isSaving}>
+                                                <Button onClick={handleSavePermissions} disabled={isSaving}>
                                                     {isSaving ? "Yadda saxlanılır..." : "Yadda Saxla"}
                                                 </Button>
                                             )}
@@ -982,31 +945,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 />
             )}
 
-            {/* Diff Review Modal */}
-            <Dialog open={isDiffOpen} onOpenChange={setIsDiffOpen}>
-                <DialogContent className="max-w-[700px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Dəyişiklikləri Təsdiqlə</DialogTitle>
-                        <DialogDescription>
-                            "{selectedRole}" rolu üçün aşağıdakı icazə dəyişiklikləri tətbiq ediləcək.
-                            Zəhmət olmasa diqqətlə yoxlayın.
-                        </DialogDescription>
-                    </DialogHeader>
 
-                    <PermissionDiffViewer
-                        original={originalPermissions}
-                        modified={selectedPermissions}
-                        className="my-2"
-                    />
-
-                    <DialogFooter className="gap-2 sm:gap-0">
-                        <Button variant="outline" onClick={() => setIsDiffOpen(false)}>Ləğv et</Button>
-                        <Button onClick={handleSavePermissions} disabled={isSaving}>
-                            {isSaving ? "Yadda saxlanılır..." : "Təsdiqlə və Yadda Saxla"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
 
 
