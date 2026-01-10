@@ -23,11 +23,17 @@ import type { ApprovalRequest } from "../constants/workflows"
 export const createColumns = ({
     onApprove,
     onReject,
-    onForward
+    onForward,
+    permissions
 }: {
     onApprove: (request: ApprovalRequest) => void
     onReject: (request: ApprovalRequest) => void
     onForward: (request: ApprovalRequest) => void
+    permissions: {
+        canApprove: boolean
+        canReject: boolean
+        canForward: boolean
+    }
 }): ColumnDef<ApprovalRequest>[] => [
         {
             accessorKey: "id",
@@ -74,15 +80,21 @@ export const createColumns = ({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onApprove(request)}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" /> Təsdiqlə
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onReject(request)}>
-                                <XCircle className="mr-2 h-4 w-4" /> İmtina
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onForward(request)}>
-                                <ArrowRight className="mr-2 h-4 w-4" /> Yönləndir
-                            </DropdownMenuItem>
+                            {permissions.canApprove && (
+                                <DropdownMenuItem onClick={() => onApprove(request)}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Təsdiqlə
+                                </DropdownMenuItem>
+                            )}
+                            {permissions.canReject && (
+                                <DropdownMenuItem onClick={() => onReject(request)}>
+                                    <XCircle className="mr-2 h-4 w-4" /> İmtina
+                                </DropdownMenuItem>
+                            )}
+                            {permissions.canForward && (
+                                <DropdownMenuItem onClick={() => onForward(request)}>
+                                    <ArrowRight className="mr-2 h-4 w-4" /> Yönləndir
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )

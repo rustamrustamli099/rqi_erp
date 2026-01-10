@@ -94,7 +94,8 @@ export type Order = {
     region: string
 }
 
-export const columns: ColumnDef<Order>[] = [
+// Converted to factory to accept permissions
+export const createColumns = (permissions: { canExport: boolean }): ColumnDef<Order>[] => [
     {
         accessorKey: "id",
         header: "Sifariş ID",
@@ -160,7 +161,7 @@ export const columns: ColumnDef<Order>[] = [
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>Sifarişə Bax</DropdownMenuItem>
-                        <DropdownMenuItem>Faktura Yüklə</DropdownMenuItem>
+                        {permissions.canExport && <DropdownMenuItem>Faktura Yüklə</DropdownMenuItem>}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )
@@ -352,7 +353,7 @@ export default function DashboardPage() {
                     <CardDescription>Sistemə daxil olan ən son sifarişlərin siyahısı.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <DataTable columns={columns} data={MOCK_ORDERS} searchKey="customer" filterPlaceholder="Müştəri axtar..." />
+                    <DataTable columns={createColumns({ canExport })} data={MOCK_ORDERS} searchKey="customer" filterPlaceholder="Müştəri axtar..." />
                 </CardContent>
             </Card>
         </div>

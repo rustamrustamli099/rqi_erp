@@ -255,8 +255,9 @@ export default function ApprovalsPage() {
     const columns = useMemo(() => createColumns({
         onApprove: (r) => handleApproveClick(r as MockRequest),
         onReject: (r) => handleRejectClick(r as MockRequest),
-        onForward: (r) => handleForwardClick(r as MockRequest)
-    }), [handleApproveClick, handleRejectClick, handleForwardClick])
+        onForward: (r) => handleForwardClick(r as MockRequest),
+        permissions: { canApprove, canReject, canForward }
+    }), [handleApproveClick, handleRejectClick, handleForwardClick, canApprove, canReject, canForward])
 
     const table = useReactTable({
         data: filteredData,

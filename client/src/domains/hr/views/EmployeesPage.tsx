@@ -124,12 +124,16 @@ export default function EmployeesPage() {
                             <DropdownMenuItem>
                                 <Eye className="mr-2 h-4 w-4" /> View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" /> Edit Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                                <Trash className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
+                            {canUpdate && (
+                                <DropdownMenuItem>
+                                    <Edit className="mr-2 h-4 w-4" /> Edit Details
+                                </DropdownMenuItem>
+                            )}
+                            {canDelete && (
+                                <DropdownMenuItem className="text-red-600">
+                                    <Trash className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )
@@ -172,7 +176,7 @@ export default function EmployeesPage() {
 
             <Card>
                 <CardContent className="p-4">
-                    <DataTableToolbar table={table} onAddClick={() => { }} addLabel="Add Employee" />
+                    <DataTableToolbar table={table} onAddClick={canCreate ? () => { } : undefined} addLabel="Add Employee" />
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader>
