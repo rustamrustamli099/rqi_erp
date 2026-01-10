@@ -172,4 +172,30 @@ export class DecisionCenterService {
                 permissions.includes('system.tenants.roles.approve')
         };
     }
+
+    /**
+     * EVALUATE ACCESS - SINGLE TRUTH
+     * Returns TRUE if user has AT LEAST ONE of the required permissions.
+     * Enforces STRICT EXACT MATCH logic.
+     */
+    isAllowed(userPermissions: string[], requiredPermissions: string[]): boolean {
+        // Default: Allow if no permissions required
+        if (!requiredPermissions || requiredPermissions.length === 0) return true;
+
+        // No user permissions = DENY
+        if (!userPermissions || userPermissions.length === 0) return false;
+
+        // Check intersection
+        return requiredPermissions.some(required => userPermissions.includes(required));
+    }
+
+    /**
+     * Strict Evaluation (AND logic) - Future Proofing
+     */
+    isAllowedStrict(userPermissions: string[], requiredPermissions: string[]): boolean {
+        if (!requiredPermissions || requiredPermissions.length === 0) return true;
+        if (!userPermissions || userPermissions.length === 0) return false;
+
+        return requiredPermissions.every(required => userPermissions.includes(required));
+    }
 }

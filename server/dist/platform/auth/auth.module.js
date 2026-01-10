@@ -24,7 +24,6 @@ const cached_effective_permissions_service_1 = require("./cached-effective-permi
 const prisma_service_1 = require("../../prisma.service");
 const menu_module_1 = require("../menu/menu.module");
 const cache_module_1 = require("../cache/cache.module");
-const decision_center_service_1 = require("./decision-center.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -45,9 +44,9 @@ exports.AuthModule = AuthModule = __decorate([
                 inject: [config_1.ConfigService],
             }),
         ],
-        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, mfa_service_1.MfaService, prisma_service_1.PrismaService, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService, cached_effective_permissions_service_1.CachedEffectivePermissionsService, decision_center_service_1.DecisionCenterService],
+        providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, mfa_service_1.MfaService, prisma_service_1.PrismaService, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService, cached_effective_permissions_service_1.CachedEffectivePermissionsService],
         controllers: [auth_controller_1.AuthController],
-        exports: [auth_service_1.AuthService, jwt_1.JwtModule, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService, cached_effective_permissions_service_1.CachedEffectivePermissionsService, decision_center_service_1.DecisionCenterService],
+        exports: [auth_service_1.AuthService, jwt_1.JwtModule, permission_service_1.PermissionsService, refresh_token_service_1.RefreshTokenService, effective_permissions_service_1.EffectivePermissionsService, cached_effective_permissions_service_1.CachedEffectivePermissionsService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

@@ -139,6 +139,7 @@ export default function NotificationRulesPage() {
                     onDelete={handleDeleteClick}
                     onView={handleView}
                     permissions={{
+                        canView: authorized,
                         canCreate,
                         canUpdate,
                         canDelete,

@@ -124,6 +124,9 @@ export default function BranchesPage() {
         {
             id: "actions",
             cell: ({ row }) => {
+                const hasAnyAction = canReadDetails || canUpdate || canDelete;
+                if (!hasAnyAction) return null;
+
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

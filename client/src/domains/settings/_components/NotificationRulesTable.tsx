@@ -81,6 +81,7 @@ interface NotificationRulesTableProps {
     onView: (rule: NotificationRule) => void;
     onAdd: () => void;
     permissions: {
+        canView: boolean;
         canCreate: boolean;
         canUpdate: boolean;
         canDelete: boolean;
@@ -91,7 +92,7 @@ interface NotificationRulesTableProps {
 }
 
 export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd, permissions }: NotificationRulesTableProps) => {
-    const { canCreate, canUpdate, canDelete, canChangeStatus, canExport, canCopy } = permissions;
+    const { canView, canCreate, canUpdate, canDelete, canChangeStatus, canExport, canCopy } = permissions;
 
     const columns: ColumnDef<NotificationRule>[] = [
         {
@@ -139,6 +140,9 @@ export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd, 
             id: "actions",
             header: "Əməliyyatlar", // Fixed Header
             cell: ({ row }) => {
+                const hasAnyAction = canView || canChangeStatus || canUpdate || canDelete || canCopy;
+                if (!hasAnyAction) return null;
+
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -148,9 +152,11 @@ export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd, 
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onView(row.original)}>
-                                <Eye className="mr-2 h-4 w-4" /> Bax
-                            </DropdownMenuItem>
+                            {canView && (
+                                <DropdownMenuItem onClick={() => onView(row.original)}>
+                                    <Eye className="mr-2 h-4 w-4" /> Bax
+                                </DropdownMenuItem>
+                            )}
                             {canChangeStatus && (
                                 <DropdownMenuItem onClick={() => toast.info('Status dəyişdirilir... (Mock)')}>
                                     <Activity className="mr-2 h-4 w-4" /> Statusu Dəyiş

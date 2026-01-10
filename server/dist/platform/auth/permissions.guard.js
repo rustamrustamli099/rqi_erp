@@ -15,7 +15,7 @@ const core_1 = require("@nestjs/core");
 const prisma_service_1 = require("../../prisma.service");
 const cached_effective_permissions_service_1 = require("./cached-effective-permissions.service");
 const audit_service_1 = require("../../system/audit/audit.service");
-const decision_center_service_1 = require("./decision-center.service");
+const decision_center_service_1 = require("../decision/decision-center.service");
 let PermissionsGuard = class PermissionsGuard {
     reflector;
     prisma;

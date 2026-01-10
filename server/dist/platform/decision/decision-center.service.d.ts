@@ -11,4 +11,6 @@ export declare class DecisionCenterService {
         canApproveSystemRoles: boolean;
         canApproveTenantRoles: boolean;
     };
+    isAllowed(userPermissions: string[], requiredPermissions: string[]): boolean;
+    isAllowedStrict(userPermissions: string[], requiredPermissions: string[]): boolean;
 }

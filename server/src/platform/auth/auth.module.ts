@@ -19,8 +19,6 @@ import { MenuService } from '../menu/menu.service';
 import { MenuModule } from '../menu/menu.module';
 import { CacheModule } from '../cache/cache.module';
 
-import { DecisionCenterService } from './decision-center.service';
-
 @Global()
 @Module({
   imports: [
@@ -37,8 +35,8 @@ import { DecisionCenterService } from './decision-center.service';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, RefreshTokenService, EffectivePermissionsService, CachedEffectivePermissionsService, DecisionCenterService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, PrismaService, PermissionsService, RefreshTokenService, EffectivePermissionsService, CachedEffectivePermissionsService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, PermissionsService, RefreshTokenService, EffectivePermissionsService, CachedEffectivePermissionsService, DecisionCenterService],
+  exports: [AuthService, JwtModule, PermissionsService, RefreshTokenService, EffectivePermissionsService, CachedEffectivePermissionsService],
 })
 export class AuthModule { }

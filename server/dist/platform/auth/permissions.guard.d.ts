@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma.service';
 import { CachedEffectivePermissionsService } from './cached-effective-permissions.service';
 import { AuditService } from '../../system/audit/audit.service';
-import { DecisionCenterService } from './decision-center.service';
+import { DecisionCenterService } from '../decision/decision-center.service';
 export declare class PermissionsGuard implements CanActivate {
     private reflector;
     private prisma;

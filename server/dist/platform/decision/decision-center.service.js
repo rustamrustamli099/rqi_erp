@@ -102,6 +102,20 @@ let DecisionCenterService = class DecisionCenterService {
                 permissions.includes('system.tenants.roles.approve')
         };
     }
+    isAllowed(userPermissions, requiredPermissions) {
+        if (!requiredPermissions || requiredPermissions.length === 0)
+            return true;
+        if (!userPermissions || userPermissions.length === 0)
+            return false;
+        return requiredPermissions.some(required => userPermissions.includes(required));
+    }
+    isAllowedStrict(userPermissions, requiredPermissions) {
+        if (!requiredPermissions || requiredPermissions.length === 0)
+            return true;
+        if (!userPermissions || userPermissions.length === 0)
+            return false;
+        return requiredPermissions.every(required => userPermissions.includes(required));
+    }
 };
 exports.DecisionCenterService = DecisionCenterService;
 exports.DecisionCenterService = DecisionCenterService = __decorate([
