@@ -192,5 +192,131 @@ CONFIRM:
 - No action menu triggers visible.
 - No “View / Edit / Approve / …” UI appears.
 - Pages render only if authorized.
-- UI visibility is 100% backend-driven.
+
+----------------------------------------------------------------------------------
+# STRICTER CONSTITUTION PROMPT (VERSION 2)
+----------------------------------------------------------------------------------
+
+YOU ARE WRITING THE OFFICIAL .GEMINI.md (PROJECT CONSTITUTION).
+This document is the LAW. It must be actionable and enforceable.
+If code contradicts this document, code must change — not the document.
+
+PROJECT GOAL
+SAP PFCG-grade ERP:
+- Single Decision Center (backend only)
+- Frontend is a dumb renderer
+- Default hidden UI
+- Exact-match permissions only
+
+========================================
+1) CORE LAWS (Non-negotiable)
+========================================
+LAW-1: Backend decides. Frontend obeys.
+LAW-2: Single Decision Center: exactly ONE canonical authorization engine in backend.
+LAW-3: Default hidden: UI renders NOTHING actionable unless backend explicitly enables it.
+LAW-4: Exact-match permission checks only for authorization/visibility decisions.
+LAW-5: No bypass: Owner/SuperAdmin shortcuts are forbidden in runtime.
+LAW-6: No shadow engines: no DryRunEngine, no simulators, no alternative evaluators.
+LAW-7: “Menu visibility” and “Action permission” are different outputs; frontend must not infer one from the other.
+
+========================================
+2) SYSTEM ARCHITECTURE (Boundaries)
+========================================
+
+BACKEND (server/)
+Allowed:
+- Permission models, role-permission relations
+- Z_* Page Objects registry (authorization objects)
+- GS_* Action Keys registry (semantic action flags)
+- DecisionCenterService (the ONLY decision engine)
+- DecisionOrchestrator (composition + caching only)
+- /decision/page-state endpoint: authoritative authorized + sections + actions
+- /me/menu endpoint: authoritative resolved menu + defaultRoute
+
+Forbidden:
+- Any second “DecisionCenterService” in another folder/module
+- Guards/services that perform independent permission logic for authorization/visibility
+- DryRunEngine / PermissionDryRunEngine / simulation evaluators
+- startsWith/wildcards/prefix matching for any gating
+- Owner/SuperAdmin bypass logic (guards/controllers/services)
+
+FRONTEND (client/)
+Allowed:
+- ProtectedRoute: authentication only
+- PageGate: reads backend pageState.authorized and blocks render
+- Rendering based only on:
+  - pageState.authorized
+  - pageState.sections flags
+  - pageState.actions[GS_*] booleans
+  - backend menu payload (already resolved)
+- UI metadata only: labels/icons/order (NO slugs, NO permissions)
+
+Forbidden (SEV-1):
+- permissions.includes(), can/canAny/canAll, hasPermission
+- permission slugs or permission structure maps in runtime bundles
+- local resolveNavigationTree / local menu filtering / local tab visibility logic
+- any “permission preview simulator” or RBAC simulation logic in client runtime
+- Owner logic, “isOwner”, or any special-casing
+
+DATABASE (prisma/)
+Allowed:
+- raw permission strings
+- role-permission relation tables
+Forbidden:
+- permission hierarchy encoding
+- implicit grants or derived permissions stored in DB
+
+========================================
+3) AUTHORIZATION CONTRACTS
+========================================
+- Every authenticated route MUST map to a Z_* object.
+- Every authenticated route MUST be gated by PageGate (or explicit authorized check).
+- Every actionable UI element MUST be controlled by GS_* flag from backend.
+- Every tab/subtab/section MUST be controlled by backend (menu nodes and/or section flags).
+- Frontend never decides visibility from raw permissions.
+
+========================================
+4) BANNED FILES / ARTIFACTS
+========================================
+Banned in client runtime (must be deleted or moved to docs with no imports):
+- permission-slugs.ts
+- permission-structure.ts
+- simulator-engine.ts
+- permission preview simulator components
+- any RBAC utils that compute visibility/authorization
+
+Banned in server runtime (must not exist in src OR dist):
+- dry-run.engine.*
+- PermissionDryRunEngine
+- alternative permission evaluators
+- duplicate decision-center services
+
+========================================
+5) ENFORCEMENT (CI / LINT / GREP)
+========================================
+CI must fail if any of these are found in runtime code:
+- permissions.includes(
+- can( / canAny( / canAll( / hasPermission(
+- resolveNavigationTree(
+- startsWith( used in gating contexts
+- dry-run.engine in server/dist or server/src
+
+Provide exact ESLint no-restricted-imports / no-restricted-syntax patterns
+AND a grep checklist developers must run before merge.
+
+========================================
+6) PHASE 15 CHECKLIST (100/100 Exit Criteria)
+========================================
+[ ] Exactly ONE DecisionCenterService exists in backend, referenced everywhere.
+[ ] No DryRunEngine / PermissionDryRunEngine in src or dist.
+[ ] All authenticated routes have Z_* + PageGate enforcement.
+[ ] All UI actions/tabs/sections are default hidden and enabled only by GS_* / sections.
+[ ] Read-only user sees NO create/update/delete/approve/reject/export UI.
+[ ] No owner/superadmin bypass logic anywhere in runtime.
+[ ] No permission ontology files imported into client runtime.
+
+========================================
+7) FINAL STATEMENT
+========================================
+Any deviation is SEV-1. Fix the code, not this document.
 
