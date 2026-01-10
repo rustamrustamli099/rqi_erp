@@ -550,3 +550,21 @@ This system is built to **SAP/Bank-Grade ERP Standards**.
 - **Stability:** "Smart UI" is brittle. "Dumb UI" is robust.
 
 **If behavior diverges from these laws, IT IS A BUG.**
+
+---
+
+## 11) STALE / DEAD FILES (AUDIT FINDINGS)
+
+The following files have been identified as stale, deprecated, or dead code.
+They should be cleaned up during the next maintenance window.
+
+| File | Status | Recommendation |
+|------|--------|----------------|
+| `client/src/domains/settings/utils/permission-engine.ts` | DEPRECATED | `PLATFORM_MENU = []` stub. DELETE |
+| `client/src/temp-seed-v2.ts` | DEAD | Migration script. DELETE |
+| `client/src/temp-seed-v3.ts` | DEAD | Migration script. DELETE |
+| `server/src/debug-user.ts` | DEBUG | Dev utility only. KEEP (exclude from prod) |
+| `server/src/modules/menus/api/menus.controller.ts:12` | STALE COMMENT | Comment mentions "isOwner check" but code doesn't use it. UPDATE COMMENT |
+
+**Last Audit:** 2026-01-10 (Commit: bdb02916)
+
