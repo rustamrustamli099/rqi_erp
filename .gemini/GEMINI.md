@@ -1,188 +1,196 @@
 # GEMINI CONSTITUTION
 # SAP ERP / PFCG Authorization Law Book
 
-This document is NON-NEGOTIABLE.
-Any violation is considered a SECURITY BUG.
+This document is the LAW of the project.
+Developers MUST follow it. No exceptions.
 
----
+OBJECTIVE
+Define what is ALLOWED and FORBIDDEN in this ERP system
+according to SAP PFCG, Single Decision Center architecture.
 
-## 0. CORE PHILOSOPHY
+────────────────────────────────────────
+SECTION 1 — CORE PHILOSOPHY
+────────────────────────────────────────
+- Backend decides.
+- Frontend obeys.
+- UI is dumb.
+- Default state = hidden.
+- Authorization is binary.
 
-This system follows SAP ERP / PFCG principles.
+────────────────────────────────────────
+SECTION 2 — ARCHITECTURE BOUNDARIES
+────────────────────────────────────────
 
-There is:
-- ONE Decision Center
-- ZERO frontend authorization logic
-- ZERO implicit permission inference
-- ZERO owner/superadmin bypass
+### BACKEND (NestJS)
+**ALLOWED:**
+- Permission models
+- Z_* page objects
+- Action maps
+- DecisionCenterService (ONLY ONE)
+- Authorization logic
+- Menu resolution
+- Route authorization
 
-Frontend is a DUMB RENDERER.
-Backend is the ONLY authority.
+**FORBIDDEN:**
+- Multiple decision engines
+- DryRun / simulation RBAC
+- Owner / SuperAdmin bypass
+- Prefix / wildcard permission matching
 
----
+### FRONTEND (React)
+**ALLOWED:**
+- PageGate
+- usePageState
+- Rendering based on backend flags
+- actionKey boolean checks
 
-## 1. SINGLE DECISION CENTER (MANDATORY)
+**FORBIDDEN:**
+- permission.includes()
+- permission trees
+- permission slugs
+- permission structure maps
+- role logic
+- owner logic
+- permission inference
+- local authorization decisions
 
-### 1.1 Allowed Decision Location
-ONLY the backend may decide:
-- page access
-- menu visibility
-- tab visibility
-- action availability
-- default routes
+### DATABASE
+**ALLOWED:**
+- Raw permission strings
+- Role-permission relations
+- No derived / inferred permissions
 
-Canonical components:
-- DecisionCenterService
-- DecisionOrchestrator
-- PAGE_OBJECTS_REGISTRY (Z_*)
-- ACTION_REGISTRY (GS_*)
+**FORBIDDEN:**
+- Permission hierarchy encoding
+- Implicit grants
 
-### 1.2 Forbidden Decision Locations ❌
-The following are STRICTLY FORBIDDEN:
-- permissions.includes(...)
-- can(), canAny(), canAll()
-- startsWith / wildcard permission checks
-- local menu filtering
-- frontend tab visibility logic
-- frontend default route calculation
+────────────────────────────────────────
+SECTION 3 — AUTHORIZATION RULES
+────────────────────────────────────────
+- Every route MUST have Z_*.
+- Every route MUST be gated.
+- Every UI action MUST be hidden unless explicitly allowed.
+- Menu visibility ≠ Action permission.
+- Tabs ≠ Authorization.
 
-Violation = audit FAIL.
+────────────────────────────────────────
+SECTION 4 — FILE-LEVEL RULES
+────────────────────────────────────────
+**FORBIDDEN FILE TYPES IN CLIENT:**
+- permission-slugs.ts
+- permission-structure.ts
+- simulator-engine.ts
+- permission preview logic
+- RBAC utils
 
----
+Any such file = DELETE.
 
-## 2. FRONTEND RULES (DUMB UI)
+────────────────────────────────────────
+SECTION 5 — AUDIT CHECKLIST (PHASE 15)
+────────────────────────────────────────
+- Single Decision Center? YES
+- Shadow RBAC? NO
+- All routes gated? YES
+- UI default hidden? YES
+- Read-only simulation clean? YES
+- dist sanitized? YES
 
-Frontend MUST:
-- Render ONLY what backend allows
-- Hide EVERYTHING by default
-- Obey pageState.authorized
-- Obey pageState.actions
-- Obey pageState.sections
+If ANY answer = NO → BUILD FAILS.
 
-Frontend MUST NEVER:
-- Decide visibility
-- Guess permissions
-- Infer access
-- Contain business authorization logic
+────────────────────────────────────────
+SECTION 6 — FINAL STATEMENT
+────────────────────────────────────────
+This project follows SAP PFCG strictly.
+Any deviation is a SEV-1 architectural violation.
 
----
-
-## 3. PAGE AUTHORIZATION (Z_* OBJECTS)
-
-### 3.1 Mandatory
-EVERY routable page and sub-page MUST:
-- Have a Z_* authorization object
-- Be enforced via PageGate or usePageState.authorized
-
-No Z_* → Page MUST NOT render.
-
-### 3.2 Granularity
-- Pages → Z_*
-- Sub-pages → separate Z_*
-- Detail pages → separate Z_*
-
----
-
-## 4. CONTENT AUTHORIZATION (CRITICAL)
-
-### 4.1 Default State
-ALL UI elements are HIDDEN by default.
-
-### 4.2 Allowed Visibility
-A UI element may render ONLY if:
-
-```typescript
-pageState.actions[GS_*] === true
-```
-
-Applies to:
-- buttons
-- dropdown actions
-- tabs
-- sub-tabs
-- toolbar actions
-- bulk actions
-- destructive actions
-
-If backend did not allow → UI MUST NOT render.
-
----
-
-## 5. PERMISSION MODEL
-
-### 5.1 Exact Match Only
-Permissions are matched by EXACT STRING equality.
-
-Forbidden:
-- prefix matching
-- wildcard matching
-- inferred parent permissions
-- inferred read permissions
-
-### 5.2 No Inference
-Examples of forbidden inference:
-- create → read
-- child → parent
-- *.access synthesis
-
----
-
-## 6. OWNER / SUPERADMIN POLICY (ZERO TOLERANCE)
-
-There is NO special user.
-
-Owner / SuperAdmin:
-- Has NO bypass
-- Has NO implicit access
-- Is treated as a normal user with permissions
-
-Forbidden:
-- isOwner flags
-- permissions.length shortcuts
-- role === 'Owner' bypass
-- maintenance or emergency bypass
-
-Violation = critical security failure.
-
----
-
-## 7. MENU & NAVIGATION
-
-Menu MUST:
-- Be resolved by backend
-- Be delivered fully resolved to frontend
-- Contain visibility decisions already applied
-
-Frontend MUST:
-- Render menu AS-IS
-- Never filter or compute visibility
-
----
-
-## 8. DEPRECATION & CLEANUP
-
-Deprecated logic MUST:
-- Be removed, not ignored
-- Never be imported at runtime
-- Never be referenced by UI
-
-Dead code is a SECURITY RISK.
-
----
-
-## 9. CI / AUDIT RULES
-
-Any PR MUST FAIL if:
-- permissions.includes appears in UI
-- frontend visibility logic exists
-- page renders without Z_* gate
-- UI action renders without GS_* gate
+----------------------------------------------------------------------------------
+# OLD PROJECT NOTES & HISTORY
+----------------------------------------------------------------------------------
 
 ---
 
 ## 10. FINAL LAW
 
-If backend did not EXPLICITLY allow,
+If backend did not EXPLICITLY allow,   
 frontend MUST NOT render.
 
-NO EXCEPTIONS.
+
+----------------------------------------------------------------------------------
+# PHASE 15: REMEDIATION PROTOCOLS (ARCHIVED INSTRUCTION)
+----------------------------------------------------------------------------------
+
+YOU ARE THE FINAL SAP ERP PHASE-15 REMEDIATION ENGINE.
+
+OBJECTIVE
+Bring the system to 100/100 SAP PFCG audit-safe compliance.
+After this task, Codex MUST return GO.
+
+NON-NEGOTIABLE RULES
+- Exactly ONE Decision Center.
+- No shadow RBAC engines.
+- Default UI state = HIDDEN.
+- Frontend NEVER decides.
+- dist/ must contain NO forbidden logic.
+
+TASKS (EXECUTE STRICTLY IN ORDER)
+
+────────────────────────────────────────
+1) SINGLE DECISION CENTER — HARD MERGE
+────────────────────────────────────────
+- Eliminate duplicate DecisionCenterService.
+- There MUST be exactly ONE canonical DecisionCenterService.
+- Merge or delete:
+  server/src/platform/auth/decision-center.service.ts
+- ALL authorization decisions (auth + menu + actions) MUST route through:
+  server/src/platform/decision/decision-center.service.ts
+
+- PermissionDryRunEngine MUST BE:
+  - fully deleted from src
+  - fully removed from dist
+  - not referenced by any guard or service
+
+FAIL if any dry-run / secondary permission evaluator remains.
+
+────────────────────────────────────────
+2) ROUTE-LEVEL AUTH — FINAL CLOSURE
+────────────────────────────────────────
+- Add Z_* + PageGate to:
+  /branches
+  /branches/:id
+
+- These MUST use Z_BRANCHES.
+- No routable path may exist without Z_* + PageGate.
+
+────────────────────────────────────────
+3) UI CONTENT AUTHORIZATION — DEFAULT HIDDEN
+────────────────────────────────────────
+For ALL UI elements (buttons, menus, tabs):
+
+RULE:
+If pageState.actions[actionKey] !== true
+→ the UI element MUST NOT RENDER AT ALL.
+
+Fix explicitly:
+- BranchesPage: Hide action menu trigger if NO actions are allowed.
+- NotificationRulesTable: “Bax / View” MUST render ONLY if an explicit action flag exists. Hide dropdown trigger if no actions allowed.
+- SettingsPage: Tabs MUST be gated by pageState.actions or backend-provided section flags. Menu presence alone is NOT sufficient.
+
+NO visual placeholders. NO disabled UI. HIDDEN means not rendered.
+
+────────────────────────────────────────
+4) DIST SANITIZATION
+────────────────────────────────────────
+- Rebuild dist.
+- Verify NO DryRunEngine code exists in dist/.
+- Verify no forbidden RBAC logic ships.
+
+────────────────────────────────────────
+5) FINAL SELF-CHECK
+────────────────────────────────────────
+Simulate READ-ONLY user.
+CONFIRM:
+- No action menu triggers visible.
+- No “View / Edit / Approve / …” UI appears.
+- Pages render only if authorized.
+- UI visibility is 100% backend-driven.
+
