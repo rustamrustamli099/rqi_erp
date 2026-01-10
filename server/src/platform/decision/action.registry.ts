@@ -428,4 +428,35 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
             { actionKey: 'export_to_excel', permissionSlug: 'system.hr.attendance.export_to_excel' },
         ],
     },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Branches Entity (Phase 2 Remediation)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'branches',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read_details', permissionSlug: 'system.branches.read_details' },
+            { actionKey: 'create', permissionSlug: 'system.branches.create' },
+            { actionKey: 'update', permissionSlug: 'system.branches.update' },
+            { actionKey: 'delete', permissionSlug: 'system.branches.delete' },
+        ],
+    },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Marketplace / Upgrade Entity (Phase 2 Remediation)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'marketplace',
+        scope: 'system',
+        actions: [
+            { actionKey: 'buy', permissionSlug: 'system.billing.marketplace.buy' },
+            { actionKey: 'install', permissionSlug: 'system.billing.marketplace.install' },
+        ],
+    },
+    {
+        entityKey: 'upgrade',
+        scope: 'system',
+        actions: [
+            { actionKey: 'request', permissionSlug: 'system.billing.upgrade.request' },
+        ],
+    },
 ];

@@ -133,7 +133,13 @@ function UsersIcon(props: any) {
     )
 }
 
+import { usePageState } from "@/app/security/usePageState"
+
 export default function MarketplacePage() {
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_BILLING_MARKETPLACE_PAGE');
+    const canBuy = actions?.GS_MARKETPLACE_BUY ?? false;
+
     const [filter, setFilter] = useState("all")
     const [search, setSearch] = useState("")
     const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null)
@@ -235,14 +241,18 @@ export default function MarketplacePage() {
                                             <Check className="mr-2 w-4 h-4" /> Artıq Aktivdir
                                         </Button>
                                     ) : (
-                                        <Button
-                                            className="w-full"
-                                            variant={item.category === 'integration' ? 'secondary' : 'default'}
-                                            onClick={() => handleBuyClick(item)}
-                                        >
-                                            <ShoppingCart className="mr-2 w-4 h-4" />
-                                            {item.category === 'integration' ? 'Quraşdır' : 'Satın Al'}
-                                        </Button>
+                                        <>
+                                            {canBuy && (
+                                                <Button
+                                                    className="w-full"
+                                                    variant={item.category === 'integration' ? 'secondary' : 'default'}
+                                                    onClick={() => handleBuyClick(item)}
+                                                >
+                                                    <ShoppingCart className="mr-2 w-4 h-4" />
+                                                    {item.category === 'integration' ? 'Quraşdır' : 'Satın Al'}
+                                                </Button>
+                                            )}
+                                        </>
                                     )}
                                 </CardFooter>
                             </Card>

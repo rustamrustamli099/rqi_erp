@@ -10,7 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, Shield, Server, Database, Users } from "lucide-react";
 import { toast } from "sonner";
 
+import { usePageState } from "@/app/security/usePageState";
+
 export default function TenantUpgradePage() {
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_BILLING_UPGRADE');
+    const canRequest = actions?.GS_UPGRADE_REQUEST ?? false;
+
     const [users, setUsers] = useState([50]);
     const [storage, setStorage] = useState([100]);
     const [addons, setAddons] = useState<string[]>([]);
@@ -118,9 +124,11 @@ export default function TenantUpgradePage() {
                             <Textarea placeholder="Xüsusi tələbləriniz..." className="mt-1" />
                         </div>
                         <div className="flex items-end">
-                            <Button size="lg" onClick={handleRequest}>
-                                Təsdiq və Sorğu Göndər
-                            </Button>
+                            {canRequest && (
+                                <Button size="lg" onClick={handleRequest}>
+                                    Təsdiq və Sorğu Göndər
+                                </Button>
+                            )}
                         </div>
                     </CardFooter>
                 </Card>

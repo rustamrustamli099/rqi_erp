@@ -271,17 +271,9 @@ export class SoDValidationService {
      * Check if permission set contains a permission (with prefix matching)
      */
     private static hasPermission(permissionSet: Set<string>, required: string): boolean {
-        // Exact match
-        if (permissionSet.has(required)) return true;
-
-        // Prefix match (e.g., "system.roles" covers "system.roles.create")
-        for (const perm of permissionSet) {
-            if (required.startsWith(perm + '.') || perm.startsWith(required + '.')) {
-                return true;
-            }
-        }
-
-        return false;
+        // PER SAP PFCG CONSTITUTION: EXACT MATCH ONLY.
+        // No prefix matching, no wildcards, no inference.
+        return permissionSet.has(required);
     }
 
     /**
