@@ -350,4 +350,82 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
         scope: 'system',
         actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.security.update' }]
     },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Approvals Entity (Phase 100% PFCG)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'approvals',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.approvals.read' },
+            { actionKey: 'approve', permissionSlug: 'system.approvals.approve' },
+            { actionKey: 'reject', permissionSlug: 'system.approvals.reject' },
+            { actionKey: 'forward', permissionSlug: 'system.approvals.forward' },
+            { actionKey: 'bulk_approve', permissionSlug: 'system.approvals.bulk_approve' },
+            { actionKey: 'bulk_reject', permissionSlug: 'system.approvals.bulk_reject' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.approvals.export_to_excel' },
+        ],
+    },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Files Entity (Phase 100% PFCG)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'files',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.file_manager.read' },
+            { actionKey: 'create', permissionSlug: 'system.file_manager.create' },
+            { actionKey: 'update', permissionSlug: 'system.file_manager.update' },
+            { actionKey: 'delete', permissionSlug: 'system.file_manager.delete' },
+            { actionKey: 'upload', permissionSlug: 'system.file_manager.upload' },
+            { actionKey: 'download', permissionSlug: 'system.file_manager.download' },
+            { actionKey: 'manage_permissions', permissionSlug: 'system.file_manager.manage_permissions' },
+            { actionKey: 'share', permissionSlug: 'system.file_manager.share' },
+        ],
+    },
+    // ─────────────────────────────────────────────────────────────────────────
+    // Dashboard Entity (Phase 100% PFCG)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'dashboard',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.dashboard.read' },
+            { actionKey: 'filter', permissionSlug: 'system.dashboard.filter' },
+            { actionKey: 'export', permissionSlug: 'system.dashboard.export' },
+        ],
+    },
+    // ─────────────────────────────────────────────────────────────────────────
+    // HR Entities (Phase 100% PFCG)
+    // ─────────────────────────────────────────────────────────────────────────
+    {
+        entityKey: 'employees',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.hr.employees.read' },
+            { actionKey: 'create', permissionSlug: 'system.hr.employees.create' },
+            { actionKey: 'update', permissionSlug: 'system.hr.employees.update' },
+            { actionKey: 'delete', permissionSlug: 'system.hr.employees.delete' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.hr.employees.export_to_excel' },
+        ],
+    },
+    {
+        entityKey: 'departments',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.hr.departments.read' },
+            { actionKey: 'create', permissionSlug: 'system.hr.departments.create' },
+            { actionKey: 'update', permissionSlug: 'system.hr.departments.update' },
+            { actionKey: 'delete', permissionSlug: 'system.hr.departments.delete' },
+        ],
+    },
+    {
+        entityKey: 'attendance',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.hr.attendance.read' },
+            { actionKey: 'filter', permissionSlug: 'system.hr.attendance.filter' },
+            { actionKey: 'export_to_excel', permissionSlug: 'system.hr.attendance.export_to_excel' },
+        ],
+    },
 ];

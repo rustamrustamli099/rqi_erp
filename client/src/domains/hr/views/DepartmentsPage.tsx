@@ -2,8 +2,14 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
+// PHASE 100% PFCG: Backend Decision Center
+import { usePageState } from "@/app/security/usePageState";
 
 export default function DepartmentsPage() {
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_DEPARTMENTS');
+    const canCreate = actions?.GS_DEPARTMENTS_CREATE ?? false;
+
     // Mock Data
     const [departments] = useState([
         { id: 1, name: "Information Technology", head: "Rəşad Əliyev", employeeCount: 12 },
@@ -19,9 +25,11 @@ export default function DepartmentsPage() {
                     <h2 className="text-3xl font-bold tracking-tight">Departments</h2>
                     <p className="text-muted-foreground">Manage company departments and structure.</p>
                 </div>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Add Department
-                </Button>
+                {canCreate && (
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" /> Add Department
+                    </Button>
+                )}
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

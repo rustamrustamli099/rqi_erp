@@ -29,6 +29,8 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
+// PHASE 100% PFCG: Backend Decision Center
+import { usePageState } from "@/app/security/usePageState"
 
 export function CalendarDateRangePicker({
     className,
@@ -188,6 +190,10 @@ import { useEffect } from "react";
 
 export default function DashboardPage() {
     const { setPageKey } = useHelp();
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_DASHBOARD');
+    const canExport = actions?.GS_DASHBOARD_EXPORT ?? false;
+    const canFilter = actions?.GS_DASHBOARD_FILTER ?? false;
 
     useEffect(() => {
         setPageKey("dashboard");
@@ -220,8 +226,8 @@ export default function DashboardPage() {
 
                     <CalendarDateRangePicker date={date} setDate={setDate} />
 
-                    <Button variant="outline" size="icon" className="bg-background"><Filter className="w-4 h-4" /></Button>
-                    <Button variant="outline" size="icon" className="bg-background"><Download className="w-4 h-4" /></Button>
+                    {canFilter && <Button variant="outline" size="icon" className="bg-background"><Filter className="w-4 h-4" /></Button>}
+                    {canExport && <Button variant="outline" size="icon" className="bg-background"><Download className="w-4 h-4" /></Button>}
                 </div>
             </div>
 

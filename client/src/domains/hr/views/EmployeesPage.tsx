@@ -28,6 +28,8 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ContextHelp } from "@/shared/components/ui/ContextHelp";
+// PHASE 100% PFCG: Backend Decision Center
+import { usePageState } from "@/app/security/usePageState";
 
 interface Employee {
     id: number;
@@ -39,6 +41,12 @@ interface Employee {
 }
 
 export default function EmployeesPage() {
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_EMPLOYEES');
+    const canCreate = actions?.GS_EMPLOYEES_CREATE ?? false;
+    const canUpdate = actions?.GS_EMPLOYEES_UPDATE ?? false;
+    const canDelete = actions?.GS_EMPLOYEES_DELETE ?? false;
+
     const [data] = useState<Employee[]>([
         { id: 1, name: "Ali Vəliyev", position: "Software Engineer", department: "IT", email: "ali@example.com", status: "Active" },
         { id: 2, name: "Ayşə Məmmədova", position: "HR Manager", department: "HR", email: "ayse@example.com", status: "Active" },

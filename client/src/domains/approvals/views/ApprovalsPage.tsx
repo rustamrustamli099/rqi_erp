@@ -49,6 +49,8 @@ import {
     getSortedRowModel,
 } from "@tanstack/react-table"
 import type { SortingState, ColumnFiltersState, VisibilityState } from "@tanstack/react-table"
+// PHASE 100% PFCG: Backend Decision Center
+import { usePageState } from "@/app/security/usePageState"
 
 // Extended Mock Data with Priority and Security Settings
 // Define MockRequest type locally for reuse
@@ -115,6 +117,14 @@ const MOCK_REQUESTS: MockRequest[] = [
 ]
 
 export default function ApprovalsPage() {
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_APPROVALS');
+    const canApprove = actions?.GS_APPROVALS_APPROVE ?? false;
+    const canReject = actions?.GS_APPROVALS_REJECT ?? false;
+    const canBulkApprove = actions?.GS_APPROVALS_BULK_APPROVE ?? false;
+    const canBulkReject = actions?.GS_APPROVALS_BULK_REJECT ?? false;
+    const canForward = actions?.GS_APPROVALS_FORWARD ?? false;
+
     const [activeTab, setActiveTab] = useState("inbox")
     const [requests, setRequests] = useState<MockRequest[]>(MOCK_REQUESTS)
 
@@ -313,14 +323,18 @@ export default function ApprovalsPage() {
                                         <>
                                             {Object.keys(rowSelection).length > 0 && (
                                                 <div className="flex items-center gap-2 ml-4 animate-in fade-in slide-in-from-left-2">
-                                                    <Button size="sm" onClick={handleBulkApprove} className="bg-green-600 hover:bg-green-700 text-white">
-                                                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                                                        Seçilənləri Təsdiqlə ({Object.keys(rowSelection).length})
-                                                    </Button>
-                                                    <Button size="sm" variant="destructive" onClick={handleBulkReject}>
-                                                        <XCircle className="mr-2 h-4 w-4" />
-                                                        İmtina
-                                                    </Button>
+                                                    {canBulkApprove && (
+                                                        <Button size="sm" onClick={handleBulkApprove} className="bg-green-600 hover:bg-green-700 text-white">
+                                                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                                                            Seçilənləri Təsdiqlə ({Object.keys(rowSelection).length})
+                                                        </Button>
+                                                    )}
+                                                    {canBulkReject && (
+                                                        <Button size="sm" variant="destructive" onClick={handleBulkReject}>
+                                                            <XCircle className="mr-2 h-4 w-4" />
+                                                            İmtina
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             )}
                                         </>

@@ -488,13 +488,7 @@ export default function BillingPage() {
         });
     };
 
-    if (allowedKeys.length === 0) {
-        return (
-            <div className="p-8">
-                <p className="text-sm text-muted-foreground">You do not have permission to view Billing.</p>
-            </div>
-        );
-    }
+    // PHASE 100% PFCG: PageGate handles authorization - no client-side checks
 
     return (
         <div className="flex flex-col min-h-[80vh] h-auto bg-background animate-in fade-in-50 duration-500">

@@ -9,7 +9,7 @@ export interface User {
     // role: string; // DEPRECATED: Use roles[]
     roles: string[]; // Multi-Role
     permissions: string[];
-    isOwner?: boolean;
+    // isOwner: REMOVED - SAP PFCG COMPLIANT: No owner bypass allowed
     managedTenantIds?: string[];
 }
 

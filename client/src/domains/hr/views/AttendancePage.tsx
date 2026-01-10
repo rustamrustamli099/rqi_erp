@@ -3,8 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Clock } from "lucide-react";
+// PHASE 100% PFCG: Backend Decision Center
+import { usePageState } from "@/app/security/usePageState";
 
 export default function AttendancePage() {
+    // PHASE 100% PFCG: Backend-driven action visibility
+    const { actions } = usePageState('Z_ATTENDANCE');
+    const canFilter = actions?.GS_ATTENDANCE_FILTER ?? false;
+
     // Mock Data (Today's attendance)
     const [attendance] = useState([
         { id: 1, name: "Ali Vəliyev", checkIn: "08:55 AM", checkOut: "-", status: "Present" },
@@ -19,9 +25,11 @@ export default function AttendancePage() {
                     <h2 className="text-3xl font-bold tracking-tight">Attendance</h2>
                     <p className="text-muted-foreground">Daily attendance tracking and reports.</p>
                 </div>
-                <Button variant="outline">
-                    <CalendarIcon className="mr-2 h-4 w-4" /> Select Date
-                </Button>
+                {canFilter && (
+                    <Button variant="outline">
+                        <CalendarIcon className="mr-2 h-4 w-4" /> Select Date
+                    </Button>
+                )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -69,7 +77,7 @@ export default function AttendancePage() {
                                     <TableCell>{log.checkOut}</TableCell>
                                     <TableCell>
                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${log.status === 'Present' ? 'bg-green-100 text-green-800' :
-                                                log.status === 'Late' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                                            log.status === 'Late' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
                                             }`}>
                                             {log.status}
                                         </span>
