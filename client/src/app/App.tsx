@@ -15,6 +15,7 @@ import { FeatureFlagProvider } from "@/domains/system-console/feature-flags/cont
 
 import { AuthGate } from "@/app/auth/AuthGate"
 import { PublicOnlyRoute } from "@/app/routing/PublicOnlyRoute"
+import { PageGate } from "@/app/security/PageGate";
 
 // Auth Pages
 import { LoginPage, ForgotPasswordPage } from "@/domains/auth"
@@ -139,15 +140,52 @@ function App() {
                       } />
 
                       {/* Placeholder Modules */}
-                      <Route path="/projects" element={<div className="p-4">Projects Module</div>} />
-                      <Route path="/inventory" element={<div className="p-4">Inventory Module</div>} />
-                      <Route path="/garage" element={<div className="p-4">Garage Module</div>} />
-                      <Route path="/audit" element={<div className="p-4">Audit Module</div>} />
-                      <Route path="/meals" element={<div className="p-4">Meals Module</div>} />
-                      <Route path="/accommodation" element={<div className="p-4">Accommodation Module</div>} />
-                      <Route path="/purchases" element={<div className="p-4">Cash Purchases Module</div>} />
-                      <Route path="/assets" element={<div className="p-4">Assets Module</div>} />
-                      <Route path="/reports" element={<div className="p-4">Reports Module</div>} />
+                      {/* Placeholder Modules - GATED (Phase 15) */}
+                      <Route path="/projects" element={
+                        <PageGate pageKey="Z_LEGACY_PROJECTS">
+                          <div className="p-4">Projects Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/inventory" element={
+                        <PageGate pageKey="Z_LEGACY_INVENTORY">
+                          <div className="p-4">Inventory Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/garage" element={
+                        <PageGate pageKey="Z_LEGACY_GARAGE">
+                          <div className="p-4">Garage Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/audit" element={
+                        <PageGate pageKey="Z_LEGACY_AUDIT">
+                          <div className="p-4">Audit Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/meals" element={
+                        <PageGate pageKey="Z_LEGACY_MEALS">
+                          <div className="p-4">Meals Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/accommodation" element={
+                        <PageGate pageKey="Z_LEGACY_ACCOMMODATION">
+                          <div className="p-4">Accommodation Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/purchases" element={
+                        <PageGate pageKey="Z_LEGACY_PURCHASES">
+                          <div className="p-4">Cash Purchases Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/assets" element={
+                        <PageGate pageKey="Z_LEGACY_ASSETS">
+                          <div className="p-4">Assets Module</div>
+                        </PageGate>
+                      } />
+                      <Route path="/reports" element={
+                        <PageGate pageKey="Z_LEGACY_REPORTS">
+                          <div className="p-4">Reports Module</div>
+                        </PageGate>
+                      } />
 
                     </Route> {/* End of AuthenticatedLayout */}
 

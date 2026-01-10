@@ -18,8 +18,8 @@ export declare class SubscriptionsUseCase {
     }>;
     findAll(): Promise<({
         tenant: {
-            name: string;
             slug: string;
+            name: string;
         };
         package: {
             currency: string;

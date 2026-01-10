@@ -28,10 +28,12 @@ const CURRENCIES = [
     { value: "TRY", label: "TRY - Türk Lirəsi" },
 ];
 
+import { ACTION_KEYS } from "@/app/navigation/action-keys";
+
 export function GeneralSettingsForm() {
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_SETTINGS_COMPANY_PROFILE');
-    const canUpdate = actions?.GS_SETTINGS_COMPANY_PROFILE_UPDATE ?? false;
+    const canUpdate = actions[ACTION_KEYS.SETTINGS_COMPANY_PROFILE_UPDATE];
 
     const [isLoading, setIsLoading] = useState(false);
 

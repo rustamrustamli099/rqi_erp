@@ -445,6 +445,58 @@ export const ACTION_PERMISSIONS_REGISTRY: EntityActionConfig[] = [
         actions: [{ actionKey: 'update', permissionSlug: 'system.settings.system_configurations.billing_configurations.security.update', contexts: ['toolbar'], label: 'Saxla' }]
     },
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // DICTIONARY CONFIGURATIONS (Phase 15)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        entityKey: 'dictionary_sectors',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.sectors.read', contexts: ['nav'], label: 'Sektorlar (Gör)' }]
+    },
+    {
+        entityKey: 'dictionary_units',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.units.read', contexts: ['nav'], label: 'Ölçü Vahidləri (Gör)' }]
+    },
+    {
+        entityKey: 'dictionary_currencies',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.currencies.read', contexts: ['nav'], label: 'Valyutalar (Gör)' }]
+    },
+    {
+        entityKey: 'dictionary_time_zones',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.time_zones.read', contexts: ['nav'], label: 'Saat Qurşaqları (Gör)' }]
+    },
+    {
+        entityKey: 'dictionary_country',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.addresses.read_country', contexts: ['nav'], label: 'Ölkələr (Gör)' }]
+    },
+    {
+        entityKey: 'dictionary_city',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.addresses.read_city', contexts: ['nav'], label: 'Şəhərlər (Gör)' }]
+    },
+    {
+        entityKey: 'dictionary_district',
+        scope: 'system',
+        actions: [{ actionKey: 'read', permissionSlug: 'system.settings.system_configurations.dictionary.addresses.read_district', contexts: ['nav'], label: 'Rayonlar (Gör)' }]
+    },
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NOTIFICATIONS (Phase 15)
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        entityKey: 'notifications',
+        scope: 'system',
+        actions: [
+            { actionKey: 'read', permissionSlug: 'system.settings.general.notification_engine.read', contexts: ['nav'], label: 'Bildirişlər (Gör)' },
+            { actionKey: 'create', permissionSlug: 'system.settings.general.notification_engine.create', contexts: ['toolbar'], label: 'Bildiriş Yarat' },
+            { actionKey: 'update', permissionSlug: 'system.settings.general.notification_engine.update', contexts: ['row'], label: 'Bildiriş Düzəlt' },
+            { actionKey: 'delete', permissionSlug: 'system.settings.general.notification_engine.delete', contexts: ['row'], label: 'Bildiriş Sil' },
+        ]
+    },
+
     // ═══════════════════════════════════════════════════════════════════════
     // TENANT SCOPE - Will be extended in future phases
     // ═══════════════════════════════════════════════════════════════════════

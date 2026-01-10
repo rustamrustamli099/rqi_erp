@@ -119,18 +119,29 @@ export default function SettingsPage() {
                 // It's a group
                 groups.push({
                     groupLabel: child.label || 'Group',
-                    items: child.children.map(subItem => ({
-                        id: subItem.id || subItem.key || 'unknown',
-                        label: subItem.label || subItem.id,
-                        path: subItem.path
-                    }))
+                    items: child.children.map(subItem => {
+                        // Extract tab key from path for matching
+                        const match = subItem.path?.match(/[?&]tab=([^&]+)/);
+                        const tabKey = match ? match[1] : (subItem.id || 'unknown');
+
+                        return {
+                            id: subItem.id || subItem.key || 'unknown',
+                            label: subItem.label || subItem.id,
+                            path: subItem.path,
+                            tabKey // Store the actual tab key for highlighting
+                        };
+                    })
                 });
             } else {
                 // It's a loose item
+                const match = child.path?.match(/[?&]tab=([^&]+)/);
+                const tabKey = match ? match[1] : (child.id || 'unknown');
+
                 looseItems.push({
                     id: child.id || child.key || 'unknown',
                     label: child.label || child.id,
-                    path: child.path
+                    path: child.path,
+                    tabKey
                 });
             }
         });
@@ -232,10 +243,10 @@ export default function SettingsPage() {
                                 {group.items.map((item) => (
                                     <Button
                                         key={item.id}
-                                        variant={activeTab === item.id ? "secondary" : "ghost"}
+                                        variant={activeTab === item.tabKey ? "secondary" : "ghost"}
                                         className={cn(
                                             "justify-start gap-2 h-9 w-48 overflow-hidden text-left",
-                                            activeTab === item.id ? "bg-secondary font-medium text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                            activeTab === item.tabKey ? "bg-secondary font-medium text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                         )}
                                         onClick={() => {
                                             // SAP-GRADE: Use path directly from the item (derived from backend node)
@@ -249,7 +260,7 @@ export default function SettingsPage() {
                                                 if (subTab) newParams.set('subTab', subTab);
                                                 setSearchParams(newParams);
                                             } else {
-                                                handleTabChange(item.id);
+                                                handleTabChange(item.tabKey);
                                             }
                                         }}
                                         title={item.label}

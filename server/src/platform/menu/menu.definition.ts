@@ -182,8 +182,8 @@ export const ADMIN_MENU_TREE: MenuItem[] = [
             {
                 id: 'user_rights',
                 label: 'İstifadəçi Hüquqları',
-                // SAP-GRADE: Permissionless container
-                // permission: 'system.settings.security.user_rights.role.read',
+                // SAP-GRADE: Permissionless container check children or use parent view
+                // Using generic view for visibility of container
                 children: [{
                     id: 'roles',
                     label: 'Rollar',

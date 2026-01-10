@@ -6,7 +6,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { LocalAuthGuard } from './local-auth.guard'; // Assuming this exists or using AuthGuard('local')
+import { PermissionsGuard, RequirePermissions } from './permissions.guard';
+
+// I should use the string literal 'system.users.users.impersonate' or find server slugs.
+// I will use string literal for now to avoid cross-project import issues if monorepo setup is strict.
+import { LocalAuthGuard } from './local-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -164,7 +168,8 @@ export class AuthController {
         };
     }
     @Post('impersonate')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, PermissionsGuard)
+    @RequirePermissions('system.users.users.impersonate')
     async impersonate(@Request() req, @Body() body: { userId: string }, @Res({ passthrough: true }) response: Response) {
         // Permission Check: system:users:impersonate
         // Ideally use @Permissions('system:users:impersonate') guard, but for now manual check or assume Role Guard handles it if applied.

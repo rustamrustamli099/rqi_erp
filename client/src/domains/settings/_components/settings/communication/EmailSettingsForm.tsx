@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Mail, CheckCircle2, AlertTriangle, Eye, EyeOff, Loader2, Info } from "lucide-react";
 // PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
 import { usePageState } from "@/app/security/usePageState";
+import { ACTION_KEYS } from "@/app/navigation/action-keys";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 interface SmtpConfig {
@@ -37,9 +38,9 @@ const DEFAULT_CONFIG: SmtpConfig = {
 export function EmailSettingsForm() {
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_SETTINGS_EMAIL');
-    const canUpdate = actions?.GS_SETTINGS_COMMUNICATION_EMAIL_UPDATE ?? false;
-    const canTest = actions?.GS_SETTINGS_COMMUNICATION_EMAIL_SEND_TEST ?? false;
-    const canChangeStatus = actions?.GS_SETTINGS_COMMUNICATION_EMAIL_CHANGE_STATUS ?? false;
+    const canUpdate = actions[ACTION_KEYS.SETTINGS_COMMUNICATION_EMAIL_UPDATE];
+    const canTest = actions[ACTION_KEYS.SETTINGS_COMMUNICATION_EMAIL_SEND_TEST];
+    const canChangeStatus = actions[ACTION_KEYS.SETTINGS_COMMUNICATION_EMAIL_CHANGE_STATUS];
 
     const [config, setConfig] = useState<SmtpConfig>(DEFAULT_CONFIG);
     const [showPassword, setShowPassword] = useState(false);

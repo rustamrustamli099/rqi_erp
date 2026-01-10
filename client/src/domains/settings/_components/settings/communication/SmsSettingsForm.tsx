@@ -9,7 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { MessageSquare, Smartphone, Zap, Eye, EyeOff, Loader2, AlertTriangle, Info } from "lucide-react";
 // PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
+// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
 import { usePageState } from "@/app/security/usePageState";
+import { ACTION_KEYS } from "@/app/navigation/action-keys";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 type SmsProviderType = 'twilio' | 'infobip' | 'msm' | 'custom';
@@ -31,9 +33,9 @@ const PROVIDERS = {
 export function SmsSettingsForm() {
     // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
     const { actions } = usePageState('Z_SETTINGS_SMS');
-    const canUpdate = actions?.GS_SETTINGS_COMMUNICATION_SMS_UPDATE ?? false;
-    const canTest = actions?.GS_SETTINGS_COMMUNICATION_SMS_SEND_TEST ?? false;
-    const canChangeStatus = actions?.GS_SETTINGS_COMMUNICATION_SMS_CHANGE_STATUS ?? false;
+    const canUpdate = actions[ACTION_KEYS.SETTINGS_COMMUNICATION_SMS_UPDATE];
+    const canTest = actions[ACTION_KEYS.SETTINGS_COMMUNICATION_SMS_SEND_TEST];
+    const canChangeStatus = actions[ACTION_KEYS.SETTINGS_COMMUNICATION_SMS_CHANGE_STATUS];
 
     const [config, setConfig] = useState<SmsConfig>({
         provider: 'twilio',

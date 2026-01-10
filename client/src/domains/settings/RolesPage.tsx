@@ -46,7 +46,7 @@ import { PermissionMatrix } from "./_components/PermissionMatrix";
 import { PermissionTreeEditor } from "./_components/PermissionTreeEditor"
 import { permissionsStructure } from "@/app/security/permission-structure"
 import { PermissionDiffViewer } from "./_components/PermissionDiffViewer"
-import { PermissionPreviewSimulator } from "./_components/PermissionPreviewSimulator"
+
 import { useListQuery } from "@/shared/hooks/useListQuery"
 // SoD Engine
 import { SoDValidationService, type SoDValidationResult } from "@/app/security/sod-rules"
@@ -918,9 +918,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                                             * Qırmızı (Təhlükəli) icazələr xüsusi təsdiq tələb edə bilər.
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button variant="outline" onClick={() => setIsPreviewOpen(true)} className="gap-2">
-                                                <Play className="w-4 h-4" /> Simulyasiya
-                                            </Button>
+
 
                                             {/* Only show Save button if allowed to manage permissions */}
                                             {managePermissionsAction?.state === 'enabled' && (
@@ -1010,23 +1008,7 @@ export default function RolesPage({ tabNode, context = "admin" }: RolesPageProps
                 </DialogContent>
             </Dialog>
 
-            {/* Simulation / Preview Modal */}
-            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-[1000px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-                    <DialogHeader className="p-6 pb-2">
-                        <DialogTitle>İcazə Simulyasiyası</DialogTitle>
-                        <DialogDescription>
-                            Seçilmiş icazələrə əsasən sistemin görünüşünü yoxlayın.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 pt-2">
-                        <PermissionPreviewSimulator
-                            permissions={selectedPermissions}
-                            context={context}
-                        />
-                    </div>
-                </DialogContent>
-            </Dialog>
+
 
             {/* Reject Role Modal */}
             <Modal

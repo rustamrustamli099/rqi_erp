@@ -45,8 +45,7 @@ import {
 import { useState } from "react";
 import type { NotificationRule, NotificationSeverity, NotificationChannel } from "@/domains/settings/constants/notification-types";
 import { toast } from "sonner";
-// PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
-import { usePageState } from "@/app/security/usePageState";
+// Helper for Severity Icon/Color
 
 // Helper for Severity Icon/Color
 const SeverityBadge = ({ severity }: { severity: NotificationSeverity }) => {
@@ -81,19 +80,18 @@ interface NotificationRulesTableProps {
     onDelete: (rule: NotificationRule) => void;
     onView: (rule: NotificationRule) => void;
     onAdd: () => void;
+    permissions: {
+        canCreate: boolean;
+        canUpdate: boolean;
+        canDelete: boolean;
+        canChangeStatus: boolean;
+        canExport: boolean;
+        canCopy: boolean;
+    }
 }
 
-export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd }: NotificationRulesTableProps) => {
-    // PHASE 14H: SAP PFCG Compliant - UI renders from backend pageState ONLY
-    const { actions } = usePageState('Z_SETTINGS_NOTIFICATION_ENGINE');
-
-    // Actions from backend Decision Center (GS_* semantic keys)
-    const canCreate = actions?.GS_SETTINGS_NOTIFICATION_ENGINE_CREATE ?? false;
-    const canUpdate = actions?.GS_SETTINGS_NOTIFICATION_ENGINE_UPDATE ?? false;
-    const canChangeStatus = actions?.GS_SETTINGS_NOTIFICATION_ENGINE_CHANGE_STATUS ?? false;
-    const canDelete = actions?.GS_SETTINGS_NOTIFICATION_ENGINE_DELETE ?? false;
-    const canExport = actions?.GS_SETTINGS_NOTIFICATION_ENGINE_EXPORT_TO_EXCEL ?? false;
-    const canCopy = actions?.GS_SETTINGS_NOTIFICATION_ENGINE_COPY_JSON ?? false;
+export const NotificationRulesTable = ({ data, onEdit, onDelete, onView, onAdd, permissions }: NotificationRulesTableProps) => {
+    const { canCreate, canUpdate, canDelete, canChangeStatus, canExport, canCopy } = permissions;
 
     const columns: ColumnDef<NotificationRule>[] = [
         {

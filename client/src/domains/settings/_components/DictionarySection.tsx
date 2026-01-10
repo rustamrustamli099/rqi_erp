@@ -3,6 +3,8 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
+import { usePageState } from '@/app/security/usePageState';
+import { ACTION_KEYS } from '@/app/navigation/action-keys';
 
 /**
  * SAP-GRADE: This component renders ONLY if user has access.
@@ -26,6 +28,9 @@ const DictionaryTableMock = ({ entity }: { entity: string }) => (
 export const DictionarySection: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // PHASE 15: Backend-driven Tab Visibility
+    const { actions } = usePageState('Z_SETTINGS');
+
     // Get current entity from URL or default to 'sectors'
     const currentEntity = (searchParams.get('entity') as DictionaryEntity) || 'sectors';
 
@@ -36,23 +41,31 @@ export const DictionarySection: React.FC = () => {
         });
     };
 
-    // SAP-GRADE: Access is enforced by ProtectedRoute
-    // Tab visibility is controlled by navigation resolver
-    // NO UI-level permission checks
+    // Calculate visibility
+    const showSectors = actions[ACTION_KEYS.DICTIONARY_SECTORS_READ];
+    const showUnits = actions[ACTION_KEYS.DICTIONARY_UNITS_READ];
+    const showCurrencies = actions[ACTION_KEYS.DICTIONARY_CURRENCIES_READ];
+    const showTimeZones = actions[ACTION_KEYS.DICTIONARY_TIMEZONES_READ];
+    const showCountry = actions[ACTION_KEYS.DICTIONARY_COUNTRY_READ];
+    const showCity = actions[ACTION_KEYS.DICTIONARY_CITY_READ];
+    const showDistrict = actions[ACTION_KEYS.DICTIONARY_DISTRICT_READ];
+
     return (
         <div className="flex flex-col space-y-4">
             <h2 className="text-xl font-semibold tracking-tight">Soraqçalar</h2>
 
             <Tabs value={currentEntity} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="w-full justify-start overflow-x-auto">
-                    <TabsTrigger value="sectors">Sektorlar</TabsTrigger>
-                    <TabsTrigger value="units">Ölçü Vahidləri</TabsTrigger>
-                    <TabsTrigger value="currencies">Valyutalar</TabsTrigger>
-                    <TabsTrigger value="time_zones">Saat Qurşaqları</TabsTrigger>
+                    {showSectors && <TabsTrigger value="sectors">Sektorlar</TabsTrigger>}
+                    {showUnits && <TabsTrigger value="units">Ölçü Vahidləri</TabsTrigger>}
+                    {showCurrencies && <TabsTrigger value="currencies">Valyutalar</TabsTrigger>}
+                    {showTimeZones && <TabsTrigger value="time_zones">Saat Qurşaqları</TabsTrigger>}
+
                     <div className="w-px h-4 bg-gray-200 mx-2 self-center" />
-                    <TabsTrigger value="country">Ölkələr</TabsTrigger>
-                    <TabsTrigger value="city">Şəhərlər</TabsTrigger>
-                    <TabsTrigger value="district">Rayonlar</TabsTrigger>
+
+                    {showCountry && <TabsTrigger value="country">Ölkələr</TabsTrigger>}
+                    {showCity && <TabsTrigger value="city">Şəhərlər</TabsTrigger>}
+                    {showDistrict && <TabsTrigger value="district">Rayonlar</TabsTrigger>}
                 </TabsList>
 
                 <div className="mt-4">

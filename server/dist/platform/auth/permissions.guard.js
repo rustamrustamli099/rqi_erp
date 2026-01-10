@@ -15,21 +15,23 @@ const core_1 = require("@nestjs/core");
 const prisma_service_1 = require("../../prisma.service");
 const cached_effective_permissions_service_1 = require("./cached-effective-permissions.service");
 const audit_service_1 = require("../../system/audit/audit.service");
-const dry_run_engine_1 = require("../../common/utils/dry-run.engine");
+const decision_center_service_1 = require("./decision-center.service");
 let PermissionsGuard = class PermissionsGuard {
     reflector;
     prisma;
     effectivePermissionsService;
     auditService;
-    constructor(reflector, prisma, effectivePermissionsService, auditService) {
+    decisionCenter;
+    constructor(reflector, prisma, effectivePermissionsService, auditService, decisionCenter) {
         this.reflector = reflector;
         this.prisma = prisma;
         this.effectivePermissionsService = effectivePermissionsService;
         this.auditService = auditService;
+        this.decisionCenter = decisionCenter;
     }
     async canActivate(context) {
         const requiredPermissions = this.reflector.get('permissions', context.getHandler());
-        if (!requiredPermissions) {
+        if (!requiredPermissions || requiredPermissions.length === 0) {
             return true;
         }
         const request = context.switchToHttp().getRequest();
@@ -47,21 +49,18 @@ let PermissionsGuard = class PermissionsGuard {
             details: { required: requiredPermissions }
         };
         try {
-            console.log('[DEBUG-GUARD] PermissionsGuard: Checking...', { userId: auditContext.userId, url: request.url });
             const userPermissionSlugs = await this.effectivePermissionsService.computeEffectivePermissions({
                 userId: auditContext.userId,
                 scopeType: auditContext.scopeType,
                 scopeId: auditContext.scopeId
             });
-            const validation = dry_run_engine_1.PermissionDryRunEngine.evaluate(userPermissionSlugs, requiredPermissions);
-            if (!validation.allowed) {
+            const isAllowed = this.decisionCenter.isAllowed(userPermissionSlugs, requiredPermissions);
+            if (!isAllowed) {
                 console.log('[DEBUG-GUARD] PermissionsGuard: DENIED');
                 await this.auditService.logAction({ ...auditContext, action: 'ACCESS_DENIED', details: { ...auditContext.details, reason: 'Insufficient Permissions' } });
                 throw new common_1.ForbiddenException('Insufficient Permissions');
             }
-            console.log('[DEBUG-GUARD] PermissionsGuard: GRANTED -> Logging Action...');
             await this.auditService.logAction({ ...auditContext, action: 'ACCESS_GRANTED' });
-            console.log('[DEBUG-GUARD] PermissionsGuard: Action Logged Successfully');
             return true;
         }
         catch (error) {
@@ -79,7 +78,8 @@ exports.PermissionsGuard = PermissionsGuard = __decorate([
     __metadata("design:paramtypes", [core_1.Reflector,
         prisma_service_1.PrismaService,
         cached_effective_permissions_service_1.CachedEffectivePermissionsService,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        decision_center_service_1.DecisionCenterService])
 ], PermissionsGuard);
 const RequirePermissions = (...permissions) => {
     return (target, key, descriptor) => {

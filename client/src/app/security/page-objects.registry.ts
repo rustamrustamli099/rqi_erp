@@ -1,0 +1,51 @@
+/**
+ * PAGE OBJECT REGISTRY
+ * 
+ * Defines all Z_* authorization objects used for PageGate.
+ * Must match backend definitions.
+ */
+
+export const PAGE_OBJECTS = {
+    // Core
+    Z_DASHBOARD: 'Z_DASHBOARD',
+    Z_USERS: 'Z_USERS',
+    Z_PROFILE: 'Z_PROFILE',
+    Z_SETTINGS: 'Z_SETTINGS',
+    Z_GUIDE: 'Z_GUIDE',
+    Z_CONSOLE: 'Z_CONSOLE',
+    Z_DEVELOPER: 'Z_DEVELOPER',
+
+    // Domains
+    Z_TENANTS: 'Z_TENANTS',
+    Z_FINANCE: 'Z_FINANCE',
+    Z_APPROVALS: 'Z_APPROVALS',
+    Z_FILES: 'Z_FILES',
+
+    // HR
+    Z_HR_EMPLOYEES: 'Z_HR_EMPLOYEES',
+    Z_HR_DEPARTMENTS: 'Z_HR_DEPARTMENTS',
+    Z_HR_STRUCTURE: 'Z_HR_STRUCTURE',
+    Z_HR_POSITIONS: 'Z_HR_POSITIONS',
+
+    // Branches
+    Z_BRANCHES: 'Z_BRANCHES',
+    Z_BRANCH_DETAILS: 'Z_BRANCH_DETAILS', // Sub-page
+
+    // Billing
+    Z_BILLING: 'Z_BILLING',
+    Z_BILLING_MARKETPLACE_PAGE: 'Z_BILLING_MARKETPLACE_PAGE',
+    Z_BILLING_UPGRADE: 'Z_BILLING_UPGRADE',
+
+    // Legacy / Placeholders (Phase 15 Closure)
+    Z_LEGACY_PROJECTS: 'Z_LEGACY_PROJECTS',
+    Z_LEGACY_INVENTORY: 'Z_LEGACY_INVENTORY',
+    Z_LEGACY_GARAGE: 'Z_LEGACY_GARAGE',
+    Z_LEGACY_AUDIT: 'Z_LEGACY_AUDIT',
+    Z_LEGACY_MEALS: 'Z_LEGACY_MEALS',
+    Z_LEGACY_ACCOMMODATION: 'Z_LEGACY_ACCOMMODATION',
+    Z_LEGACY_PURCHASES: 'Z_LEGACY_PURCHASES',
+    Z_LEGACY_ASSETS: 'Z_LEGACY_ASSETS',
+    Z_LEGACY_REPORTS: 'Z_LEGACY_REPORTS',
+} as const;
+
+export type PageObjectKey = keyof typeof PAGE_OBJECTS;

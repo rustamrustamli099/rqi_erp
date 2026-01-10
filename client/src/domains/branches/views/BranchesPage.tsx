@@ -193,28 +193,7 @@ export default function BranchesPage() {
                 <p className="text-muted-foreground">Təşkilati strukturu (Filiallar, Anbarlar, Regionlar) idarə edin.</p>
             </div>
 
-            <Card>
-                <CardContent className="p-4">
-                    <DataTableToolbar
-                        table={table}
-                        onAddClick={() => {
-                            setEditingBranch(null);
-                            setIsCreateOpen(true);
-                        }}
-                        addLabel="Yeni Bölmə"
-                    // Only pass action if permission exists - Toolbar needs update to accept boolean or wrap button
-                    />
-                    {/* Note: DataTableToolbar internally does not gate the Add button unless we pass a prop or gate outside. 
-                         Since DataTableToolbar prop 'onAddClick' is optional, we can conditionally pass it or wrap.
-                         However, for strict PFCG, it's better to modify the toolbar call or wrap the button.
-                         Assuming DataTableToolbar renders 'Add' button if onAddClick is present. */}
 
-                    {/* HACK: Re-implementing toolbar logic slightly or passing null if no permission */}
-                    {/* BETTER: Pass undefined to onAddClick if !canCreate */}
-
-                    {/* Re-rendering properly below with correct props */}
-                </CardContent>
-            </Card>
 
             {/* Refactor loop to fix double render issue above */}
             <Card>

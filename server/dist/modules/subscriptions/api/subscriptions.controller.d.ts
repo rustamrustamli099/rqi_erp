@@ -17,8 +17,8 @@ export declare class SubscriptionsController {
     }>;
     findAll(): Promise<({
         tenant: {
-            name: string;
             slug: string;
+            name: string;
         };
         package: {
             currency: string;

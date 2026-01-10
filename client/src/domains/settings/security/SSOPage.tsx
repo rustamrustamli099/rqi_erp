@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Check, Edit, Eye, Info, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { Check, Edit, Eye, Info, Loader2, Plus, ShieldCheck, Trash2, Download } from "lucide-react";
 import { ConfirmationDialog } from "@/shared/components/ui/confirmation-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 // PHASE 14H: Use pageState from backend Decision Center (DUMB UI)
 import { usePageState } from "@/app/security/usePageState";
 import { ExportModal } from "@/shared/components/ui/export-modal";
@@ -186,24 +187,29 @@ export default function SSOPage() {
                     <h3 className="text-lg font-medium flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-primary" /> SSO və OAuth</h3>
                     <p className="text-sm text-muted-foreground">İşçilərin korporativ hesablarla girişini təmin edin.</p>
                 </div>
-                <div className="flex gap-2">
-                    {canExport && (
-                        <Button variant="outline" onClick={() => setIsExportOpen(true)}>
-                            Export
-                        </Button>
-                    )}
-                    {canCreate && (
-                        <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" /> Yeni Provayder</Button>
-                    )}
-                </div>
             </div>
 
-            <div className="border rounded-md">
+            <div className="border rounded-md p-3">
                 <DataTable
                     columns={columns}
                     data={providers}
                     searchKey="provider"
-                />
+                    onAddClick={canCreate ? openCreate : undefined}
+                    addLabel="Yeni Provayder"
+                >
+                    {canExport && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-8 w-8 ml-auto" onClick={() => setIsExportOpen(true)}>
+                                        <Download className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Excel-ə İxrac</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                </DataTable>
             </div>
 
             {/* Config Modal */}

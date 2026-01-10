@@ -20,6 +20,7 @@ const effective_permissions_service_1 = require("./effective-permissions.service
 const passport_1 = require("@nestjs/passport");
 const client_1 = require("@prisma/client");
 const jwt_auth_guard_1 = require("./jwt-auth.guard");
+const permissions_guard_1 = require("./permissions.guard");
 let AuthController = class AuthController {
     authService;
     mfaService;
@@ -220,7 +221,8 @@ __decorate([
 ], AuthController.prototype, "getMe", null);
 __decorate([
     (0, common_1.Post)('impersonate'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
+    (0, permissions_guard_1.RequirePermissions)('system.users.users.impersonate'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Res)({ passthrough: true })),
